@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity } from 'react-native';
 import { Button, Text, Title, HelperText } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -16,6 +16,7 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isOver18, setIsOver18] = useState(true); // Default to true for initial date (2000)
 
   const validateAge = (selectedDate: Date) => {
     // Calculate age
@@ -30,18 +31,26 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
     // Check if user is at least 18
     if (age < 18) {
       setError('You must be at least 18 years old to use this app');
+      setIsOver18(false);
       return false;
     }
     
     // Check if date is in the future
     if (selectedDate > today) {
       setError('Please enter a valid birth date');
+      setIsOver18(false);
       return false;
     }
     
     setError('');
+    setIsOver18(true);
     return true;
   };
+
+  // Validate initial date
+  useEffect(() => {
+    validateAge(date);
+  }, []);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -127,9 +136,9 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
         <Button
           mode="contained"
           onPress={handleContinue}
-          style={styles.button}
+          style={[styles.button, !isOver18 && styles.disabledButton]}
           loading={loading}
-          disabled={loading}
+          disabled={loading || !isOver18}
         >
           Continue
         </Button>
@@ -180,6 +189,9 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
     paddingVertical: 6,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 
