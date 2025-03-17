@@ -13,7 +13,7 @@ type WriterLetterParams = {
 };
 
 // Common emoji moods that users can select quickly
-const SUGGESTED_MOODS = ['😊', '😔', '😡', '😢', '😂', '😍', '🤔', '😴', '😎', '😒'];
+const SUGGESTED_MOODS = ['😊', '😔', '😡', '😢', '😂', '😍', '🤔', '😴', '😎', '😒', '👍', '👎', '❤️', '😱', '🙏'];
 
 const WriteLetterScreen = () => {
   const { user } = useAuth();
@@ -32,7 +32,6 @@ const WriteLetterScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [moodEmoji, setMoodEmoji] = useState('');
-  const [showEmojiSuggestions, setShowEmojiSuggestions] = useState(false);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -129,31 +128,7 @@ const WriteLetterScreen = () => {
   };
 
   const handleEmojiSelect = (emoji: string) => {
-    setMoodEmoji(emoji);
-    setShowEmojiSuggestions(false);
-  };
-
-  // Function to validate if a string is a single emoji
-  const validateEmoji = (text: string) => {
-    // Basic validation to ensure it's just one emoji character
-    // This isn't perfect but will work for most common emojis
-    if (text.length > 2) {
-      return false;
-    }
-    
-    // More comprehensive validation could be added here if needed
-    return true;
-  };
-
-  const handleEmojiInputChange = (text: string) => {
-    if (text === '') {
-      setMoodEmoji('');
-      return;
-    }
-    
-    if (validateEmoji(text)) {
-      setMoodEmoji(text);
-    }
+    setMoodEmoji(emoji === moodEmoji ? '' : emoji); // Toggle the emoji if it's already selected
   };
 
   return (
@@ -170,38 +145,33 @@ const WriteLetterScreen = () => {
 
         <View style={styles.moodContainer}>
           <Text style={styles.label}>Your Mood</Text>
-          <View style={styles.moodInputRow}>
-            <TextInput
-              value={moodEmoji}
-              onChangeText={handleEmojiInputChange}
-              placeholder="Add an emoji"
-              style={styles.moodInput}
-              maxLength={2}
-              onFocus={() => setShowEmojiSuggestions(true)}
-            />
-            <TouchableOpacity 
-              style={styles.moodHelpButton}
-              onPress={() => setShowEmojiSuggestions(!showEmojiSuggestions)}
-            >
-              <Text>{showEmojiSuggestions ? 'Hide' : 'Suggestions'}</Text>
-            </TouchableOpacity>
+          
+          {/* Display the selected emoji or placeholder */}
+          <View style={styles.selectedEmojiContainer}>
+            {moodEmoji ? (
+              <Text style={styles.selectedEmoji}>{moodEmoji}</Text>
+            ) : (
+              <Text style={styles.placeholderEmoji}>Select an emoji</Text>
+            )}
           </View>
           
-          {showEmojiSuggestions && (
-            <Surface style={styles.emojiSuggestions}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {SUGGESTED_MOODS.map((emoji, index) => (
-                  <TouchableOpacity 
-                    key={index} 
-                    style={styles.emojiOption}
-                    onPress={() => handleEmojiSelect(emoji)}
-                  >
-                    <Text style={styles.emojiText}>{emoji}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </Surface>
-          )}
+          {/* Always show emoji options */}
+          <Surface style={styles.emojiSuggestions}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {SUGGESTED_MOODS.map((emoji, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[
+                    styles.emojiOption,
+                    emoji === moodEmoji && styles.selectedEmojiOption
+                  ]}
+                  onPress={() => handleEmojiSelect(emoji)}
+                >
+                  <Text style={styles.emojiText}>{emoji}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </Surface>
         </View>
         
         <Text style={styles.label}>Category</Text>
@@ -307,37 +277,42 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   moodContainer: {
-    marginBottom: 16,
+    marginBottom: 24,
   },
-  moodInputRow: {
-    flexDirection: 'row',
+  selectedEmojiContainer: {
+    height: 60,
+    justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
   },
-  moodInput: {
-    flex: 1,
-    fontSize: 24,
-    textAlign: 'center',
-    marginRight: 8,
+  selectedEmoji: {
+    fontSize: 36,
   },
-  moodHelpButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 4,
-    backgroundColor: '#f0f0f0',
+  placeholderEmoji: {
+    fontSize: 16,
+    color: '#999',
   },
   emojiSuggestions: {
-    flexDirection: 'row',
-    marginTop: 8,
-    padding: 8,
+    padding: 12,
     borderRadius: 8,
     elevation: 2,
   },
   emojiOption: {
     padding: 8,
     marginHorizontal: 4,
+    borderRadius: 20,
+  },
+  selectedEmojiOption: {
+    backgroundColor: 'rgba(98, 0, 238, 0.1)',
+    borderWidth: 1,
+    borderColor: '#6200ee',
   },
   emojiText: {
-    fontSize: 24,
+    fontSize: 28,
   },
   label: {
     fontSize: 16,
