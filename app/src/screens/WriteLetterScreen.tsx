@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { TextInput, Button, Text, Headline, Subheading, Divider, ActivityIndicator, Chip, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
+import { TextInput, Button, Text, Headline, Subheading, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,6 +11,9 @@ type WriterLetterParams = {
   threadId?: string;
   category?: any;
 };
+
+// Common emoji moods that users can select quickly
+const SUGGESTED_MOODS = ['😊', '😔', '😡', '😢', '😂', '😍', '🤔', '😴', '😎', '😒'];
 
 const WriteLetterScreen = () => {
   const { user } = useAuth();
@@ -28,6 +31,8 @@ const WriteLetterScreen = () => {
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
+  const [moodEmoji, setMoodEmoji] = useState('');
+  const [showEmojiSuggestions, setShowEmojiSuggestions] = useState(false);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -91,6 +96,7 @@ const WriteLetterScreen = () => {
             user_id: user.id,
             category_id: selectedCategory.id,
             is_anonymous: isAnonymous,
+            mood_emoji: moodEmoji || null, // Include the mood emoji
           },
         ])
         .select()
@@ -122,6 +128,34 @@ const WriteLetterScreen = () => {
     setSelectedCategory(category);
   };
 
+  const handleEmojiSelect = (emoji: string) => {
+    setMoodEmoji(emoji);
+    setShowEmojiSuggestions(false);
+  };
+
+  // Function to validate if a string is a single emoji
+  const validateEmoji = (text: string) => {
+    // Basic validation to ensure it's just one emoji character
+    // This isn't perfect but will work for most common emojis
+    if (text.length > 2) {
+      return false;
+    }
+    
+    // More comprehensive validation could be added here if needed
+    return true;
+  };
+
+  const handleEmojiInputChange = (text: string) => {
+    if (text === '') {
+      setMoodEmoji('');
+      return;
+    }
+    
+    if (validateEmoji(text)) {
+      setMoodEmoji(text);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -133,6 +167,42 @@ const WriteLetterScreen = () => {
         <Subheading style={styles.subheading}>Share your thoughts with the community</Subheading>
         
         <Divider style={styles.divider} />
+
+        <View style={styles.moodContainer}>
+          <Text style={styles.label}>Your Mood</Text>
+          <View style={styles.moodInputRow}>
+            <TextInput
+              value={moodEmoji}
+              onChangeText={handleEmojiInputChange}
+              placeholder="Add an emoji"
+              style={styles.moodInput}
+              maxLength={2}
+              onFocus={() => setShowEmojiSuggestions(true)}
+            />
+            <TouchableOpacity 
+              style={styles.moodHelpButton}
+              onPress={() => setShowEmojiSuggestions(!showEmojiSuggestions)}
+            >
+              <Text>{showEmojiSuggestions ? 'Hide' : 'Suggestions'}</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {showEmojiSuggestions && (
+            <Surface style={styles.emojiSuggestions}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {SUGGESTED_MOODS.map((emoji, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.emojiOption}
+                    onPress={() => handleEmojiSelect(emoji)}
+                  >
+                    <Text style={styles.emojiText}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Surface>
+          )}
+        </View>
         
         <Text style={styles.label}>Category</Text>
         {loadingCategories ? (
@@ -236,6 +306,39 @@ const styles = StyleSheet.create({
   divider: {
     marginVertical: 16,
   },
+  moodContainer: {
+    marginBottom: 16,
+  },
+  moodInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  moodInput: {
+    flex: 1,
+    fontSize: 24,
+    textAlign: 'center',
+    marginRight: 8,
+  },
+  moodHelpButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    backgroundColor: '#f0f0f0',
+  },
+  emojiSuggestions: {
+    flexDirection: 'row',
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 8,
+    elevation: 2,
+  },
+  emojiOption: {
+    padding: 8,
+    marginHorizontal: 4,
+  },
+  emojiText: {
+    fontSize: 24,
+  },
   label: {
     fontSize: 16,
     fontWeight: '500',
@@ -248,24 +351,23 @@ const styles = StyleSheet.create({
   },
   categoryChip: {
     marginRight: 8,
-    marginBottom: 8,
   },
   categoryChipText: {
     fontSize: 14,
   },
   titleInput: {
     marginBottom: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
   },
   contentInput: {
     marginBottom: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9f9f9',
     minHeight: 200,
   },
   anonymousContainer: {
     flexDirection: 'column',
     alignItems: 'center',
-    marginVertical: 16,
+    marginBottom: 24,
   },
   anonymousButton: {
     marginBottom: 8,
@@ -275,8 +377,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   submitButton: {
-    marginTop: 16,
-    paddingVertical: 8,
+    padding: 8,
   },
   loading: {
     marginVertical: 16,
