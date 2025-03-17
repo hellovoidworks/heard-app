@@ -21,23 +21,38 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Add logging for debugging
   useEffect(() => {
+    console.log('CategoryPreferencesScreen mounted');
+    return () => {
+      console.log('CategoryPreferencesScreen unmounted');
+    };
+  }, []);
+
+  useEffect(() => {
+    console.log('Fetching categories...');
     fetchCategories();
   }, []);
 
   const fetchCategories = async () => {
     try {
+      console.log('Making Supabase request for categories');
       const { data, error } = await supabase
         .from('categories')
         .select('*')
         .order('name');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching categories:', error);
+        throw error;
+      }
       
       if (data) {
+        console.log(`Received ${data.length} categories`);
         setCategories(data);
       }
     } catch (error: any) {
+      console.error('Exception in fetchCategories:', error);
       Alert.alert('Error', error.message || 'Failed to load categories');
     } finally {
       setLoading(false);

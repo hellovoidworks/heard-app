@@ -18,6 +18,14 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   const [error, setError] = useState('');
   const [isOver18, setIsOver18] = useState(true); // Default to true for initial date (2000)
 
+  // Log navigation state for debugging
+  useEffect(() => {
+    console.log('AgeVerificationScreen mounted');
+    return () => {
+      console.log('AgeVerificationScreen unmounted');
+    };
+  }, []);
+
   const validateAge = (selectedDate: Date) => {
     // Calculate age
     const today = new Date();
@@ -77,20 +85,52 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
     try {
       // Store the birthdate in user metadata
       if (user) {
+        console.log('Updating user metadata with birthdate...');
         const formattedDate = format(date, 'MM/dd/yyyy');
-        const { error } = await supabase.auth.updateUser({
-          data: { 
-            birthdate: formattedDate,
-            onboarding_completed: false
-          }
+        
+        // First, get the current user metadata to avoid overwriting existing data
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        
+        if (userError) {
+          console.error('Error getting user data:', userError);
+          throw userError;
+        }
+        
+        // Merge existing metadata with new data
+        const currentMetadata = userData.user?.user_metadata || {};
+        const updatedMetadata = {
+          ...currentMetadata,
+          birthdate: formattedDate,
+          onboarding_completed: false,
+          onboarding_step: 'age_verified'
+        };
+        
+        console.log('Updating with metadata:', updatedMetadata);
+        
+        const { data, error } = await supabase.auth.updateUser({
+          data: updatedMetadata
         });
         
-        if (error) throw error;
+        if (error) {
+          console.error('Error updating user metadata:', error);
+          throw error;
+        }
         
-        // Navigate to the next onboarding screen
-        navigation.navigate('CategoryPreferences');
+        console.log('User metadata updated successfully:', data);
+        
+        // Force a small delay to ensure state updates are processed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('Navigating to CategoryPreferences screen...');
+        
+        // Use the replace method instead of navigate to avoid navigation stack issues
+        navigation.replace('CategoryPreferences');
+      } else {
+        console.error('No user found in context');
+        Alert.alert('Error', 'User not found. Please try signing in again.');
       }
     } catch (error: any) {
+      console.error('Error in handleContinue:', error);
       Alert.alert('Error', error.message || 'An error occurred while saving your birthdate');
     } finally {
       setLoading(false);
