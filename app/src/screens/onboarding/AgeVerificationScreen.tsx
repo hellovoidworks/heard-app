@@ -81,15 +81,18 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
     }
 
     setLoading(true);
+    console.log('Starting handleContinue function...');
     
     try {
       // Store the birthdate in user_profiles table instead of metadata
       if (user) {
+        console.log('User found:', user.id);
         console.log('Saving birthdate to user_profiles table...');
         const formattedDate = format(date, 'MM/dd/yyyy');
         
         // Update the user_profiles table with the birthdate
-        const { error: profileError } = await supabase
+        console.log('Making Supabase request to update user_profiles...');
+        const profileUpdateResult = await supabase
           .from('user_profiles')
           .update({
             birthdate: formattedDate,
@@ -97,43 +100,67 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
           })
           .eq('id', user.id);
         
-        if (profileError) {
-          console.error('Error updating user profile:', profileError);
-          throw profileError;
+        console.log('Profile update result:', JSON.stringify(profileUpdateResult));
+        
+        if (profileUpdateResult.error) {
+          console.error('Error updating user profile:', profileUpdateResult.error);
+          throw profileUpdateResult.error;
         }
         
         console.log('User profile updated successfully with birthdate');
         
         // Only store minimal data in user metadata
-        const { error: metadataError } = await supabase.auth.updateUser({
+        console.log('Making Supabase request to update user metadata...');
+        const metadataUpdateResult = await supabase.auth.updateUser({
           data: { 
             onboarding_step: 'age_verified',
             onboarding_completed: false
           }
         });
         
-        if (metadataError) {
-          console.error('Error updating user metadata:', metadataError);
-          throw metadataError;
+        console.log('Metadata update result:', JSON.stringify(metadataUpdateResult));
+        
+        if (metadataUpdateResult.error) {
+          console.error('Error updating user metadata:', metadataUpdateResult.error);
+          throw metadataUpdateResult.error;
         }
         
         console.log('User metadata updated with onboarding status');
         
         // Force a small delay to ensure state updates are processed
-        await new Promise(resolve => setTimeout(resolve, 500));
+        console.log('Waiting before navigation...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        console.log('Navigating to CategoryPreferences screen...');
+        console.log('Attempting to navigate to CategoryPreferences screen...');
         
-        // Use the replace method instead of navigate to avoid navigation stack issues
-        navigation.replace('CategoryPreferences');
+        try {
+          // Use the replace method instead of navigate to avoid navigation stack issues
+          navigation.replace('CategoryPreferences');
+          console.log('Navigation.replace called successfully');
+        } catch (navError) {
+          console.error('Navigation error:', navError);
+          Alert.alert('Navigation Error', 'Failed to navigate to the next screen. Please try again.');
+        }
+        
+        // If we're still here after 2 seconds, something went wrong with navigation
+        setTimeout(() => {
+          if (loading) {
+            console.log('Still on AgeVerificationScreen after 2 seconds, forcing loading state to false');
+            setLoading(false);
+            Alert.alert(
+              'Navigation Issue', 
+              'There seems to be a problem navigating to the next screen. Please try again or restart the app.'
+            );
+          }
+        }, 2000);
       } else {
         console.error('No user found in context');
         Alert.alert('Error', 'User not found. Please try signing in again.');
+        setLoading(false);
       }
     } catch (error: any) {
       console.error('Error in handleContinue:', error);
       Alert.alert('Error', error.message || 'An error occurred while saving your birthdate');
-    } finally {
       setLoading(false);
     }
   };

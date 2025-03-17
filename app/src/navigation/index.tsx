@@ -42,13 +42,44 @@ const AuthNavigator = () => (
 );
 
 // Onboarding navigator
-const OnboardingNavigator = () => (
-  <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
-    <OnboardingStack.Screen name="AgeVerification" component={AgeVerificationScreen} />
-    <OnboardingStack.Screen name="CategoryPreferences" component={CategoryPreferencesScreen} />
-    <OnboardingStack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
-  </OnboardingStack.Navigator>
-);
+const OnboardingNavigator = () => {
+  console.log('Rendering OnboardingNavigator');
+  return (
+    <OnboardingStack.Navigator 
+      screenOptions={{ headerShown: false }}
+      screenListeners={{
+        state: (e) => {
+          console.log('Onboarding navigation state changed:', e.data);
+        },
+      }}
+    >
+      <OnboardingStack.Screen 
+        name="AgeVerification" 
+        component={AgeVerificationScreen} 
+        listeners={{
+          focus: () => console.log('AgeVerification screen focused'),
+          blur: () => console.log('AgeVerification screen blurred'),
+        }}
+      />
+      <OnboardingStack.Screen 
+        name="CategoryPreferences" 
+        component={CategoryPreferencesScreen} 
+        listeners={{
+          focus: () => console.log('CategoryPreferences screen focused'),
+          blur: () => console.log('CategoryPreferences screen blurred'),
+        }}
+      />
+      <OnboardingStack.Screen 
+        name="NotificationPermission" 
+        component={NotificationPermissionScreen} 
+        listeners={{
+          focus: () => console.log('NotificationPermission screen focused'),
+          blur: () => console.log('NotificationPermission screen blurred'),
+        }}
+      />
+    </OnboardingStack.Navigator>
+  );
+};
 
 // Main tab navigator
 const MainNavigator = () => (

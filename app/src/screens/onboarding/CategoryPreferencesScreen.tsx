@@ -24,10 +24,11 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   // Add logging for debugging
   useEffect(() => {
     console.log('CategoryPreferencesScreen mounted');
+    console.log('User from context:', user?.id);
     return () => {
       console.log('CategoryPreferencesScreen unmounted');
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     console.log('Fetching categories...');
@@ -48,8 +49,17 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
       }
       
       if (data) {
-        console.log(`Received ${data.length} categories`);
+        console.log(`Received ${data.length} categories:`, JSON.stringify(data));
+        if (data.length === 0) {
+          console.warn('No categories found in the database');
+          Alert.alert(
+            'No Categories Found', 
+            'There are no categories available. Please contact support or try again later.'
+          );
+        }
         setCategories(data);
+      } else {
+        console.warn('No data returned from categories query');
       }
     } catch (error: any) {
       console.error('Exception in fetchCategories:', error);
