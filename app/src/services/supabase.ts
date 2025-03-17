@@ -9,106 +9,16 @@ import Constants from 'expo-constants';
 const supabaseUrl = 'https://lrdylsehrfkkrjzicczz.supabase.co';
 const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxyZHlsc2VocmZra3JqemljY3p6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIxNjQ4MjcsImV4cCI6MjA1Nzc0MDgyN30.6QB5Yibq_I2QiEUWSZsz7vw0TxOR3O5cQlN5d_Td4wk';
 
-// Enhanced SecureStore adapter for Supabase auth persistence
-// Handles values larger than 2048 bytes by chunking them
+// SecureStore adapter for Supabase auth persistence
 const ExpoSecureStoreAdapter = {
-  getItem: async (key: string) => {
-    try {
-      // Check if we have chunks
-      const numChunksStr = await SecureStore.getItemAsync(`${key}_chunks`);
-      
-      if (numChunksStr) {
-        // We have chunks, need to reassemble
-        const numChunks = parseInt(numChunksStr, 10);
-        let value = '';
-        
-        for (let i = 0; i < numChunks; i++) {
-          const chunk = await SecureStore.getItemAsync(`${key}_${i}`);
-          if (chunk) {
-            value += chunk;
-          } else {
-            console.warn(`Missing chunk ${i} for key ${key}`);
-          }
-        }
-        
-        return value;
-      }
-      
-      // No chunks, regular retrieval
-      return SecureStore.getItemAsync(key);
-    } catch (error) {
-      console.error('Error retrieving from SecureStore:', error);
-      return null;
-    }
+  getItem: (key: string) => {
+    return SecureStore.getItemAsync(key);
   },
-  
-  setItem: async (key: string, value: string) => {
-    try {
-      // Check if value is too large (SecureStore has a 2048 byte limit)
-      if (value.length > 2000) { // Using 2000 to be safe
-        console.log(`Value for ${key} is large (${value.length} bytes), chunking it`);
-        
-        // Clear any existing chunks
-        const existingNumChunksStr = await SecureStore.getItemAsync(`${key}_chunks`);
-        if (existingNumChunksStr) {
-          const existingNumChunks = parseInt(existingNumChunksStr, 10);
-          for (let i = 0; i < existingNumChunks; i++) {
-            await SecureStore.deleteItemAsync(`${key}_${i}`);
-          }
-        }
-        
-        // Split into chunks of 1900 bytes (to be safe)
-        const chunkSize = 1900;
-        const numChunks = Math.ceil(value.length / chunkSize);
-        
-        // Store number of chunks
-        await SecureStore.setItemAsync(`${key}_chunks`, numChunks.toString());
-        
-        // Store each chunk
-        for (let i = 0; i < numChunks; i++) {
-          const start = i * chunkSize;
-          const end = Math.min(start + chunkSize, value.length);
-          const chunk = value.substring(start, end);
-          await SecureStore.setItemAsync(`${key}_${i}`, chunk);
-        }
-      } else {
-        // Value is small enough, store normally
-        await SecureStore.setItemAsync(key, value);
-        
-        // Clean up any chunks if they exist
-        const numChunksStr = await SecureStore.getItemAsync(`${key}_chunks`);
-        if (numChunksStr) {
-          const numChunks = parseInt(numChunksStr, 10);
-          for (let i = 0; i < numChunks; i++) {
-            await SecureStore.deleteItemAsync(`${key}_${i}`);
-          }
-          await SecureStore.deleteItemAsync(`${key}_chunks`);
-        }
-      }
-    } catch (error) {
-      console.error('Error storing in SecureStore:', error);
-    }
+  setItem: (key: string, value: string) => {
+    SecureStore.setItemAsync(key, value);
   },
-  
-  removeItem: async (key: string) => {
-    try {
-      // Check if we have chunks
-      const numChunksStr = await SecureStore.getItemAsync(`${key}_chunks`);
-      
-      if (numChunksStr) {
-        // Delete all chunks
-        const numChunks = parseInt(numChunksStr, 10);
-        for (let i = 0; i < numChunks; i++) {
-          await SecureStore.deleteItemAsync(`${key}_${i}`);
-        }
-        await SecureStore.deleteItemAsync(`${key}_chunks`);
-      }
-      
-      // Delete the main key
-      await SecureStore.deleteItemAsync(key);
-    } catch (error) {
-      console.error('Error removing from SecureStore:', error);
-    }
+  removeItem: (key: string) => {
+    SecureStore.deleteItemAsync(key);
   },
 };
 
