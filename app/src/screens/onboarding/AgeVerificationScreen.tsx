@@ -83,40 +83,41 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
     setLoading(true);
     
     try {
-      // Store the birthdate in user metadata
+      // Store the birthdate in user_profiles table instead of metadata
       if (user) {
-        console.log('Updating user metadata with birthdate...');
+        console.log('Saving birthdate to user_profiles table...');
         const formattedDate = format(date, 'MM/dd/yyyy');
         
-        // First, get the current user metadata to avoid overwriting existing data
-        const { data: userData, error: userError } = await supabase.auth.getUser();
+        // Update the user_profiles table with the birthdate
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({
+            birthdate: formattedDate,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
         
-        if (userError) {
-          console.error('Error getting user data:', userError);
-          throw userError;
+        if (profileError) {
+          console.error('Error updating user profile:', profileError);
+          throw profileError;
         }
         
-        // Merge existing metadata with new data
-        const currentMetadata = userData.user?.user_metadata || {};
-        const updatedMetadata = {
-          ...currentMetadata,
-          birthdate: formattedDate,
-          onboarding_completed: false,
-          onboarding_step: 'age_verified'
-        };
+        console.log('User profile updated successfully with birthdate');
         
-        console.log('Updating with metadata:', updatedMetadata);
-        
-        const { data, error } = await supabase.auth.updateUser({
-          data: updatedMetadata
+        // Only store minimal data in user metadata
+        const { error: metadataError } = await supabase.auth.updateUser({
+          data: { 
+            onboarding_step: 'age_verified',
+            onboarding_completed: false
+          }
         });
         
-        if (error) {
-          console.error('Error updating user metadata:', error);
-          throw error;
+        if (metadataError) {
+          console.error('Error updating user metadata:', metadataError);
+          throw metadataError;
         }
         
-        console.log('User metadata updated successfully:', data);
+        console.log('User metadata updated with onboarding status');
         
         // Force a small delay to ensure state updates are processed
         await new Promise(resolve => setTimeout(resolve, 500));

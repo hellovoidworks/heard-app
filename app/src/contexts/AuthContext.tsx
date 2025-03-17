@@ -7,6 +7,7 @@ interface Profile {
   id: string;
   username: string;
   avatar_url?: string;
+  birthdate?: string;
   created_at?: string;
   updated_at?: string;
 }
