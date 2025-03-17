@@ -99,11 +99,6 @@ const ProfileScreen = () => {
       <List.Section>
         <List.Subheader>Account</List.Subheader>
         <List.Item
-          title="My Letters"
-          left={props => <List.Icon {...props} icon="file-document" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
-        />
-        <List.Item
           title="Notification Settings"
           left={props => <List.Icon {...props} icon="bell" />}
           right={props => <List.Icon {...props} icon="chevron-right" />}
