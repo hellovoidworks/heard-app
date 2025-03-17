@@ -7,6 +7,7 @@ export type RootStackParamList = {
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   Profile: undefined;
   Notifications: undefined;
+  NotificationSettings: undefined;
 };
 
 export type AuthStackParamList = {

@@ -3,12 +3,18 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Text, Avatar, Button, TextInput, Divider, List } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { removePushToken } from '../services/notifications';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const ProfileScreen = () => {
   const { user, profile, signOut, updateProfile } = useAuth();
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(profile?.username || '');
   const [loading, setLoading] = useState(false);
+  const navigation = useNavigation<NavigationProp>();
 
   const handleSignOut = async () => {
     if (user) {
@@ -102,6 +108,7 @@ const ProfileScreen = () => {
           title="Notification Settings"
           left={props => <List.Icon {...props} icon="bell" />}
           right={props => <List.Icon {...props} icon="chevron-right" />}
+          onPress={() => navigation.navigate('NotificationSettings')}
         />
         <List.Item
           title="Privacy Settings"
