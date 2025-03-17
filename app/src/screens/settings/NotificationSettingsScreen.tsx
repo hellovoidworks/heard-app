@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Switch, Divider, Button, ActivityIndicator } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, Linking, Platform } from 'react-native';
+import { Text, Switch, Divider, Button, ActivityIndicator, Banner } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
-import { registerForPushNotificationsAsync } from '../../services/notifications';
+import { registerForPushNotificationsAsync, checkNotificationPermissions } from '../../services/notifications';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
@@ -12,10 +12,23 @@ const NotificationSettingsScreen = () => {
   const [letterNotifications, setLetterNotifications] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [systemPermissionsGranted, setSystemPermissionsGranted] = useState(true);
 
   useEffect(() => {
     fetchNotificationPreferences();
+    checkSystemPermissions();
   }, []);
+
+  const checkSystemPermissions = async () => {
+    const permissionStatus = await checkNotificationPermissions();
+    setSystemPermissionsGranted(permissionStatus === 'granted');
+  };
+
+  const openSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+    }
+  };
 
   const fetchNotificationPreferences = async () => {
     if (!user) return;
@@ -63,6 +76,8 @@ const NotificationSettingsScreen = () => {
           setSaving(false);
           return;
         }
+        // Recheck the permission status after registration
+        checkSystemPermissions();
       }
       
       const preferences = {
@@ -103,12 +118,32 @@ const NotificationSettingsScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {!systemPermissionsGranted && (
+        <Banner
+          visible={true}
+          actions={[
+            {
+              label: 'Open Settings',
+              onPress: openSettings,
+            }
+          ]}
+          icon="alert"
+          style={styles.banner}
+        >
+          <Text style={styles.bannerText}>
+            Notifications are disabled for this app in your device settings. 
+            Please enable them to receive notifications.
+          </Text>
+        </Banner>
+      )}
+
       <View style={styles.section}>
         <View style={styles.switchRow}>
           <Text style={styles.settingTitle}>Enable Notifications</Text>
           <Switch
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
+            disabled={!systemPermissionsGranted}
           />
         </View>
         <Text style={styles.settingDescription}>
@@ -128,6 +163,7 @@ const NotificationSettingsScreen = () => {
               <Switch
                 value={replyNotifications}
                 onValueChange={setReplyNotifications}
+                disabled={!systemPermissionsGranted}
               />
             </View>
             
@@ -136,6 +172,7 @@ const NotificationSettingsScreen = () => {
               <Switch
                 value={letterNotifications}
                 onValueChange={setLetterNotifications}
+                disabled={!systemPermissionsGranted}
               />
             </View>
           </View>
@@ -145,15 +182,25 @@ const NotificationSettingsScreen = () => {
       )}
       
       <View style={styles.buttonContainer}>
-        <Button
-          mode="contained"
-          onPress={saveNotificationPreferences}
-          loading={saving}
-          disabled={saving}
-          style={styles.saveButton}
-        >
-          Save Preferences
-        </Button>
+        {!systemPermissionsGranted ? (
+          <Button
+            mode="contained"
+            onPress={openSettings}
+            style={styles.saveButton}
+          >
+            Open iOS Settings
+          </Button>
+        ) : (
+          <Button
+            mode="contained"
+            onPress={saveNotificationPreferences}
+            loading={saving}
+            disabled={saving}
+            style={styles.saveButton}
+          >
+            Save Preferences
+          </Button>
+        )}
       </View>
     </ScrollView>
   );
@@ -168,6 +215,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  banner: {
+    marginBottom: 16,
+  },
+  bannerText: {
+    fontSize: 14,
   },
   section: {
     padding: 16,

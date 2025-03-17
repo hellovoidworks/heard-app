@@ -13,6 +13,22 @@ Notifications.setNotificationHandler({
   }),
 });
 
+export type NotificationPermissionStatus = 'granted' | 'denied' | 'undetermined';
+
+export async function checkNotificationPermissions(): Promise<NotificationPermissionStatus> {
+  if (Platform.OS !== 'ios') {
+    return 'granted'; // Only checking iOS for now
+  }
+
+  try {
+    const { status } = await Notifications.getPermissionsAsync();
+    return status as NotificationPermissionStatus;
+  } catch (error) {
+    console.error('Error checking notification permissions:', error);
+    return 'denied';
+  }
+}
+
 export async function registerForPushNotificationsAsync() {
   let token;
 
