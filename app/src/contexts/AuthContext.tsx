@@ -2,21 +2,60 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
+// Define the profile interface
+interface Profile {
+  id: string;
+  username: string;
+  avatar_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// Define the update profile params
+interface UpdateProfileParams {
+  username: string;
+  avatar_url?: string;
+}
+
 interface AuthContextData {
   user: User | null;
+  profile: Profile | null;
   loading: boolean;
   signIn: (user: User) => void;
   signOut: () => Promise<void>;
   isOnboardingComplete: boolean | null;
   checkOnboardingStatus: () => Promise<boolean>;
+  updateProfile: (params: UpdateProfileParams) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOnboardingComplete, setIsOnboardingComplete] = useState<boolean | null>(null);
+
+  // Fetch user profile from Supabase
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+
+      return data as Profile;
+    } catch (error) {
+      console.error('Exception fetching profile:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
     // Check for active session on mount
@@ -32,6 +71,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (data?.session?.user) {
           console.log('AuthContext: Active session found for user:', data.session.user.email);
           setUser(data.session.user);
+          
+          // Fetch user profile
+          const userProfile = await fetchProfile(data.session.user.id);
+          setProfile(userProfile);
           
           // Check onboarding status
           const onboardingComplete = data.session.user.user_metadata?.onboarding_completed === true;
@@ -57,12 +100,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('AuthContext: User authenticated:', session.user.email);
           setUser(session.user);
           
+          // Fetch user profile
+          const userProfile = await fetchProfile(session.user.id);
+          setProfile(userProfile);
+          
           // Check onboarding status
           const onboardingComplete = session.user.user_metadata?.onboarding_completed === true;
           setIsOnboardingComplete(onboardingComplete);
         } else {
           console.log('AuthContext: No user session');
           setUser(null);
+          setProfile(null);
           setIsOnboardingComplete(null);
         }
         setLoading(false);
@@ -80,6 +128,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthContext: Manual sign in for user:', newUser.email);
     setUser(newUser);
     
+    // Fetch user profile
+    fetchProfile(newUser.id).then(userProfile => {
+      setProfile(userProfile);
+    });
+    
     // Check onboarding status
     const onboardingComplete = newUser.user_metadata?.onboarding_completed === true;
     setIsOnboardingComplete(onboardingComplete);
@@ -95,6 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       console.log('AuthContext: User signed out successfully');
       setUser(null);
+      setProfile(null);
       setIsOnboardingComplete(null);
     } catch (error) {
       console.error('AuthContext: Error signing out:', error);
@@ -116,14 +170,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (params: UpdateProfileParams): Promise<{ error: Error | null }> => {
+    if (!user) {
+      return { error: new Error('User not authenticated') };
+    }
+
+    try {
+      console.log('AuthContext: Updating profile for user:', user.id);
+      
+      // Check if profile exists
+      const existingProfile = await fetchProfile(user.id);
+      
+      if (existingProfile) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            username: params.username,
+            avatar_url: params.avatar_url,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        if (error) {
+          console.error('AuthContext: Error updating profile:', error);
+          return { error: new Error(error.message) };
+        }
+      } else {
+        // Create new profile
+        const { error } = await supabase
+          .from('user_profiles')
+          .insert({
+            id: user.id,
+            username: params.username,
+            avatar_url: params.avatar_url,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          });
+        
+        if (error) {
+          console.error('AuthContext: Error creating profile:', error);
+          return { error: new Error(error.message) };
+        }
+      }
+      
+      // Fetch updated profile
+      const updatedProfile = await fetchProfile(user.id);
+      setProfile(updatedProfile);
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('AuthContext: Exception updating profile:', error);
+      return { error };
+    }
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
+      profile,
       loading, 
       signIn, 
       signOut, 
       isOnboardingComplete,
-      checkOnboardingStatus
+      checkOnboardingStatus,
+      updateProfile
     }}>
       {children}
     </AuthContext.Provider>
