@@ -64,6 +64,7 @@ const LoginScreen = ({ navigation }: Props) => {
         
         // If successful, update the auth context
         if (data?.user) {
+          // Profile will be automatically created by the database trigger
           signIn(data.user);
         }
       }

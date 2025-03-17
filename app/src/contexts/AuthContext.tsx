@@ -178,40 +178,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('AuthContext: Updating profile for user:', user.id);
       
-      // Check if profile exists
-      const existingProfile = await fetchProfile(user.id);
+      // With the database trigger, we can assume the profile always exists
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          username: params.username,
+          avatar_url: params.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
       
-      if (existingProfile) {
-        // Update existing profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .update({
-            username: params.username,
-            avatar_url: params.avatar_url,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', user.id);
-        
-        if (error) {
-          console.error('AuthContext: Error updating profile:', error);
-          return { error: new Error(error.message) };
-        }
-      } else {
-        // Create new profile
-        const { error } = await supabase
-          .from('user_profiles')
-          .insert({
-            id: user.id,
-            username: params.username,
-            avatar_url: params.avatar_url,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          });
-        
-        if (error) {
-          console.error('AuthContext: Error creating profile:', error);
-          return { error: new Error(error.message) };
-        }
+      if (error) {
+        console.error('AuthContext: Error updating profile:', error);
+        return { error: new Error(error.message) };
       }
       
       // Fetch updated profile

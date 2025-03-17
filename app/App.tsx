@@ -42,6 +42,26 @@ export default function App() {
               const { data } = await supabase.auth.getSession();
               if (data?.session) {
                 console.log('User authenticated:', data.session.user.email);
+                
+                // Fetch the user's profile to ensure it exists
+                const { data: profileData, error: profileError } = await supabase
+                  .from('user_profiles')
+                  .select('*')
+                  .eq('id', data.session.user.id)
+                  .single();
+                
+                if (profileError && profileError.code !== 'PGRST116') {
+                  console.error('Error fetching user profile:', profileError);
+                }
+                
+                if (profileData) {
+                  console.log('User profile found:', profileData.username);
+                } else {
+                  console.log('No user profile found, it should be created by the database trigger');
+                  // The database trigger will automatically create a profile for new users
+                  // We don't need to manually create it here
+                }
+                
                 Alert.alert('Success', 'You have been successfully authenticated!');
               }
             }
