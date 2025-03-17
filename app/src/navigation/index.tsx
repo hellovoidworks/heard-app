@@ -16,7 +16,8 @@ import {
   ProfileScreen,
   NotificationsScreen,
   WriteLetterScreen,
-  LetterDetailScreen
+  LetterDetailScreen,
+  MailboxScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -93,6 +94,8 @@ const MainNavigator = () => (
           iconName = focused ? 'home' : 'home-outline';
         } else if (route.name === 'Write') {
           iconName = focused ? 'create' : 'create-outline';
+        } else if (route.name === 'Mailbox') {
+          iconName = focused ? 'mail' : 'mail-outline';
         }
 
         return <Ionicons name={iconName} size={size} color={color} />;
@@ -132,6 +135,7 @@ const MainNavigator = () => (
       })}
     />
     <Tab.Screen name="Write" component={WriteLetterScreen} />
+    <Tab.Screen name="Mailbox" component={MailboxScreen} />
   </Tab.Navigator>
 );
 
