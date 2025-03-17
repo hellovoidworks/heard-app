@@ -7,6 +7,7 @@ import { registerForPushNotificationsAsync, savePushToken } from '../services/no
 import { Ionicons } from '@expo/vector-icons';
 import linking from '../utils/linking';
 import { supabase } from '../services/supabase';
+import { CommonActions } from '@react-navigation/native';
 
 // Import screens from the index file
 import {
@@ -94,8 +95,6 @@ const MainNavigator = () => (
           iconName = focused ? 'create' : 'create-outline';
         } else if (route.name === 'Notifications') {
           iconName = focused ? 'notifications' : 'notifications-outline';
-        } else if (route.name === 'Profile') {
-          iconName = focused ? 'person' : 'person-outline';
         }
 
         return <Ionicons name={iconName} size={size} color={color} />;
@@ -104,10 +103,26 @@ const MainNavigator = () => (
       tabBarInactiveTintColor: 'gray',
     })}
   >
-    <Tab.Screen name="Home" component={HomeScreen} />
+    <Tab.Screen 
+      name="Home" 
+      component={HomeScreen} 
+      options={({ navigation }) => ({
+        headerRight: () => (
+          <Ionicons 
+            name="person-circle-outline" 
+            size={24} 
+            color="#6200ee" 
+            style={{ marginRight: 15 }}
+            onPress={() => {
+              // Navigate to the Profile screen in the root navigator
+              navigation.getParent()?.navigate('Profile');
+            }}
+          />
+        ),
+      })}
+    />
     <Tab.Screen name="Write" component={WriteLetterScreen} />
     <Tab.Screen name="Notifications" component={NotificationsScreen} />
-    <Tab.Screen name="Profile" component={ProfileScreen} />
   </Tab.Navigator>
 );
 
@@ -170,6 +185,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Main" component={MainNavigator} />
               <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
               <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
+              <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
             </>
           )
         ) : (

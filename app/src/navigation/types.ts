@@ -5,6 +5,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   LetterDetail: { letterId: string };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
+  Profile: undefined;
 };
 
 export type AuthStackParamList = {
@@ -21,5 +22,5 @@ export type MainTabParamList = {
   Home: undefined;
   Write: undefined;
   Notifications: undefined;
-  Profile: undefined;
+  // Profile tab removed
 }; 
