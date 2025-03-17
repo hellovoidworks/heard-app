@@ -38,10 +38,18 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
     
-    // Get push token
-    token = (await Notifications.getExpoPushTokenAsync({
-      projectId: Constants.expoConfig?.extra?.eas?.projectId,
-    })).data;
+    try {
+      // Get push token
+      console.log('Getting Expo push token with projectId:', Constants.expoConfig?.extra?.eas?.projectId);
+      const response = await Notifications.getExpoPushTokenAsync({
+        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+      });
+      token = response.data;
+      console.log('Successfully obtained push token:', token);
+    } catch (error) {
+      console.error('Error encountered while fetching Expo token:', error);
+      return null;
+    }
   } else {
     console.log('Push notifications are only configured for iOS in this app');
     return null;

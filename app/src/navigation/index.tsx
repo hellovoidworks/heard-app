@@ -119,14 +119,34 @@ const AppNavigator = () => {
     if (user && isOnboardingComplete) {
       // Register for push notifications when user is logged in and has completed onboarding
       const registerForNotifications = async () => {
-        const { data } = await supabase.auth.getUser();
-        const metadata = data?.user?.user_metadata;
-        
-        if (metadata?.notifications_enabled === true) {
-          const token = await registerForPushNotificationsAsync();
-          if (token) {
-            await savePushToken(user.id, token);
+        try {
+          // Get user profile to check notification preferences
+          const { data: profileData, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('notification_preferences')
+            .eq('id', user.id)
+            .single();
+          
+          if (profileError) {
+            console.error('Error fetching user profile:', profileError);
+            return;
           }
+          
+          // Check if notifications are enabled in the notification_preferences JSON
+          if (profileData?.notification_preferences?.enabled === true) {
+            console.log('Notifications are enabled, registering for push notifications');
+            const token = await registerForPushNotificationsAsync();
+            if (token) {
+              console.log('Push token obtained, saving to user profile');
+              await savePushToken(user.id, token);
+            } else {
+              console.log('No push token obtained');
+            }
+          } else {
+            console.log('Notifications are not enabled for this user');
+          }
+        } catch (error) {
+          console.error('Error registering for notifications:', error);
         }
       };
 

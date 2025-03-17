@@ -24,15 +24,20 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 
       console.log('Requesting notification permissions...');
       // Request notification permissions
-      const token = await registerForPushNotificationsAsync();
-      
-      if (token) {
-        console.log('Push token obtained:', token);
-        // Save the push token
-        await savePushToken(user.id, token);
-        console.log('Push token saved successfully');
-      } else {
-        console.log('No push token obtained - user denied permissions or error occurred');
+      let token = null;
+      try {
+        token = await registerForPushNotificationsAsync();
+        if (token) {
+          console.log('Push token obtained:', token);
+          // Save the push token
+          await savePushToken(user.id, token);
+          console.log('Push token saved successfully');
+        } else {
+          console.log('No push token obtained - user denied permissions or error occurred');
+        }
+      } catch (notificationError) {
+        console.error('Error in notification registration:', notificationError);
+        // Continue with onboarding even if notifications fail
       }
       
       // Update user_profiles table with notification preferences as JSON
@@ -64,7 +69,7 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       completeOnboarding();
     } catch (error: any) {
       console.error('Error enabling notifications:', error);
-      Alert.alert('Error', error.message || 'Failed to enable notifications');
+      Alert.alert('Error', 'There was a problem enabling notifications. You can enable them later in settings.');
       
       if (user) {
         // Still mark onboarding as complete even if there was an error
