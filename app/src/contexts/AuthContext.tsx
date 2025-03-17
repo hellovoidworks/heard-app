@@ -8,6 +8,8 @@ interface Profile {
   username: string;
   avatar_url?: string;
   birthdate?: string;
+  onboarding_step?: string;
+  onboarding_completed?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -77,8 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userProfile = await fetchProfile(data.session.user.id);
           setProfile(userProfile);
           
-          // Check onboarding status
-          const onboardingComplete = data.session.user.user_metadata?.onboarding_completed === true;
+          // Check onboarding status from profile instead of metadata
+          const onboardingComplete = userProfile?.onboarding_completed === true;
           setIsOnboardingComplete(onboardingComplete);
         } else {
           console.log('AuthContext: No active session found');
@@ -105,8 +107,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userProfile = await fetchProfile(session.user.id);
           setProfile(userProfile);
           
-          // Check onboarding status
-          const onboardingComplete = session.user.user_metadata?.onboarding_completed === true;
+          // Check onboarding status from profile instead of metadata
+          const onboardingComplete = userProfile?.onboarding_completed === true;
           setIsOnboardingComplete(onboardingComplete);
         } else {
           console.log('AuthContext: No user session');
@@ -132,11 +134,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Fetch user profile
     fetchProfile(newUser.id).then(userProfile => {
       setProfile(userProfile);
+      
+      // Check onboarding status from profile instead of metadata
+      const onboardingComplete = userProfile?.onboarding_completed === true;
+      setIsOnboardingComplete(onboardingComplete);
     });
-    
-    // Check onboarding status
-    const onboardingComplete = newUser.user_metadata?.onboarding_completed === true;
-    setIsOnboardingComplete(onboardingComplete);
   };
 
   const signOut = async () => {
@@ -161,8 +163,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user) return false;
     
     try {
-      const { data } = await supabase.auth.getUser();
-      const onboardingComplete = data?.user?.user_metadata?.onboarding_completed === true;
+      // Check onboarding status from profile instead of metadata
+      const userProfile = await fetchProfile(user.id);
+      const onboardingComplete = userProfile?.onboarding_completed === true;
       setIsOnboardingComplete(onboardingComplete);
       return onboardingComplete;
     } catch (error) {

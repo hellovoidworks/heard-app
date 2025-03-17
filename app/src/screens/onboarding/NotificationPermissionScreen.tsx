@@ -18,42 +18,66 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
     setLoading(true);
     
     try {
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      console.log('Requesting notification permissions...');
       // Request notification permissions
       const token = await registerForPushNotificationsAsync();
       
-      if (token && user) {
+      if (token) {
+        console.log('Push token obtained:', token);
         // Save the push token
         await savePushToken(user.id, token);
-        
-        // Update user metadata
-        await supabase.auth.updateUser({
-          data: { 
-            onboarding_completed: true,
-            notifications_enabled: true
-          }
-        });
+        console.log('Push token saved successfully');
       } else {
-        // User denied permissions or there was an error
-        await supabase.auth.updateUser({
-          data: { 
-            onboarding_completed: true,
-            notifications_enabled: false
-          }
-        });
+        console.log('No push token obtained - user denied permissions or error occurred');
       }
+      
+      // Update user_profiles table instead of metadata
+      console.log('Updating user_profiles with onboarding completion...');
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          onboarding_step: 'completed',
+          onboarding_completed: true,
+          notifications_enabled: token ? true : false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (profileError) {
+        console.error('Error updating user profile:', profileError);
+        throw profileError;
+      }
+      
+      console.log('User profile updated with onboarding completion');
       
       // Complete onboarding
       completeOnboarding();
     } catch (error: any) {
+      console.error('Error enabling notifications:', error);
       Alert.alert('Error', error.message || 'Failed to enable notifications');
       
-      // Still mark onboarding as complete even if there was an error
-      await supabase.auth.updateUser({
-        data: { 
-          onboarding_completed: true,
-          notifications_enabled: false
+      if (user) {
+        // Still mark onboarding as complete even if there was an error
+        try {
+          await supabase
+            .from('user_profiles')
+            .update({
+              onboarding_step: 'completed',
+              onboarding_completed: true,
+              notifications_enabled: false,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', user.id);
+          
+          console.log('User profile updated with onboarding completion (after error)');
+        } catch (updateError) {
+          console.error('Error updating user profile after notification error:', updateError);
         }
-      });
+      }
       
       completeOnboarding();
     } finally {
@@ -65,17 +89,33 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
     setLoading(true);
     
     try {
-      // Update user metadata
-      await supabase.auth.updateUser({
-        data: { 
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      console.log('Skipping notifications, updating user_profiles...');
+      // Update user_profiles table instead of metadata
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .update({
+          onboarding_step: 'completed',
           onboarding_completed: true,
-          notifications_enabled: false
-        }
-      });
+          notifications_enabled: false,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (profileError) {
+        console.error('Error updating user profile:', profileError);
+        throw profileError;
+      }
+      
+      console.log('User profile updated with onboarding completion (skipped notifications)');
       
       // Complete onboarding
       completeOnboarding();
     } catch (error: any) {
+      console.error('Error skipping notifications:', error);
       Alert.alert('Error', error.message || 'Failed to complete onboarding');
     } finally {
       setLoading(false);

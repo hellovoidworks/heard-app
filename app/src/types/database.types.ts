@@ -4,6 +4,9 @@ export type UserProfile = {
   avatar_url: string | null;
   push_token: string | null;
   birthdate: string | null;
+  onboarding_step: string | null;
+  onboarding_completed: boolean | null;
+  notifications_enabled: boolean | null;
   notification_preferences: Record<string, any>;
   created_at: string;
   updated_at: string;

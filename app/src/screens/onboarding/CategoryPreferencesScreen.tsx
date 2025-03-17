@@ -86,10 +86,14 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
     }
 
     setSaving(true);
+    console.log('Starting handleContinue in CategoryPreferencesScreen...');
     
     try {
       if (user) {
+        console.log('User found:', user.id);
+        
         // Save user preferences
+        console.log('Saving user category preferences...');
         const promises = selectedCategories.map(categoryId => 
           supabase
             .from('user_category_preferences')
@@ -100,18 +104,34 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         );
         
         await Promise.all(promises);
+        console.log('User category preferences saved successfully');
         
-        // Update user metadata
-        await supabase.auth.updateUser({
-          data: { 
-            onboarding_step: 'categories_completed'
-          }
-        });
+        // Update onboarding progress in user_profiles table
+        console.log('Updating onboarding progress in user_profiles table...');
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .update({
+            onboarding_step: 'categories_completed',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+        
+        if (profileError) {
+          console.error('Error updating user profile:', profileError);
+          throw profileError;
+        }
+        
+        console.log('User profile updated with onboarding progress');
         
         // Navigate to the next onboarding screen
+        console.log('Navigating to NotificationPermission screen...');
         navigation.navigate('NotificationPermission');
+      } else {
+        console.error('No user found in context');
+        Alert.alert('Error', 'User not found. Please try signing in again.');
       }
     } catch (error: any) {
+      console.error('Error in handleContinue:', error);
       Alert.alert('Error', error.message || 'Failed to save your preferences');
     } finally {
       setSaving(false);
