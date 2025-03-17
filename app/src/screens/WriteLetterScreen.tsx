@@ -24,7 +24,6 @@ const WriteLetterScreen = () => {
   // Get the category from route params if available
   const initialCategory = route.params?.category || null;
   
-  const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [categories, setCategories] = useState<any[]>([]);
@@ -67,11 +66,6 @@ const WriteLetterScreen = () => {
       return;
     }
 
-    if (!title.trim()) {
-      Alert.alert('Error', 'Please enter a title for your letter.');
-      return;
-    }
-
     if (!content.trim()) {
       Alert.alert('Error', 'Please enter content for your letter.');
       return;
@@ -85,17 +79,29 @@ const WriteLetterScreen = () => {
     try {
       setIsSubmitting(true);
 
+      // Use the first line or first few words as an automatic title
+      let autoTitle = content.split('\n')[0].trim();
+      if (autoTitle.length > 50) {
+        autoTitle = autoTitle.substring(0, 47) + '...';
+      } else if (autoTitle.length < 3) {
+        // If first line is too short, use first few words of content
+        autoTitle = content.trim().substring(0, 50);
+        if (autoTitle.length === 50) {
+          autoTitle = autoTitle + '...';
+        }
+      }
+
       // Create the letter in the database
       const { data, error } = await supabase
         .from('letters')
         .insert([
           {
-            title,
+            title: autoTitle, // Use auto-generated title
             content,
             user_id: user.id,
             category_id: selectedCategory.id,
             is_anonymous: isAnonymous,
-            mood_emoji: moodEmoji || null, // Include the mood emoji
+            mood_emoji: moodEmoji || null,
           },
         ])
         .select()
@@ -203,16 +209,7 @@ const WriteLetterScreen = () => {
           </ScrollView>
         )}
         
-        <Text style={styles.label}>Title</Text>
-        <TextInput
-          value={title}
-          onChangeText={setTitle}
-          placeholder="Enter a title for your letter"
-          style={styles.titleInput}
-          maxLength={100}
-        />
-        
-        <Text style={styles.label}>Content</Text>
+        <Text style={styles.label}>Your Letter</Text>
         <TextInput
           value={content}
           onChangeText={setContent}
@@ -242,7 +239,7 @@ const WriteLetterScreen = () => {
           mode="contained"
           onPress={handleSubmit}
           style={styles.submitButton}
-          disabled={isSubmitting || !title.trim() || !content.trim() || !selectedCategory}
+          disabled={isSubmitting || !content.trim() || !selectedCategory}
           loading={isSubmitting}
         >
           Submit Letter
@@ -329,10 +326,6 @@ const styles = StyleSheet.create({
   },
   categoryChipText: {
     fontSize: 14,
-  },
-  titleInput: {
-    marginBottom: 16,
-    backgroundColor: '#f9f9f9',
   },
   contentInput: {
     marginBottom: 16,
