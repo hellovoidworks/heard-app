@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
-import { TextInput, Button, Text, Title, Divider } from 'react-native-paper';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking } from 'react-native';
+import { TextInput, Button, Text, Title, Divider, IconButton } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
@@ -104,6 +104,43 @@ const LoginScreen = ({ navigation }: Props) => {
     }
   };
 
+  const openMailApp = async () => {
+    try {
+      // Try to open the default mail app
+      let url = '';
+      
+      if (Platform.OS === 'ios') {
+        url = 'message://';
+      } else {
+        url = 'mailto:';
+      }
+      
+      const canOpen = await Linking.canOpenURL(url);
+      
+      if (canOpen) {
+        await Linking.openURL(url);
+      } else {
+        // If can't open mail app, try Gmail
+        const gmailUrl = 'googlegmail://';
+        const canOpenGmail = await Linking.canOpenURL(gmailUrl);
+        
+        if (canOpenGmail) {
+          await Linking.openURL(gmailUrl);
+        } else {
+          Alert.alert('Error', 'Could not open mail app');
+        }
+      }
+    } catch (error) {
+      console.error('Error opening mail app:', error);
+      Alert.alert('Error', 'Could not open mail app');
+    }
+  };
+
+  const handleBackToSignIn = () => {
+    setMagicLinkSent(false);
+    setEmail('');
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -119,12 +156,19 @@ const LoginScreen = ({ navigation }: Props) => {
               <Text style={styles.magicLinkText}>
                 Magic link sent! Check your email at {email} and click the link to sign in.
               </Text>
+              
               <Button
-                mode="outlined"
-                onPress={() => {
-                  setMagicLinkSent(false);
-                  setEmail('');
-                }}
+                mode="contained"
+                onPress={openMailApp}
+                style={styles.mailButton}
+                icon="email"
+              >
+                Open Mail App
+              </Button>
+              
+              <Button
+                mode="text"
+                onPress={handleBackToSignIn}
                 style={styles.backButton}
               >
                 Back to Sign In
@@ -253,21 +297,27 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     color: '#666',
   },
-  emailInstructions: {
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
-  },
-  backButton: {
-    marginTop: 16,
-  },
   magicLinkSentContainer: {
     alignItems: 'center',
-    padding: 20,
+    width: '100%',
   },
   magicLinkText: {
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 24,
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  mailButton: {
+    width: '100%',
+    marginBottom: 16,
+    paddingVertical: 6,
+  },
+  backButton: {
+    marginTop: 8,
+  },
+  emailInstructions: {
+    textAlign: 'center',
+    marginBottom: 24,
     fontSize: 16,
     lineHeight: 24,
   },
