@@ -25,7 +25,6 @@ const linking: LinkingOptions<RootStackParamList> = {
       Main: {
         screens: {
           Home: 'home',
-          Categories: 'categories',
           Write: 'write',
           Notifications: 'notifications',
           Profile: 'profile',

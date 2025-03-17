@@ -19,7 +19,6 @@ export type OnboardingStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Categories: undefined;
   Write: undefined;
   Notifications: undefined;
   Profile: undefined;

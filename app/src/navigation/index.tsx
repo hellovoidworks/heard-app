@@ -15,8 +15,7 @@ import {
   ProfileScreen,
   NotificationsScreen,
   WriteLetterScreen,
-  LetterDetailScreen,
-  CategoriesScreen
+  LetterDetailScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -60,8 +59,6 @@ const MainNavigator = () => (
 
         if (route.name === 'Home') {
           iconName = focused ? 'home' : 'home-outline';
-        } else if (route.name === 'Categories') {
-          iconName = focused ? 'list' : 'list-outline';
         } else if (route.name === 'Write') {
           iconName = focused ? 'create' : 'create-outline';
         } else if (route.name === 'Notifications') {
@@ -77,7 +74,6 @@ const MainNavigator = () => (
     })}
   >
     <Tab.Screen name="Home" component={HomeScreen} />
-    <Tab.Screen name="Categories" component={CategoriesScreen} />
     <Tab.Screen name="Write" component={WriteLetterScreen} />
     <Tab.Screen name="Notifications" component={NotificationsScreen} />
     <Tab.Screen name="Profile" component={ProfileScreen} />
