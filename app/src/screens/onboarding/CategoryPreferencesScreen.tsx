@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
-import { Button, Text, Title, Chip, ActivityIndicator } from 'react-native-paper';
+import { Button, Text, Title, Chip, ActivityIndicator, IconButton } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
@@ -93,6 +93,10 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
     }
   };
 
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   const renderCategoryItem = ({ item }: { item: Category }) => (
     <Chip
       selected={selectedCategories.includes(item.id)}
@@ -116,9 +120,17 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <View style={styles.header}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={handleGoBack}
+        />
         <Title style={styles.title}>Select Your Interests</Title>
-        
+        <View style={{ width: 40 }} />
+      </View>
+      
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.description}>
           Choose at least 3 categories that interest you. We'll use these to personalize your experience.
         </Text>
@@ -164,6 +176,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingTop: 20,
+  },
   scrollContent: {
     padding: 20,
     paddingBottom: 100,
@@ -178,7 +197,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    marginBottom: 20,
     textAlign: 'center',
   },
   description: {

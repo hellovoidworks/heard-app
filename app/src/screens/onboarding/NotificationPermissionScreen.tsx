@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
-import { Button, Text, Title } from 'react-native-paper';
+import { Button, Text, Title, IconButton } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
@@ -82,6 +82,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
     }
   };
 
+  const handleGoBack = () => {
+    navigation.goBack();
+  };
+
   const completeOnboarding = () => {
     // Navigate to the main app
     navigation.reset({
@@ -92,6 +96,15 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <IconButton
+          icon="arrow-left"
+          size={24}
+          onPress={handleGoBack}
+        />
+        <View style={{ width: 40 }} />
+      </View>
+      
       <View style={styles.content}>
         <View style={styles.iconContainer}>
           <Ionicons name="notifications" size={100} color="#6200ee" />
@@ -130,6 +143,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    paddingTop: 20,
   },
   content: {
     padding: 20,

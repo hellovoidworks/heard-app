@@ -21,7 +21,17 @@
       "bundleIdentifier": "com.yourcompany.heard",
       "associatedDomains": [
         "applinks:lrdylsehrfkkrjzicczz.supabase.co"
-      ]
+      ],
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": [
+              "heardapp",
+              "com.yourcompany.heard"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
