@@ -93,8 +93,6 @@ const MainNavigator = () => (
           iconName = focused ? 'home' : 'home-outline';
         } else if (route.name === 'Write') {
           iconName = focused ? 'create' : 'create-outline';
-        } else if (route.name === 'Notifications') {
-          iconName = focused ? 'notifications' : 'notifications-outline';
         }
 
         return <Ionicons name={iconName} size={size} color={color} />;
@@ -107,6 +105,18 @@ const MainNavigator = () => (
       name="Home" 
       component={HomeScreen} 
       options={({ navigation }) => ({
+        headerLeft: () => (
+          <Ionicons 
+            name="notifications-outline" 
+            size={24} 
+            color="#6200ee" 
+            style={{ marginLeft: 15 }}
+            onPress={() => {
+              // Navigate to the Notifications screen in the root navigator
+              navigation.getParent()?.navigate('Notifications');
+            }}
+          />
+        ),
         headerRight: () => (
           <Ionicons 
             name="person-circle-outline" 
@@ -122,7 +132,6 @@ const MainNavigator = () => (
       })}
     />
     <Tab.Screen name="Write" component={WriteLetterScreen} />
-    <Tab.Screen name="Notifications" component={NotificationsScreen} />
   </Tab.Navigator>
 );
 
@@ -186,6 +195,7 @@ const AppNavigator = () => {
               <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
               <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
               <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
+              <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
             </>
           )
         ) : (
