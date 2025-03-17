@@ -86,23 +86,21 @@ const OnboardingNavigator = () => {
 // Main tab navigator
 const MainNavigator = () => (
   <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName: keyof typeof Ionicons.glyphMap = 'home';
-
-        if (route.name === 'Home') {
-          iconName = focused ? 'home' : 'home-outline';
-        } else if (route.name === 'Write') {
-          iconName = focused ? 'create' : 'create-outline';
-        } else if (route.name === 'Mailbox') {
-          iconName = focused ? 'mail' : 'mail-outline';
-        }
-
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
+    screenOptions={{
       tabBarActiveTintColor: '#6200ee',
       tabBarInactiveTintColor: 'gray',
-    })}
+      tabBarLabelStyle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+      },
+      tabBarIconStyle: { display: 'none' },
+      tabBarStyle: {
+        height: 60,
+        paddingTop: 10,
+        paddingBottom: 10,
+      },
+    }}
   >
     <Tab.Screen 
       name="Home" 
