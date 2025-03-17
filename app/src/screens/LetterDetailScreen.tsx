@@ -24,13 +24,13 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       setLoading(true);
       
-      // Fetch the letter with details
+      // Fetch the letter details
       const { data: letterData, error: letterError } = await supabase
         .from('letters')
         .select(`
           *,
           category:categories(*),
-          author:user_profiles(*)
+          author:user_profiles!letters_author_id_fkey(*)
         `)
         .eq('id', letterId)
         .single();
@@ -43,12 +43,12 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       if (letterData) {
         setLetter(letterData as LetterWithDetails);
         
-        // Fetch replies
+        // Fetch replies to this letter
         const { data: repliesData, error: repliesError } = await supabase
           .from('letters')
           .select(`
             *,
-            author:user_profiles(*)
+            author:user_profiles!letters_author_id_fkey(*)
           `)
           .eq('parent_id', letterId)
           .order('created_at', { ascending: true });

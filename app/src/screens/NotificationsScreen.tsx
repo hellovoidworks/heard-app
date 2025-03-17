@@ -19,19 +19,19 @@ const NotificationsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const fetchNotifications = async () => {
-    if (!user) return;
-
     try {
       setLoading(true);
       
+      if (!user) return;
+
       const { data, error } = await supabase
         .from('notifications')
         .select(`
           *,
-          sender:user_profiles!sender_id(*),
+          sender:user_profiles!notifications_sender_id_fkey(*),
           letter:letters(*)
         `)
-        .eq('recipient_id', user.id)
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) {

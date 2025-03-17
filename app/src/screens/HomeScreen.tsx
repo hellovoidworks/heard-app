@@ -28,7 +28,7 @@ const HomeScreen = () => {
         .select(`
           *,
           category:categories(*),
-          author:user_profiles(*)
+          author:user_profiles!letters_author_id_fkey(*)
         `)
         .is('parent_id', null) // Only get top-level letters, not replies
         .order('created_at', { ascending: false });
