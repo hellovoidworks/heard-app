@@ -94,8 +94,10 @@ const LoginScreen = ({ navigation }: Props) => {
       
       if (error) throw error;
       
+      console.log('Magic link sent successfully');
       setMagicLinkSent(true);
     } catch (error: any) {
+      console.error('Error sending magic link:', error);
       Alert.alert('Error', error.message || 'Failed to send magic link');
     } finally {
       setLoading(false);

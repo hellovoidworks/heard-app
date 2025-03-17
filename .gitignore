@@ -107,8 +107,7 @@ yarn-error.*
 .env.production
 
 # Supabase
-.supabase/
+.supabase/ 
 
-# Cursor IDE
-.cursor/
-.cursorignore
+#cursor
+.cursor

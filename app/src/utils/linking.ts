@@ -15,6 +15,13 @@ const linking: LinkingOptions<RootStackParamList> = {
           Login: 'login',
         },
       },
+      Onboarding: {
+        screens: {
+          AgeVerification: 'onboarding/age',
+          CategoryPreferences: 'onboarding/categories',
+          NotificationPermission: 'onboarding/notifications',
+        },
+      },
       Main: {
         screens: {
           Home: 'home',
@@ -44,22 +51,14 @@ const linking: LinkingOptions<RootStackParamList> = {
   async getInitialURL() {
     // First, check if the app was opened via a deep link
     const url = await Linking.getInitialURL();
-    
-    if (url != null) {
-      return url;
-    }
-    
-    // If not opened by a deep link, check if it was opened from a universal link
-    const universalLinkUrl = await Linking.getInitialURL();
-    
-    if (universalLinkUrl != null) {
-      return universalLinkUrl;
-    }
-    
-    return null;
+    console.log('Initial URL in linking config:', url);
+    return url;
   },
   subscribe(listener) {
-    const onReceiveURL = ({ url }: { url: string }) => listener(url);
+    const onReceiveURL = ({ url }: { url: string }) => {
+      console.log('URL event in linking config:', url);
+      listener(url);
+    };
 
     // Listen to incoming links from deep linking
     const subscription = Linking.addEventListener('url', onReceiveURL);

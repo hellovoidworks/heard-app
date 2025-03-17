@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { registerForPushNotificationsAsync, savePushToken } from '../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import linking from '../utils/linking';
+import { supabase } from '../services/supabase';
 
 // Import screens from the index file
 import {
@@ -18,12 +19,20 @@ import {
   CategoriesScreen
 } from '../screens';
 
+// Import onboarding screens
+import {
+  AgeVerificationScreen,
+  CategoryPreferencesScreen,
+  NotificationPermissionScreen
+} from '../screens/onboarding';
+
 // Import navigation types
-import { RootStackParamList, AuthStackParamList, MainTabParamList } from './types';
+import { RootStackParamList, AuthStackParamList, MainTabParamList, OnboardingStackParamList } from './types';
 
 // Create navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Auth navigator
@@ -31,6 +40,15 @@ const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
     <AuthStack.Screen name="Login" component={LoginScreen} />
   </AuthStack.Navigator>
+);
+
+// Onboarding navigator
+const OnboardingNavigator = () => (
+  <OnboardingStack.Navigator screenOptions={{ headerShown: false }}>
+    <OnboardingStack.Screen name="AgeVerification" component={AgeVerificationScreen} />
+    <OnboardingStack.Screen name="CategoryPreferences" component={CategoryPreferencesScreen} />
+    <OnboardingStack.Screen name="NotificationPermission" component={NotificationPermissionScreen} />
+  </OnboardingStack.Navigator>
 );
 
 // Main tab navigator
@@ -68,23 +86,28 @@ const MainNavigator = () => (
 
 // Root navigator
 const AppNavigator = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, isOnboardingComplete } = useAuth();
 
   useEffect(() => {
-    if (user) {
-      // Register for push notifications when user is logged in
+    if (user && isOnboardingComplete) {
+      // Register for push notifications when user is logged in and has completed onboarding
       const registerForNotifications = async () => {
-        const token = await registerForPushNotificationsAsync();
-        if (token) {
-          await savePushToken(user.id, token);
+        const { data } = await supabase.auth.getUser();
+        const metadata = data?.user?.user_metadata;
+        
+        if (metadata?.notifications_enabled === true) {
+          const token = await registerForPushNotificationsAsync();
+          if (token) {
+            await savePushToken(user.id, token);
+          }
         }
       };
 
       registerForNotifications();
     }
-  }, [user]);
+  }, [user, isOnboardingComplete]);
 
-  if (loading) {
+  if (loading || (user && isOnboardingComplete === null)) {
     // You could return a loading screen here
     return null;
   }
@@ -93,11 +116,15 @@ const AppNavigator = () => {
     <NavigationContainer linking={linking}>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <>
-            <Stack.Screen name="Main" component={MainNavigator} />
-            <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
-            <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
-          </>
+          isOnboardingComplete === false ? (
+            <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
+          ) : (
+            <>
+              <Stack.Screen name="Main" component={MainNavigator} />
+              <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
+              <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
+            </>
+          )
         ) : (
           <Stack.Screen name="Auth" component={AuthNavigator} />
         )}
