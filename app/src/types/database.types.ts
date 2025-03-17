@@ -6,8 +6,13 @@ export type UserProfile = {
   birthdate: string | null;
   onboarding_step: string | null;
   onboarding_completed: boolean | null;
-  notifications_enabled: boolean | null;
-  notification_preferences: Record<string, any>;
+  notification_preferences: {
+    enabled: boolean;
+    new_replies?: boolean;
+    new_reactions?: boolean;
+    system_announcements?: boolean;
+    [key: string]: any; // Allow for future notification types
+  };
   created_at: string;
   updated_at: string;
 };

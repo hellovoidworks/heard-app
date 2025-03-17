@@ -10,6 +10,13 @@ interface Profile {
   birthdate?: string;
   onboarding_step?: string;
   onboarding_completed?: boolean;
+  notification_preferences?: {
+    enabled: boolean;
+    new_replies?: boolean;
+    new_reactions?: boolean;
+    system_announcements?: boolean;
+    [key: string]: any; // Allow for future notification types
+  };
   created_at?: string;
   updated_at?: string;
 }

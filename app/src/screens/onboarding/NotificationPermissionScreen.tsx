@@ -35,14 +35,20 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
         console.log('No push token obtained - user denied permissions or error occurred');
       }
       
-      // Update user_profiles table instead of metadata
+      // Update user_profiles table with notification preferences as JSON
       console.log('Updating user_profiles with onboarding completion...');
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
           onboarding_step: 'completed',
           onboarding_completed: true,
-          notifications_enabled: token ? true : false,
+          notification_preferences: {
+            enabled: token ? true : false,
+            // Future granular settings can be added here
+            new_replies: token ? true : false,
+            new_reactions: token ? true : false,
+            system_announcements: token ? true : false
+          },
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -68,7 +74,12 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
             .update({
               onboarding_step: 'completed',
               onboarding_completed: true,
-              notifications_enabled: false,
+              notification_preferences: {
+                enabled: false,
+                new_replies: false,
+                new_reactions: false,
+                system_announcements: false
+              },
               updated_at: new Date().toISOString()
             })
             .eq('id', user.id);
@@ -94,13 +105,18 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       }
 
       console.log('Skipping notifications, updating user_profiles...');
-      // Update user_profiles table instead of metadata
+      // Update user_profiles table with notification preferences as JSON
       const { error: profileError } = await supabase
         .from('user_profiles')
         .update({
           onboarding_step: 'completed',
           onboarding_completed: true,
-          notifications_enabled: false,
+          notification_preferences: {
+            enabled: false,
+            new_replies: false,
+            new_reactions: false,
+            system_announcements: false
+          },
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);
@@ -127,11 +143,30 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   const completeOnboarding = () => {
+    console.log('Completing onboarding, resetting navigation to Main...');
     // Navigate to the main app
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Main' as any }],
-    });
+    try {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Main' as any }],
+      });
+      console.log('Navigation reset successful');
+    } catch (error) {
+      console.error('Error resetting navigation:', error);
+      
+      // Fallback navigation if reset fails
+      try {
+        // @ts-ignore - This is a workaround for navigation issues
+        navigation.navigate('Root', { screen: 'Main' });
+        console.log('Fallback navigation successful');
+      } catch (fallbackError) {
+        console.error('Fallback navigation failed:', fallbackError);
+        Alert.alert(
+          'Navigation Error',
+          'Could not navigate to the main app. Please restart the app.'
+        );
+      }
+    }
   };
 
   return (
