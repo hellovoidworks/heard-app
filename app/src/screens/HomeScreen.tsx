@@ -118,6 +118,7 @@ const HomeScreen = () => {
   
   /**
    * Gets a specific number of unread letters not authored by the current user
+   * Prioritizes letters from categories the user has expressed interest in
    * @param limit Number of letters to fetch
    */
   const getUnreadLettersNotByUser = async (limit: number = LETTERS_LIMIT) => {
@@ -138,33 +139,100 @@ const HomeScreen = () => {
       // Extract read letter IDs into an array
       const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
       
-      // Query for letters not authored by the user and not read by them
-      let query = supabase
-        .from('letters')
-        .select(`
-          *,
-          category:categories(*),
-          author:user_profiles!letters_author_id_fkey(*)
-        `)
-        .is('parent_id', null) // Only get top-level letters, not replies
-        .neq('author_id', user.id) // Not written by the current user
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      
-      // If the user has read any letters, exclude those from the results
-      if (readLetterIds.length > 0) {
-        query = query.not('id', 'in', readLetterIds);
+      // Get user's category preferences
+      const { data: categoryPreferences, error: preferencesError } = await supabase
+        .from('user_category_preferences')
+        .select('category_id')
+        .eq('user_id', user.id);
+        
+      if (preferencesError) {
+        console.error('Error fetching category preferences:', preferencesError);
+        // Continue without preferences rather than failing
       }
       
-      const { data, error } = await query;
+      // Extract preferred category IDs
+      const preferredCategoryIds = categoryPreferences 
+        ? categoryPreferences.map(pref => pref.category_id) 
+        : [];
       
-      if (error) {
-        console.error('Error fetching unread letters:', error);
-        return [];
+      console.log(`User has ${preferredCategoryIds.length} preferred categories`);
+      
+      // If user has preferences, first try to get unread letters from preferred categories
+      let resultLetters: any[] = [];
+      
+      if (preferredCategoryIds.length > 0) {
+        // Query for unread letters from preferred categories
+        const query = supabase
+          .from('letters')
+          .select(`
+            *,
+            category:categories(*),
+            author:user_profiles!letters_author_id_fkey(*)
+          `)
+          .is('parent_id', null) // Only get top-level letters, not replies
+          .neq('author_id', user.id) // Not written by the current user
+          .in('category_id', preferredCategoryIds) // From preferred categories
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        
+        // If the user has read any letters, exclude those from the results
+        if (readLetterIds.length > 0) {
+          query.not('id', 'in', readLetterIds);
+        }
+        
+        const { data: preferredLetters, error: preferredError } = await query;
+        
+        if (preferredError) {
+          console.error('Error fetching preferred category letters:', preferredError);
+        } else if (preferredLetters) {
+          console.log(`Found ${preferredLetters.length} unread letters from preferred categories`);
+          resultLetters = preferredLetters;
+        }
       }
       
-      console.log(`Found ${data?.length || 0} unread letters not authored by user`);
-      return data || [];
+      // If we didn't get enough letters from preferred categories, get more from any category
+      if (resultLetters.length < limit) {
+        const remainingLimit = limit - resultLetters.length;
+        
+        // Need to exclude IDs of letters we already have
+        const excludeIds = [...readLetterIds, ...resultLetters.map(letter => letter.id)];
+        
+        // Query for remaining unread letters from any category
+        const query = supabase
+          .from('letters')
+          .select(`
+            *,
+            category:categories(*),
+            author:user_profiles!letters_author_id_fkey(*)
+          `)
+          .is('parent_id', null) // Only get top-level letters, not replies
+          .neq('author_id', user.id) // Not written by the current user
+          .order('created_at', { ascending: false })
+          .limit(remainingLimit);
+        
+        // If we have any IDs to exclude, do so
+        if (excludeIds.length > 0) {
+          query.not('id', 'in', excludeIds);
+        }
+        
+        // Exclude preferred categories since we already queried those
+        if (preferredCategoryIds.length > 0) {
+          query.not('category_id', 'in', preferredCategoryIds);
+        }
+        
+        const { data: additionalLetters, error: additionalError } = await query;
+        
+        if (additionalError) {
+          console.error('Error fetching additional letters:', additionalError);
+        } else if (additionalLetters) {
+          console.log(`Found ${additionalLetters.length} additional unread letters from other categories`);
+          resultLetters = [...resultLetters, ...additionalLetters];
+        }
+      }
+      
+      console.log(`Returning total of ${resultLetters.length} unread letters`);
+      return resultLetters;
+      
     } catch (error) {
       console.error('Error fetching unread letters:', error);
       return [];
@@ -173,6 +241,7 @@ const HomeScreen = () => {
   
   /**
    * Loads unread letters and updates the UI
+   * Prioritizes letters from categories the user has expressed interest in
    */
   const loadUnreadLetters = async () => {
     try {
@@ -186,6 +255,7 @@ const HomeScreen = () => {
       }));
       
       setLetters(lettersWithReadStatus as LetterWithDetails[]);
+      console.log(`Loaded ${unreadLetters.length} unread letters to UI`);
     } catch (error) {
       console.error('Error loading unread letters:', error);
     } finally {
@@ -277,7 +347,9 @@ const HomeScreen = () => {
       <View style={styles.headerContainer}>
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>
-            {showOnlyUnread ? 'Showing unread letters' : 'Showing all letters'}
+            {showOnlyUnread 
+              ? 'Showing unread letters from your interests' 
+              : 'Showing all letters'}
           </Text>
           <Button 
             mode={showOnlyUnread ? "contained" : "outlined"}
@@ -285,7 +357,7 @@ const HomeScreen = () => {
             icon="filter"
             compact
           >
-            {showOnlyUnread ? "Unread Only" : "All Letters"}
+            {showOnlyUnread ? "For You" : "All Letters"}
           </Button>
         </View>
       </View>
@@ -302,7 +374,7 @@ const HomeScreen = () => {
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               {showOnlyUnread 
-                ? "No unread letters found" 
+                ? "No unread letters in your preferred categories yet" 
                 : "No letters found"}
             </Text>
             <Button 
