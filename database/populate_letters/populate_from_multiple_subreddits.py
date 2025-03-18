@@ -149,20 +149,12 @@ def fetch_from_all_categories(reddit, categories, limit_per_category=10, time_fi
     return all_posts
 
 def get_user_ids(supabase: Client) -> List[str]:
-    """Fetch all user IDs from the database or use configured ones."""
-    # If user IDs are specified in the configuration, use those
-    if USER_IDS:
-        print(f"Using {len(USER_IDS)} configured user IDs")
-        return USER_IDS
+    """Get user IDs from the configuration."""
+    if not USER_IDS:
+        raise ValueError("USER_IDS array is empty. Please specify at least one user ID in the USER_IDS array at the top of the script.")
     
-    # Otherwise fetch from the database
-    print("Fetching user IDs from the database")
-    response = supabase.table("user_profiles").select("id").execute()
-    
-    if len(response.data) == 0:
-        raise ValueError("No users found in the database")
-    
-    return [user["id"] for user in response.data]
+    print(f"Using {len(USER_IDS)} configured user IDs")
+    return USER_IDS
 
 def main():
     """Main function to execute the script."""

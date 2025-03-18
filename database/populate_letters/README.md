@@ -34,6 +34,8 @@ cp .env.example .env
 
 3. Edit the `.env` file with your Reddit API credentials and Supabase credentials.
 
+4. Configure user IDs in the script files (see "Configuring User IDs" section below).
+
 ### Reddit API Credentials
 
 To obtain Reddit API credentials:
@@ -61,9 +63,9 @@ To obtain Supabase credentials:
 
 ## Usage
 
-### Configuring User IDs
+### Configuring User IDs (Required)
 
-By default, the scripts randomly select user IDs from your database to assign as authors of the letters. If you want to use specific user IDs instead:
+You must specify user IDs to be used as letter authors:
 
 1. Open the script file(s) you want to run (`populate_from_reddit.py` or `populate_from_multiple_subreddits.py`)
 2. Locate the `USER_IDS` array near the top of the file
@@ -72,7 +74,7 @@ By default, the scripts randomly select user IDs from your database to assign as
 USER_IDS = ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
 ```
 
-If the `USER_IDS` array is left empty, the script will fetch user IDs from your database.
+The scripts will not run if the `USER_IDS` array is empty.
 
 ### Populate from a single subreddit
 
@@ -104,6 +106,6 @@ python populate_from_multiple_subreddits.py --limit 20 --time week
 ## Notes
 
 - The scripts automatically assign categories to the posts based on content analysis
-- User IDs for letter authors are either specified in the `USER_IDS` array or randomly selected from existing users in the database
+- User IDs for letter authors must be specified in the `USER_IDS` array in the script files
 - Display names are generated as fake usernames for all letters
 - The content is cleaned to remove URLs and Reddit-specific formatting 
