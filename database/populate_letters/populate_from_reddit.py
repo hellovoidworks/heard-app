@@ -158,19 +158,8 @@ def assign_category(post_content: str, categories: List[Dict[str, Any]]) -> str:
 
 
 def generate_display_name(author_name: str) -> str:
-    """Generate a display name based on the pattern and author name."""
-    pattern = random.choice(DISPLAY_NAME_PATTERN)
-    
-    if pattern == 'Anonymous':
-        return 'Anonymous'
-    
-    if '{username}' in pattern:
-        # Replace username placeholder with the Reddit username or a generated one if deleted
-        if author_name == 'deleted':
-            author_name = fake.user_name()
-        return pattern.replace('{username}', author_name)
-    
-    return pattern
+    """Generate a fake display name for the letter author."""
+    return fake.user_name()
 
 
 def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any]], user_ids: List[str]) -> Dict[str, Any]:
