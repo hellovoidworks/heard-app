@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Badge, IconButton } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Letter, LetterWithDetails } from '../types/database.types';
@@ -15,18 +15,46 @@ const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+  
+  // Number of letters to fetch at a time
+  const LETTERS_LIMIT = 10;
 
-  const fetchUnreadLettersCount = async () => {
-    if (!user) return 0;
-
+  /**
+   * Fetches letters based on the current filter settings
+   * If showOnlyUnread is true, only fetches letters not authored by and not read by the current user
+   */
+  const fetchLetters = async () => {
     try {
-      console.log('Fetching unread letters count');
+      setLoading(true);
       
-      // Get the ids of all letters the user has read
+      if (!user) {
+        // If no user is logged in, just fetch all letters
+        const { data, error } = await supabase
+          .from('letters')
+          .select(`
+            *,
+            category:categories(*),
+            author:user_profiles!letters_author_id_fkey(*)
+          `)
+          .is('parent_id', null) // Only get top-level letters, not replies
+          .order('created_at', { ascending: false })
+          .limit(LETTERS_LIMIT);
+          
+        if (error) {
+          console.error('Error fetching letters:', error);
+          return;
+        }
+        
+        setLetters(data as LetterWithDetails[]);
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
+      // Get all read letter IDs for the current user
       const { data: readData, error: readError } = await supabase
         .from('letter_reads')
         .select('letter_id')
@@ -34,54 +62,11 @@ const HomeScreen = () => {
       
       if (readError) {
         console.error('Error fetching read letters:', readError);
-        return 0;
+        return;
       }
       
       // Extract read letter IDs into an array
       const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
-      
-      // Count all letters not written by the user and not read by them
-      let query = supabase
-        .from('letters')
-        .select('id', { count: 'exact' })
-        .is('parent_id', null) // Only top-level letters, not replies
-        .neq('author_id', user.id); // Not written by the current user
-      
-      // If the user has read any letters, exclude those from the count
-      if (readLetterIds.length > 0) {
-        query = query.not('id', 'in', readLetterIds);
-      }
-      
-      const { count, error: countError } = await query;
-      
-      if (countError) {
-        console.error('Error counting unread letters:', countError);
-        return 0;
-      }
-      
-      console.log(`Found ${count} unread letters`);
-      setUnreadCount(count || 0);
-      return count || 0;
-    } catch (error) {
-      console.error('Error fetching unread count:', error);
-      return 0;
-    }
-  };
-
-  const fetchLetters = async () => {
-    try {
-      setLoading(true);
-      
-      // Get all read letter IDs if the user is logged in
-      let readLetterIds: string[] = [];
-      if (user) {
-        const { data: readData } = await supabase
-          .from('letter_reads')
-          .select('letter_id')
-          .eq('user_id', user.id);
-        
-        readLetterIds = readData ? readData.map(item => item.letter_id) : [];
-      }
       
       // Base query for letters
       let query = supabase
@@ -94,8 +79,7 @@ const HomeScreen = () => {
         .is('parent_id', null) // Only get top-level letters, not replies
         .order('created_at', { ascending: false });
       
-      // If filtering by unread and user is logged in
-      if (showOnlyUnread && user) {
+      if (showOnlyUnread) {
         // Filter out letters written by the user
         query = query.neq('author_id', user.id);
         
@@ -104,6 +88,9 @@ const HomeScreen = () => {
           query = query.not('id', 'in', readLetterIds);
         }
       }
+      
+      // Limit the number of results
+      query = query.limit(LETTERS_LIMIT);
       
       const { data, error } = await query;
 
@@ -114,26 +101,12 @@ const HomeScreen = () => {
 
       if (data) {
         // Mark letters as read or unread
-        if (user) {
-          // We already have readLetterIds from above
-          const lettersWithReadStatus = data.map(letter => ({
-            ...letter,
-            is_read: readLetterIds.includes(letter.id)
-          }));
-          
-          setLetters(lettersWithReadStatus as LetterWithDetails[]);
-        } else {
-          setLetters(data as LetterWithDetails[]);
-        }
+        const lettersWithReadStatus = data.map(letter => ({
+          ...letter,
+          is_read: readLetterIds.includes(letter.id)
+        }));
         
-        // Fetch unread letters count
-        if (!showOnlyUnread) {
-          // Only need to fetch count if we're not already showing only unread
-          await fetchUnreadLettersCount();
-        } else {
-          // If showing only unread, we know the count is the number of letters
-          setUnreadCount(data.length);
-        }
+        setLetters(lettersWithReadStatus as LetterWithDetails[]);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -142,36 +115,113 @@ const HomeScreen = () => {
       setRefreshing(false);
     }
   };
+  
+  /**
+   * Gets a specific number of unread letters not authored by the current user
+   * @param limit Number of letters to fetch
+   */
+  const getUnreadLettersNotByUser = async (limit: number = LETTERS_LIMIT) => {
+    if (!user) return [];
+    
+    try {
+      // Get all read letter IDs for the current user
+      const { data: readData, error: readError } = await supabase
+        .from('letter_reads')
+        .select('letter_id')
+        .eq('user_id', user.id);
+      
+      if (readError) {
+        console.error('Error fetching read letters:', readError);
+        return [];
+      }
+      
+      // Extract read letter IDs into an array
+      const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
+      
+      // Query for letters not authored by the user and not read by them
+      let query = supabase
+        .from('letters')
+        .select(`
+          *,
+          category:categories(*),
+          author:user_profiles!letters_author_id_fkey(*)
+        `)
+        .is('parent_id', null) // Only get top-level letters, not replies
+        .neq('author_id', user.id) // Not written by the current user
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      
+      // If the user has read any letters, exclude those from the results
+      if (readLetterIds.length > 0) {
+        query = query.not('id', 'in', readLetterIds);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Error fetching unread letters:', error);
+        return [];
+      }
+      
+      console.log(`Found ${data?.length || 0} unread letters not authored by user`);
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching unread letters:', error);
+      return [];
+    }
+  };
+  
+  /**
+   * Loads unread letters and updates the UI
+   */
+  const loadUnreadLetters = async () => {
+    try {
+      setLoading(true);
+      const unreadLetters = await getUnreadLettersNotByUser();
+      
+      // Mark all as unread (since we know they're unread)
+      const lettersWithReadStatus = unreadLetters.map(letter => ({
+        ...letter,
+        is_read: false
+      }));
+      
+      setLetters(lettersWithReadStatus as LetterWithDetails[]);
+    } catch (error) {
+      console.error('Error loading unread letters:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    fetchLetters();
-    
-    // Set up interval to refresh unread count periodically
-    const interval = setInterval(() => {
-      if (user) {
-        fetchUnreadLettersCount();
-      }
-    }, 60000); // Check every minute
-    
-    return () => clearInterval(interval);
+    if (showOnlyUnread) {
+      loadUnreadLetters();
+    } else {
+      fetchLetters();
+    }
   }, [user, showOnlyUnread]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchLetters();
+    if (showOnlyUnread) {
+      loadUnreadLetters();
+    } else {
+      fetchLetters();
+    }
   };
 
   const toggleUnreadFilter = () => {
     setShowOnlyUnread(!showOnlyUnread);
-    // fetchLetters will be called by the useEffect when showOnlyUnread changes
+    // The appropriate fetch function will be called by useEffect when showOnlyUnread changes
   };
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
     // Navigate to letter detail
     navigation.navigate('LetterDetail', { letterId: letter.id });
 
-    // Mark letter as read if user is logged in
-    if (user && !letter.is_read) {
+    // Mark letter as read if user is logged in and not the author
+    if (user && !letter.is_read && letter.author_id !== user.id) {
       try {
         await supabase.from('letter_reads').insert([
           {
@@ -180,8 +230,12 @@ const HomeScreen = () => {
           },
         ]);
         
-        // Update the unread count
-        fetchUnreadLettersCount();
+        // Update the letters list to mark this letter as read
+        setLetters(prevLetters => 
+          prevLetters.map(l => 
+            l.id === letter.id ? { ...l, is_read: true } : l
+          )
+        );
       } catch (error) {
         console.error('Error marking letter as read:', error);
       }
@@ -221,12 +275,6 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        {unreadCount > 0 && (
-          <Text style={styles.unreadText}>
-            You have {unreadCount} unread letter{unreadCount !== 1 ? 's' : ''}
-          </Text>
-        )}
-        
         <View style={styles.filterContainer}>
           <Text style={styles.filterLabel}>
             {showOnlyUnread ? 'Showing unread letters' : 'Showing all letters'}
@@ -337,16 +385,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
   },
-  unreadText: {
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#6200ee',
-  },
   filterContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
   },
   filterLabel: {
     fontSize: 14,
