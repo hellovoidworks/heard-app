@@ -14,114 +14,22 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   
-  // Number of letters to fetch at a time
-  const LETTERS_LIMIT = 10;
+  // Number of letters to fetch initially and when loading more
+  const INITIAL_LETTERS_LIMIT = 5;
+  const MORE_LETTERS_LIMIT = 5;
 
-  /**
-   * Fetches letters based on the current filter settings
-   * If showOnlyUnread is true, only fetches letters not authored by and not read by the current user
-   */
-  const fetchLetters = async () => {
-    try {
-      setLoading(true);
-      
-      if (!user) {
-        // If no user is logged in, just fetch all letters
-        const { data, error } = await supabase
-          .from('letters')
-          .select(`
-            *,
-            category:categories(*),
-            author:user_profiles!letters_author_id_fkey(*)
-          `)
-          .is('parent_id', null) // Only get top-level letters, not replies
-          .order('created_at', { ascending: false })
-          .limit(LETTERS_LIMIT);
-          
-        if (error) {
-          console.error('Error fetching letters:', error);
-          return;
-        }
-        
-        setLetters(data as LetterWithDetails[]);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-      
-      // Get all read letter IDs for the current user
-      const { data: readData, error: readError } = await supabase
-        .from('letter_reads')
-        .select('letter_id')
-        .eq('user_id', user.id);
-      
-      if (readError) {
-        console.error('Error fetching read letters:', readError);
-        return;
-      }
-      
-      // Extract read letter IDs into an array
-      const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
-      
-      // Base query for letters
-      let query = supabase
-        .from('letters')
-        .select(`
-          *,
-          category:categories(*),
-          author:user_profiles!letters_author_id_fkey(*)
-        `)
-        .is('parent_id', null) // Only get top-level letters, not replies
-        .order('created_at', { ascending: false });
-      
-      if (showOnlyUnread) {
-        // Filter out letters written by the user
-        query = query.neq('author_id', user.id);
-        
-        // Filter out letters that have been read, if any exist
-        if (readLetterIds.length > 0) {
-          query = query.not('id', 'in', readLetterIds);
-        }
-      }
-      
-      // Limit the number of results
-      query = query.limit(LETTERS_LIMIT);
-      
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching letters:', error);
-        return;
-      }
-
-      if (data) {
-        // Mark letters as read or unread
-        const lettersWithReadStatus = data.map(letter => ({
-          ...letter,
-          is_read: readLetterIds.includes(letter.id)
-        }));
-        
-        setLetters(lettersWithReadStatus as LetterWithDetails[]);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-  
   /**
    * Gets a specific number of unread letters not authored by the current user
    * Prioritizes letters from categories the user has expressed interest in
    * @param limit Number of letters to fetch
+   * @param offset Number of letters to skip (for pagination)
    */
-  const getUnreadLettersNotByUser = async (limit: number = LETTERS_LIMIT) => {
+  const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT, offset: number = 0) => {
     if (!user) return [];
     
     try {
@@ -173,7 +81,7 @@ const HomeScreen = () => {
           .neq('author_id', user.id) // Not written by the current user
           .in('category_id', preferredCategoryIds) // From preferred categories
           .order('created_at', { ascending: false })
-          .limit(limit);
+          .range(offset, offset + limit - 1);
         
         // If the user has read any letters, exclude those from the results
         if (readLetterIds.length > 0) {
@@ -193,6 +101,7 @@ const HomeScreen = () => {
       // If we didn't get enough letters from preferred categories, get more from any category
       if (resultLetters.length < limit) {
         const remainingLimit = limit - resultLetters.length;
+        const remainingOffset = Math.max(0, offset - resultLetters.length);
         
         // Need to exclude IDs of letters we already have
         const excludeIds = [...readLetterIds, ...resultLetters.map(letter => letter.id)];
@@ -208,7 +117,7 @@ const HomeScreen = () => {
           .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id) // Not written by the current user
           .order('created_at', { ascending: false })
-          .limit(remainingLimit);
+          .range(remainingOffset, remainingOffset + remainingLimit - 1);
         
         // If we have any IDs to exclude, do so
         if (excludeIds.length > 0) {
@@ -240,13 +149,36 @@ const HomeScreen = () => {
   };
   
   /**
-   * Loads unread letters and updates the UI
-   * Prioritizes letters from categories the user has expressed interest in
+   * Loads initial letters when the component mounts
    */
-  const loadUnreadLetters = async () => {
+  const loadInitialLetters = async () => {
     try {
       setLoading(true);
-      const unreadLetters = await getUnreadLettersNotByUser();
+      
+      if (!user) {
+        // If no user is logged in, just fetch recent letters
+        const { data, error } = await supabase
+          .from('letters')
+          .select(`
+            *,
+            category:categories(*),
+            author:user_profiles!letters_author_id_fkey(*)
+          `)
+          .is('parent_id', null) // Only get top-level letters, not replies
+          .order('created_at', { ascending: false })
+          .limit(INITIAL_LETTERS_LIMIT);
+          
+        if (error) {
+          console.error('Error fetching letters:', error);
+          return;
+        }
+        
+        setLetters(data as LetterWithDetails[]);
+        return;
+      }
+      
+      // Get unread letters for logged in user
+      const unreadLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
       
       // Mark all as unread (since we know they're unread)
       const lettersWithReadStatus = unreadLetters.map(letter => ({
@@ -255,35 +187,60 @@ const HomeScreen = () => {
       }));
       
       setLetters(lettersWithReadStatus as LetterWithDetails[]);
-      console.log(`Loaded ${unreadLetters.length} unread letters to UI`);
+      console.log(`Loaded ${unreadLetters.length} initial letters`);
+      
     } catch (error) {
-      console.error('Error loading unread letters:', error);
+      console.error('Error loading initial letters:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
-
-  useEffect(() => {
-    if (showOnlyUnread) {
-      loadUnreadLetters();
-    } else {
-      fetchLetters();
-    }
-  }, [user, showOnlyUnread]);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    if (showOnlyUnread) {
-      loadUnreadLetters();
-    } else {
-      fetchLetters();
+  
+  /**
+   * Loads more letters when the user presses the "Load More" button
+   */
+  const loadMoreLetters = async () => {
+    if (loadingMore || !user) return;
+    
+    try {
+      setLoadingMore(true);
+      
+      // Calculate the offset based on current letters
+      const offset = letters.length;
+      
+      // Fetch more unread letters
+      const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT, offset);
+      
+      if (moreLetters.length === 0) {
+        console.log('No more unread letters available');
+        return;
+      }
+      
+      // Mark all as unread
+      const moreWithReadStatus = moreLetters.map(letter => ({
+        ...letter,
+        is_read: false
+      }));
+      
+      // Append to the existing letters
+      setLetters(prevLetters => [...prevLetters, ...moreWithReadStatus] as LetterWithDetails[]);
+      
+      console.log(`Loaded ${moreLetters.length} more letters`);
+    } catch (error) {
+      console.error('Error loading more letters:', error);
+    } finally {
+      setLoadingMore(false);
     }
   };
 
-  const toggleUnreadFilter = () => {
-    setShowOnlyUnread(!showOnlyUnread);
-    // The appropriate fetch function will be called by useEffect when showOnlyUnread changes
+  useEffect(() => {
+    loadInitialLetters();
+  }, [user]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadInitialLetters();
   };
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
@@ -334,6 +291,25 @@ const HomeScreen = () => {
     </Card>
   );
 
+  const renderFooter = () => {
+    if (!user || letters.length === 0) return null;
+    
+    return (
+      <View style={styles.footerContainer}>
+        <Button 
+          mode="outlined"
+          onPress={loadMoreLetters}
+          loading={loadingMore}
+          disabled={loadingMore}
+          icon="refresh"
+          style={styles.loadMoreButton}
+        >
+          Load More Letters
+        </Button>
+      </View>
+    );
+  };
+
   if (loading && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -344,24 +320,6 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <View style={styles.filterContainer}>
-          <Text style={styles.filterLabel}>
-            {showOnlyUnread 
-              ? 'Showing unread letters from your interests' 
-              : 'Showing all letters'}
-          </Text>
-          <Button 
-            mode={showOnlyUnread ? "contained" : "outlined"}
-            onPress={toggleUnreadFilter}
-            icon="filter"
-            compact
-          >
-            {showOnlyUnread ? "For You" : "All Letters"}
-          </Button>
-        </View>
-      </View>
-      
       <FlatList
         data={letters}
         renderItem={renderLetterItem}
@@ -370,10 +328,11 @@ const HomeScreen = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
+        ListFooterComponent={renderFooter}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
-              {showOnlyUnread 
+              {user 
                 ? "No unread letters in your preferred categories yet" 
                 : "No letters found"}
             </Text>
@@ -403,6 +362,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingBottom: 24,
   },
   card: {
     marginBottom: 16,
@@ -451,20 +411,13 @@ const styles = StyleSheet.create({
   writeButton: {
     marginTop: 10,
   },
-  headerContainer: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  footerContainer: {
+    marginTop: 8,
+    marginBottom: 24,
     alignItems: 'center',
   },
-  filterLabel: {
-    fontSize: 14,
-    color: '#666',
+  loadMoreButton: {
+    width: '80%',
   },
 });
 
