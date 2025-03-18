@@ -121,11 +121,15 @@ def assign_category(post_content: str, categories: List[Dict[str, Any]]) -> str:
     """
     # Define keywords for each category
     category_keywords = {
-        "Personal": ["my life", "myself", "personal", "experience", "feeling", "story"],
-        "Advice": ["advice", "help", "what should", "need guidance", "question"],
-        "Gratitude": ["thank", "grateful", "appreciate", "blessed", "lucky"],
-        "Reflection": ["thinking about", "reflect", "wonder", "contemplating", "perspective"],
-        "Support": ["support", "struggling", "hard time", "difficult", "need help"]
+        "Love": ["love", "relationship", "boyfriend", "girlfriend", "dating", "marriage", "crush", "partner", "husband", "wife", "romance", "breakup", "ex"],
+        "Financial": ["money", "debt", "finance", "financial", "job", "income", "loan", "budget", "savings", "bills", "rent", "salary", "career", "bank", "tax", "invest"],
+        "Family": ["family", "parent", "mother", "father", "dad", "mom", "son", "daughter", "sibling", "brother", "sister", "grandparent", "cousin", "uncle", "aunt", "in-law", "child"],
+        "Friendship": ["friend", "friendship", "best friend", "buddy", "pal", "social circle", "acquaintance", "colleague", "betrayal", "trust"],
+        "Vent": ["angry", "frustrated", "tired of", "sick of", "annoyed", "irritated", "furious", "fed up", "rant", "vent", "complaint", "venting", "upset", "mad"],
+        "Health": ["health", "doctor", "medical", "sick", "illness", "disease", "diagnosis", "pain", "symptom", "weight", "diet", "exercise", "mental health", "therapy", "medication"],
+        "Reflections": ["thinking about", "reflect", "wonder", "contemplating", "perspective", "realization", "epiphany", "awakening", "retrospect", "introspection", "growth", "change"],
+        "Intimacy": ["sex", "intimate", "physical", "sexual", "attraction", "desire", "bedroom", "consent", "virgin", "pleasure", "passion"],
+        "Spiritual": ["god", "faith", "religion", "spiritual", "belief", "prayer", "meditation", "soul", "universe", "divine", "church", "temple", "mosque", "worship"]
     }
     
     # Convert content to lowercase for easier matching

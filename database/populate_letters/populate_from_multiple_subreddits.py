@@ -21,40 +21,84 @@ load_dotenv()
 
 # Default subreddits grouped by matching categories
 SUBREDDIT_CATEGORIES = {
-    "Personal": [
-        "offmychest",
-        "confession",
-        "CasualConversation",
-        "self",
-        "stories",
-    ],
-    "Advice": [
-        "advice",
+    "Love": [
         "relationship_advice",
+        "dating",
         "dating_advice",
-        "AskReddit",
-        "AmItheAsshole",
+        "love",
+        "Marriage",
+        "BreakUps",
+        "LongDistance"
     ],
-    "Gratitude": [
-        "gratitude",
-        "MadeMeSmile",
-        "HumansBeingBros",
-        "happy",
-        "CongratsLikeImFive",
+    "Financial": [
+        "personalfinance",
+        "povertyfinance",
+        "jobs",
+        "careerguidance",
+        "financialindependence",
+        "frugal",
+        "studentloans"
     ],
-    "Reflection": [
-        "Showerthoughts",
-        "philosophy",
-        "DoesAnybodyElse",
-        "self",
-        "Mindfulness",
+    "Family": [
+        "parenting",
+        "family",
+        "raisedbynarcissists",
+        "JUSTNOFAMILY",
+        "JUSTNOMIL",
+        "daddit",
+        "Mommit"
     ],
-    "Support": [
+    "Friendship": [
+        "friendship",
+        "socialskills",
+        "MakeNewFriendsHere",
+        "FriendshipAdvice",
+        "depression_help"
+    ],
+    "Vent": [
+        "offmychest",
+        "rant",
+        "TrueOffMyChest",
+        "venting",
+        "Anger",
+        "complaints"
+    ],
+    "Health": [
+        "HealthAnxiety",
+        "ChronicPain",
+        "ChronicIllness",
         "mentalhealth",
         "depression",
         "anxiety",
-        "SuicideWatch",
-        "kindvoice",
+        "AskDocs"
+    ],
+    "Reflections": [
+        "Showerthoughts",
+        "self",
+        "Meditation",
+        "Mindfulness",
+        "philosophy",
+        "selfimprovement",
+        "GetMotivated"
+    ],
+    "Intimacy": [
+        "sex",
+        "sexadvice",
+        "deadbedrooms",
+        "AskMen",
+        "AskWomen",
+        "relationship_advice",
+        "relationshipproblems"
+    ],
+    "Spiritual": [
+        "religion",
+        "spirituality",
+        "Christianity",
+        "islam",
+        "Buddhism",
+        "hinduism",
+        "meditation",
+        "Psychonaut"
     ]
 }
 

@@ -2,6 +2,22 @@
 
 This directory contains scripts to populate the letters table in the database with content from Reddit.
 
+## Categories
+
+The scripts are configured to work with the following categories:
+
+- **Love**: Relationships, dating, marriage, breakups
+- **Financial**: Money, jobs, career, debt, finances
+- **Family**: Parents, children, siblings, family relationships
+- **Friendship**: Friends, social circles, colleagues
+- **Vent**: Complaints, frustrations, anger, rants
+- **Health**: Physical and mental health, medical issues
+- **Reflections**: Self-improvement, thoughts, contemplation
+- **Intimacy**: Sex, physical relationships, attraction
+- **Spiritual**: Religion, faith, spirituality, belief systems
+
+The scripts will automatically classify Reddit posts into these categories based on content analysis.
+
 ## Setup
 
 1. Install the required dependencies:
