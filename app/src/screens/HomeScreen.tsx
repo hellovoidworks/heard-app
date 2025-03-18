@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Badge, IconButton } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Letter, LetterWithDetails } from '../types/database.types';
@@ -15,15 +15,76 @@ const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [showOnlyUnread, setShowOnlyUnread] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+
+  const fetchUnreadLettersCount = async () => {
+    if (!user) return 0;
+
+    try {
+      console.log('Fetching unread letters count');
+      
+      // Get the ids of all letters the user has read
+      const { data: readData, error: readError } = await supabase
+        .from('letter_reads')
+        .select('letter_id')
+        .eq('user_id', user.id);
+      
+      if (readError) {
+        console.error('Error fetching read letters:', readError);
+        return 0;
+      }
+      
+      // Extract read letter IDs into an array
+      const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
+      
+      // Count all letters not written by the user and not read by them
+      let query = supabase
+        .from('letters')
+        .select('id', { count: 'exact' })
+        .is('parent_id', null) // Only top-level letters, not replies
+        .neq('author_id', user.id); // Not written by the current user
+      
+      // If the user has read any letters, exclude those from the count
+      if (readLetterIds.length > 0) {
+        query = query.not('id', 'in', readLetterIds);
+      }
+      
+      const { count, error: countError } = await query;
+      
+      if (countError) {
+        console.error('Error counting unread letters:', countError);
+        return 0;
+      }
+      
+      console.log(`Found ${count} unread letters`);
+      setUnreadCount(count || 0);
+      return count || 0;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  };
 
   const fetchLetters = async () => {
     try {
       setLoading(true);
       
-      // Fetch letters with category and author details
-      const { data, error } = await supabase
+      // Get all read letter IDs if the user is logged in
+      let readLetterIds: string[] = [];
+      if (user) {
+        const { data: readData } = await supabase
+          .from('letter_reads')
+          .select('letter_id')
+          .eq('user_id', user.id);
+        
+        readLetterIds = readData ? readData.map(item => item.letter_id) : [];
+      }
+      
+      // Base query for letters
+      let query = supabase
         .from('letters')
         .select(`
           *,
@@ -32,6 +93,19 @@ const HomeScreen = () => {
         `)
         .is('parent_id', null) // Only get top-level letters, not replies
         .order('created_at', { ascending: false });
+      
+      // If filtering by unread and user is logged in
+      if (showOnlyUnread && user) {
+        // Filter out letters written by the user
+        query = query.neq('author_id', user.id);
+        
+        // Filter out letters that have been read, if any exist
+        if (readLetterIds.length > 0) {
+          query = query.not('id', 'in', readLetterIds);
+        }
+      }
+      
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching letters:', error);
@@ -39,16 +113,9 @@ const HomeScreen = () => {
       }
 
       if (data) {
-        // Check which letters the user has read
+        // Mark letters as read or unread
         if (user) {
-          const { data: readData } = await supabase
-            .from('letter_reads')
-            .select('letter_id')
-            .eq('user_id', user.id);
-
-          const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
-          
-          // Mark letters as read or unread
+          // We already have readLetterIds from above
           const lettersWithReadStatus = data.map(letter => ({
             ...letter,
             is_read: readLetterIds.includes(letter.id)
@@ -57,6 +124,15 @@ const HomeScreen = () => {
           setLetters(lettersWithReadStatus as LetterWithDetails[]);
         } else {
           setLetters(data as LetterWithDetails[]);
+        }
+        
+        // Fetch unread letters count
+        if (!showOnlyUnread) {
+          // Only need to fetch count if we're not already showing only unread
+          await fetchUnreadLettersCount();
+        } else {
+          // If showing only unread, we know the count is the number of letters
+          setUnreadCount(data.length);
         }
       }
     } catch (error) {
@@ -69,11 +145,25 @@ const HomeScreen = () => {
 
   useEffect(() => {
     fetchLetters();
-  }, [user]);
+    
+    // Set up interval to refresh unread count periodically
+    const interval = setInterval(() => {
+      if (user) {
+        fetchUnreadLettersCount();
+      }
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [user, showOnlyUnread]);
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchLetters();
+  };
+
+  const toggleUnreadFilter = () => {
+    setShowOnlyUnread(!showOnlyUnread);
+    // fetchLetters will be called by the useEffect when showOnlyUnread changes
   };
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
@@ -89,6 +179,9 @@ const HomeScreen = () => {
             letter_id: letter.id,
           },
         ]);
+        
+        // Update the unread count
+        fetchUnreadLettersCount();
       } catch (error) {
         console.error('Error marking letter as read:', error);
       }
@@ -127,6 +220,28 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        {unreadCount > 0 && (
+          <Text style={styles.unreadText}>
+            You have {unreadCount} unread letter{unreadCount !== 1 ? 's' : ''}
+          </Text>
+        )}
+        
+        <View style={styles.filterContainer}>
+          <Text style={styles.filterLabel}>
+            {showOnlyUnread ? 'Showing unread letters' : 'Showing all letters'}
+          </Text>
+          <Button 
+            mode={showOnlyUnread ? "contained" : "outlined"}
+            onPress={toggleUnreadFilter}
+            icon="filter"
+            compact
+          >
+            {showOnlyUnread ? "Unread Only" : "All Letters"}
+          </Button>
+        </View>
+      </View>
+      
       <FlatList
         data={letters}
         renderItem={renderLetterItem}
@@ -137,7 +252,11 @@ const HomeScreen = () => {
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No letters found</Text>
+            <Text style={styles.emptyText}>
+              {showOnlyUnread 
+                ? "No unread letters found" 
+                : "No letters found"}
+            </Text>
             <Button 
               mode="contained" 
               onPress={() => navigation.navigate('WriteLetter', {})}
@@ -211,6 +330,27 @@ const styles = StyleSheet.create({
   },
   writeButton: {
     marginTop: 10,
+  },
+  headerContainer: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  unreadText: {
+    fontWeight: 'bold',
+    marginBottom: 8,
+    color: '#6200ee',
+  },
+  filterContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  filterLabel: {
+    fontSize: 14,
+    color: '#666',
   },
 });
 
