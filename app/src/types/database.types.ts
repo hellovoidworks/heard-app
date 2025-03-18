@@ -1,6 +1,7 @@
 export type UserProfile = {
   id: string;
   username: string;
+  // @deprecated This field is no longer used by the application
   avatar_url: string | null;
   push_token: string | null;
   birthdate: string | null;

@@ -6,7 +6,6 @@ import { User } from '@supabase/supabase-js';
 interface Profile {
   id: string;
   username: string;
-  avatar_url?: string;
   birthdate?: string;
   onboarding_step?: string;
   onboarding_completed?: boolean;
@@ -24,7 +23,6 @@ interface Profile {
 // Define the update profile params
 interface UpdateProfileParams {
   username: string;
-  avatar_url?: string;
 }
 
 interface AuthContextData {
@@ -194,7 +192,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('user_profiles')
         .update({
           username: params.username,
-          avatar_url: params.avatar_url,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id);

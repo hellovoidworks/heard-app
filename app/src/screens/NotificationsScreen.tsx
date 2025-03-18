@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, List, Avatar, Divider, ActivityIndicator, Badge } from 'react-native-paper';
+import { Text, List, Divider, ActivityIndicator, Badge } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationWithDetails } from '../types/database.types';

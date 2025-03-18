@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Avatar, Button, TextInput, Divider, List } from 'react-native-paper';
+import { Text, Button, TextInput, Divider, List } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { removePushToken } from '../services/notifications';
 import { useNavigation } from '@react-navigation/native';
@@ -49,12 +49,6 @@ const ProfileScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Avatar.Text 
-          size={80} 
-          label={profile?.username?.substring(0, 2).toUpperCase() || 'U'} 
-          style={styles.avatar}
-        />
-        
         {editing ? (
           <View style={styles.editForm}>
             <TextInput
@@ -141,12 +135,9 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
   },
-  avatar: {
-    marginBottom: 16,
-    backgroundColor: '#6200ee',
-  },
   profileInfo: {
     alignItems: 'center',
+    width: '100%',
   },
   username: {
     fontSize: 24,
