@@ -36,6 +36,9 @@ SUBREDDIT = "offmychest"  # Subreddit to fetch posts from
 LIMIT = 50  # Number of posts to fetch
 TIME_FILTER = "month"  # Options: hour, day, week, month, year, all
 DISPLAY_NAME_PATTERN = ['Anonymous', '{username}']  # Format for display names
+# User IDs to use for author_id (override random selection)
+USER_IDS = []  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
+# If USER_IDS is empty, the script will fetch users from the database
 
 
 def setup_reddit() -> praw.Reddit:
@@ -192,7 +195,14 @@ def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any
 
 
 def get_user_ids(supabase: Client) -> List[str]:
-    """Fetch all user IDs from the database."""
+    """Fetch all user IDs from the database or use configured ones."""
+    # If user IDs are specified in the configuration, use those
+    if USER_IDS:
+        print(f"Using {len(USER_IDS)} configured user IDs")
+        return USER_IDS
+    
+    # Otherwise fetch from the database
+    print("Fetching user IDs from the database")
     response = supabase.table("user_profiles").select("id").execute()
     
     if len(response.data) == 0:

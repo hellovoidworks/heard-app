@@ -61,6 +61,19 @@ To obtain Supabase credentials:
 
 ## Usage
 
+### Configuring User IDs
+
+By default, the scripts randomly select user IDs from your database to assign as authors of the letters. If you want to use specific user IDs instead:
+
+1. Open the script file(s) you want to run (`populate_from_reddit.py` or `populate_from_multiple_subreddits.py`)
+2. Locate the `USER_IDS` array near the top of the file
+3. Add your desired user IDs to the array, for example:
+```python
+USER_IDS = ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
+```
+
+If the `USER_IDS` array is left empty, the script will fetch user IDs from your database.
+
 ### Populate from a single subreddit
 
 This script fetches posts from the r/offmychest subreddit by default:
@@ -91,6 +104,6 @@ python populate_from_multiple_subreddits.py --limit 20 --time week
 ## Notes
 
 - The scripts automatically assign categories to the posts based on content analysis
-- User IDs for letter authors are randomly selected from existing users in the database
-- Display names are either "Anonymous" or the Reddit username
+- User IDs for letter authors are either specified in the `USER_IDS` array or randomly selected from existing users in the database
+- Display names are generated as fake usernames for all letters
 - The content is cleaned to remove URLs and Reddit-specific formatting 

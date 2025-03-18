@@ -9,15 +9,23 @@ import random
 from typing import List, Dict, Any
 import argparse
 from dotenv import load_dotenv
+from supabase import create_client, Client
 
 # Import functions from the main script
 from populate_from_reddit import (
-    setup_reddit, setup_supabase, get_categories, get_user_ids,
+    setup_reddit, setup_supabase, get_categories,
     fetch_posts, create_letter_from_post, save_letters
 )
 
 # Load environment variables from .env file
 load_dotenv()
+
+# Configuration
+DEFAULT_LIMIT = 10  # Default number of posts to fetch per category
+DEFAULT_TIME_FILTER = "month"  # Default time filter
+# User IDs to use for author_id (override random selection)
+USER_IDS = []  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
+# If USER_IDS is empty, the script will fetch users from the database
 
 # Default subreddits grouped by matching categories
 SUBREDDIT_CATEGORIES = {
@@ -140,6 +148,21 @@ def fetch_from_all_categories(reddit, categories, limit_per_category=10, time_fi
     
     return all_posts
 
+def get_user_ids(supabase: Client) -> List[str]:
+    """Fetch all user IDs from the database or use configured ones."""
+    # If user IDs are specified in the configuration, use those
+    if USER_IDS:
+        print(f"Using {len(USER_IDS)} configured user IDs")
+        return USER_IDS
+    
+    # Otherwise fetch from the database
+    print("Fetching user IDs from the database")
+    response = supabase.table("user_profiles").select("id").execute()
+    
+    if len(response.data) == 0:
+        raise ValueError("No users found in the database")
+    
+    return [user["id"] for user in response.data]
 
 def main():
     """Main function to execute the script."""
