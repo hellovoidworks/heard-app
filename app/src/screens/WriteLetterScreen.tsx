@@ -16,7 +16,7 @@ type WriterLetterParams = {
 const SUGGESTED_MOODS = ['😊', '😔', '😡', '😢', '😂', '😍', '🤔', '😴', '😎', '😒', '👍', '👎', '❤️', '😱', '🙏'];
 
 const WriteLetterScreen = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriterLetterParams>, string>>();
   const theme = useTheme();
@@ -27,10 +27,17 @@ const WriteLetterScreen = () => {
   const [content, setContent] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [categories, setCategories] = useState<any[]>([]);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [displayName, setDisplayName] = useState(profile?.username || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingCategories, setLoadingCategories] = useState(true);
   const [moodEmoji, setMoodEmoji] = useState('');
+
+  // Update display name when profile changes
+  useEffect(() => {
+    if (profile?.username) {
+      setDisplayName(profile.username);
+    }
+  }, [profile]);
 
   // Fetch categories on component mount
   useEffect(() => {
@@ -76,6 +83,11 @@ const WriteLetterScreen = () => {
       return;
     }
 
+    if (!displayName.trim()) {
+      Alert.alert('Error', 'Please enter a display name.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -98,9 +110,9 @@ const WriteLetterScreen = () => {
           {
             title: autoTitle, // Use auto-generated title
             content,
-            user_id: user.id,
+            author_id: user.id,
+            display_name: displayName.trim(),
             category_id: selectedCategory.id,
-            is_anonymous: isAnonymous,
             mood_emoji: moodEmoji || null,
           },
         ])
@@ -220,26 +232,23 @@ const WriteLetterScreen = () => {
           maxLength={5000}
         />
         
-        <View style={styles.anonymousContainer}>
-          <Button
-            mode={isAnonymous ? "contained" : "outlined"}
-            onPress={() => setIsAnonymous(!isAnonymous)}
-            style={styles.anonymousButton}
-          >
-            {isAnonymous ? "Anonymous" : "Post with Name"}
-          </Button>
-          <Text style={styles.anonymousText}>
-            {isAnonymous 
-              ? "Your letter will be posted anonymously" 
-              : "Your display name will be shown"}
-          </Text>
-        </View>
+        <Text style={styles.label}>Display Name</Text>
+        <TextInput
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="Enter a display name for this letter"
+          style={styles.displayNameInput}
+          maxLength={50}
+        />
+        <Text style={styles.displayNameHint}>
+          This name will be shown publicly with your letter
+        </Text>
         
         <Button
           mode="contained"
           onPress={handleSubmit}
           style={styles.submitButton}
-          disabled={isSubmitting || !content.trim() || !selectedCategory}
+          disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim()}
           loading={isSubmitting}
         >
           Submit Letter
@@ -332,17 +341,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     minHeight: 200,
   },
-  anonymousContainer: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  anonymousButton: {
+  displayNameInput: {
     marginBottom: 8,
+    backgroundColor: '#f9f9f9',
   },
-  anonymousText: {
+  displayNameHint: {
     fontSize: 12,
     color: '#666',
+    marginBottom: 24,
   },
   submitButton: {
     padding: 8,
