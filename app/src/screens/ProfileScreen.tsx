@@ -105,6 +105,12 @@ const ProfileScreen = () => {
           onPress={() => navigation.navigate('NotificationSettings')}
         />
         <List.Item
+          title="Category Preferences"
+          left={props => <List.Icon {...props} icon="tag-multiple" />}
+          right={props => <List.Icon {...props} icon="chevron-right" />}
+          onPress={() => navigation.navigate('CategoryPreferencesSettings')}
+        />
+        <List.Item
           title="Privacy Settings"
           left={props => <List.Icon {...props} icon="shield" />}
           right={props => <List.Icon {...props} icon="chevron-right" />}

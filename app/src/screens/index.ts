@@ -18,3 +18,4 @@ export { default as MailboxScreen } from './MailboxScreen';
 
 // Settings screens
 export { default as NotificationSettingsScreen } from './settings/NotificationSettingsScreen'; 
+export { default as CategoryPreferencesSettingsScreen } from './CategoryPreferencesSettingsScreen'; 
