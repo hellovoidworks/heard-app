@@ -1,0 +1,4 @@
+praw>=7.7.0
+supabase>=1.0.3
+python-dotenv>=1.0.0
+faker>=18.10.1 
