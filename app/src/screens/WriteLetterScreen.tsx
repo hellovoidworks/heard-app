@@ -25,6 +25,7 @@ const WriteLetterScreen = () => {
   const initialCategory = route.params?.category || null;
   
   const [content, setContent] = useState('');
+  const [title, setTitle] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [categories, setCategories] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState(profile?.username || '');
@@ -91,15 +92,19 @@ const WriteLetterScreen = () => {
     try {
       setIsSubmitting(true);
 
-      // Use the first line or first few words as an automatic title
-      let autoTitle = content.split('\n')[0].trim();
-      if (autoTitle.length > 50) {
-        autoTitle = autoTitle.substring(0, 47) + '...';
-      } else if (autoTitle.length < 3) {
-        // If first line is too short, use first few words of content
-        autoTitle = content.trim().substring(0, 50);
-        if (autoTitle.length === 50) {
-          autoTitle = autoTitle + '...';
+      // Use provided title or generate an automatic one if empty
+      let letterTitle = title.trim();
+      if (!letterTitle) {
+        // Use the first line or first few words as an automatic title
+        letterTitle = content.split('\n')[0].trim();
+        if (letterTitle.length > 50) {
+          letterTitle = letterTitle.substring(0, 47) + '...';
+        } else if (letterTitle.length < 3) {
+          // If first line is too short, use first few words of content
+          letterTitle = content.trim().substring(0, 50);
+          if (letterTitle.length === 50) {
+            letterTitle = letterTitle + '...';
+          }
         }
       }
 
@@ -108,7 +113,7 @@ const WriteLetterScreen = () => {
         .from('letters')
         .insert([
           {
-            title: autoTitle, // Use auto-generated title
+            title: letterTitle,
             content,
             author_id: user.id,
             display_name: displayName.trim(),
@@ -220,6 +225,15 @@ const WriteLetterScreen = () => {
             ))}
           </ScrollView>
         )}
+        
+        <Text style={styles.label}>Title</Text>
+        <TextInput
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Enter a title for your letter"
+          style={styles.titleInput}
+          maxLength={100}
+        />
         
         <Text style={styles.label}>Your Letter</Text>
         <TextInput
@@ -340,6 +354,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     backgroundColor: '#f9f9f9',
     minHeight: 200,
+  },
+  titleInput: {
+    marginBottom: 8,
+    backgroundColor: '#f9f9f9',
   },
   displayNameInput: {
     marginBottom: 8,
