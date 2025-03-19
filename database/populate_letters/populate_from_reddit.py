@@ -153,7 +153,7 @@ Please analyze the following post and select the most appropriate category.
 Only respond with the exact name of ONE category from the list. Do not add any explanation.
 
 POST:
-{post_content[:1000]}  # Limit to first 1000 chars to avoid token limits
+{post_content[:3000]}  # Limit to first 3000 chars to avoid token limits
 """
 
     try:
@@ -165,7 +165,7 @@ POST:
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=10  # 10 second timeout
+            timeout=60  # 60 second timeout (1 minute)
         )
         
         # Check if the request was successful
