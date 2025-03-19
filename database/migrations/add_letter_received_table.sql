@@ -2,6 +2,15 @@
 -- This helps to implement the feature where users receive random letters periodically
 -- The table stores when each letter was received by each user
 
+-- Create the set_updated_at function if it doesn't exist
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create the letter_received table
 CREATE TABLE public.letter_received (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
