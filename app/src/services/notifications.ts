@@ -76,30 +76,66 @@ export async function registerForPushNotificationsAsync() {
 
 export async function savePushToken(userId: string, token: string) {
   try {
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ push_token: token })
-      .eq('id', userId);
+    // First, check if this token already exists for this user
+    const { data: existingTokens, error: fetchError } = await supabase
+      .from('push_tokens')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('token', token);
 
-    if (error) {
-      console.error('Error saving push token:', error);
+    if (fetchError) {
+      console.error('Error checking existing push token:', fetchError);
+      return;
+    }
+
+    // If token doesn't exist, insert it
+    if (!existingTokens || existingTokens.length === 0) {
+      const { error } = await supabase
+        .from('push_tokens')
+        .insert({
+          user_id: userId,
+          token: token,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) {
+        console.error('Error saving push token:', error);
+      } else {
+        console.log('Successfully saved push token');
+      }
+    } else {
+      console.log('Push token already exists for this user');
     }
   } catch (error) {
     console.error('Error saving push token:', error);
   }
 }
 
-export async function removePushToken(userId: string) {
+export async function removePushToken(userId: string, token?: string) {
   try {
-    const { error } = await supabase
-      .from('user_profiles')
-      .update({ push_token: null })
-      .eq('id', userId);
+    let query = supabase
+      .from('push_tokens')
+      .delete();
+    
+    // If token is provided, remove just that specific token
+    if (token) {
+      query = query
+        .eq('user_id', userId)
+        .eq('token', token);
+    } else {
+      // Otherwise, remove all tokens for this user
+      query = query.eq('user_id', userId);
+    }
+
+    const { error } = await query;
 
     if (error) {
-      console.error('Error removing push token:', error);
+      console.error('Error removing push token(s):', error);
+    } else {
+      console.log('Successfully removed push token(s)');
     }
   } catch (error) {
-    console.error('Error removing push token:', error);
+    console.error('Error removing push token(s):', error);
   }
 } 

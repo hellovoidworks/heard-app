@@ -18,7 +18,7 @@ const ProfileScreen = () => {
 
   const handleSignOut = async () => {
     if (user) {
-      // Remove push token when signing out
+      // Remove all push tokens when signing out
       await removePushToken(user.id);
     }
     await signOut();
