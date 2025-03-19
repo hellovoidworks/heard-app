@@ -72,6 +72,15 @@ export type LetterRead = {
   created_at: string;
 };
 
+export type LetterReceived = {
+  id: string;
+  user_id: string;
+  letter_id: string;
+  received_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 // Extended types with related data
 export type LetterWithDetails = Letter & {
   category: Category;

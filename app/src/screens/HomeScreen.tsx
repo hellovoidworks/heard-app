@@ -25,7 +25,7 @@ const HomeScreen = () => {
 
   /**
    * Gets a specific number of unread letters not authored by the current user
-   * Prioritizes letters from categories the user has expressed interest in
+   * Returns random letters from all categories, prioritizing preferred categories
    * @param limit Number of letters to fetch
    * @param offset Number of letters to skip (for pagination)
    */
@@ -69,7 +69,7 @@ const HomeScreen = () => {
       let resultLetters: any[] = [];
       
       if (preferredCategoryIds.length > 0) {
-        // Query for unread letters from preferred categories
+        // Query for random unread letters from preferred categories
         const query = supabase
           .from('letters')
           .select(`
@@ -79,16 +79,15 @@ const HomeScreen = () => {
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id) // Not written by the current user
-          .in('category_id', preferredCategoryIds) // From preferred categories
-          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
-          .range(offset, offset + limit - 1);
+          .in('category_id', preferredCategoryIds) // From preferred categories;
         
         // If the user has read any letters, exclude those from the results
         if (readLetterIds.length > 0) {
           query.filter('id', 'not.in', `(${readLetterIds.join(',')})`);
         }
         
-        const { data: preferredLetters, error: preferredError } = await query;
+        // Get letters with a random ordering
+        const { data: preferredLetters, error: preferredError } = await query.order('created_at', { ascending: Math.random() > 0.5 }).limit(limit);
         
         if (preferredError) {
           console.error('Error fetching preferred category letters:', preferredError);
@@ -101,12 +100,11 @@ const HomeScreen = () => {
       // If we didn't get enough letters from preferred categories, get more from any category
       if (resultLetters.length < limit) {
         const remainingLimit = limit - resultLetters.length;
-        const remainingOffset = Math.max(0, offset - resultLetters.length);
         
         // Need to exclude IDs of letters we already have
         const excludeIds = [...readLetterIds, ...resultLetters.map(letter => letter.id)];
         
-        // Query for remaining unread letters from any category
+        // Query for remaining random unread letters from any category
         const query = supabase
           .from('letters')
           .select(`
@@ -115,9 +113,7 @@ const HomeScreen = () => {
             author:user_profiles!letters_author_id_fkey(*)
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
-          .neq('author_id', user.id) // Not written by the current user
-          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
-          .range(remainingOffset, remainingOffset + remainingLimit - 1);
+          .neq('author_id', user.id) // Not written by the current user;
         
         // If we have any IDs to exclude, do so
         if (excludeIds.length > 0) {
@@ -129,7 +125,8 @@ const HomeScreen = () => {
           query.filter('category_id', 'not.in', `(${preferredCategoryIds.join(',')})`);
         }
         
-        const { data: additionalLetters, error: additionalError } = await query;
+        // Get random letters
+        const { data: additionalLetters, error: additionalError } = await query.order('created_at', { ascending: Math.random() > 0.5 }).limit(remainingLimit);
         
         if (additionalError) {
           console.error('Error fetching additional letters:', additionalError);
@@ -139,7 +136,35 @@ const HomeScreen = () => {
         }
       }
       
-      console.log(`Returning total of ${resultLetters.length} unread letters`);
+      // Track which letters were received by the user
+      if (resultLetters.length > 0 && user) {
+        try {
+          // Create letter_received entries for each letter
+          const letterReceivedEntries = resultLetters.map(letter => ({
+            user_id: user.id,
+            letter_id: letter.id,
+            received_at: new Date().toISOString()
+          }));
+          
+          // Insert the records
+          const { error: insertError } = await supabase
+            .from('letter_received')
+            .upsert(letterReceivedEntries, { 
+              onConflict: 'user_id,letter_id', 
+              ignoreDuplicates: true 
+            });
+          
+          if (insertError) {
+            console.error('Error tracking received letters:', insertError);
+          } else {
+            console.log(`Tracked ${letterReceivedEntries.length} letters as received by user`);
+          }
+        } catch (trackError) {
+          console.error('Error tracking received letters:', trackError);
+        }
+      }
+      
+      console.log(`Returning total of ${resultLetters.length} random unread letters`);
       return resultLetters;
       
     } catch (error) {
@@ -156,7 +181,7 @@ const HomeScreen = () => {
       setLoading(true);
       
       if (!user) {
-        // If no user is logged in, just fetch recent letters
+        // If no user is logged in, just fetch random letters
         const { data, error } = await supabase
           .from('letters')
           .select(`
@@ -165,7 +190,7 @@ const HomeScreen = () => {
             author:user_profiles!letters_author_id_fkey(*)
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
-          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
+          .order('created_at', { ascending: Math.random() > 0.5 }) // Random order
           .limit(INITIAL_LETTERS_LIMIT);
           
         if (error) {
@@ -177,7 +202,7 @@ const HomeScreen = () => {
         return;
       }
       
-      // Get unread letters for logged in user
+      // Get random unread letters for logged in user
       const unreadLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
       
       // Mark all as unread (since we know they're unread)
@@ -198,7 +223,7 @@ const HomeScreen = () => {
   };
   
   /**
-   * Loads more letters when the user presses the "Load More" button
+   * Loads more random letters when the user presses the "Load More" button
    */
   const loadMoreLetters = async () => {
     if (loadingMore || !user) return;
@@ -206,11 +231,8 @@ const HomeScreen = () => {
     try {
       setLoadingMore(true);
       
-      // Calculate the offset based on current letters
-      const offset = letters.length;
-      
-      // Fetch more unread letters
-      const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT, offset);
+      // Fetch more random unread letters
+      const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT);
       
       if (moreLetters.length === 0) {
         console.log('No more unread letters available');
