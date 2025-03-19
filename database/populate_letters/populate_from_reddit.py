@@ -368,7 +368,7 @@ def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any
     # Generate display name
     display_name = generate_display_name(post["author"])
     
-    # Assign a category
+    # Assign a category based on the final content (original or rewritten)
     category_id = assign_category(title + " " + cleaned_content, categories)
     
     # Select a random user as the author
