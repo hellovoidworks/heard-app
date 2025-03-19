@@ -123,7 +123,7 @@ def assign_category_with_ollama(post_content: str, categories: List[Dict[str, An
     
     Args:
         post_content: The content of the post (title and body)
-        categories: List of available categories
+        categories: List of available categories with name and description
         
     Returns:
         The ID of the assigned category
@@ -134,16 +134,23 @@ def assign_category_with_ollama(post_content: str, categories: List[Dict[str, An
     # Get the model name from environment or use default
     model = os.getenv("OLLAMA_MODEL", "llama3")
     
-    # Create a list of category names
-    category_names = [cat["name"] for cat in categories]
+    # Create a list of category names with descriptions
+    category_desc = []
+    for cat in categories:
+        desc = cat.get("description", "")
+        if desc:
+            category_desc.append(f"{cat['name']}: {desc}")
+        else:
+            category_desc.append(cat['name'])
     
     # Create the prompt
     prompt = f"""
 You are tasked with categorizing a post into one of the following categories:
-{', '.join(category_names)}
+
+{chr(10).join(category_desc)}
 
 Please analyze the following post and select the most appropriate category.
-Only respond with the exact name of ONE category. Do not add any explanation.
+Only respond with the exact name of ONE category from the list. Do not add any explanation.
 
 POST:
 {post_content[:1000]}  # Limit to first 1000 chars to avoid token limits
