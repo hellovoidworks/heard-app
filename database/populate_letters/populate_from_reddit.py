@@ -15,6 +15,7 @@ import praw
 from dotenv import load_dotenv
 from supabase import create_client, Client
 from faker import Faker
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
@@ -35,9 +36,8 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUBREDDIT = "offmychest"  # Subreddit to fetch posts from
 LIMIT = 50  # Number of posts to fetch
 TIME_FILTER = "month"  # Options: hour, day, week, month, year, all
-DISPLAY_NAME_PATTERN = ['Anonymous', '{username}']  # Format for display names
 # User IDs to use for author_id (override random selection)
-USER_IDS = []  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
+USER_IDS = ['fd3c4746-5f3a-45da-bd13-4274740c44a8']  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
 # If USER_IDS is empty, the script will fetch users from the database
 
 
@@ -117,10 +117,83 @@ def clean_content(content: str) -> str:
     return content
 
 
-def assign_category(post_content: str, categories: List[Dict[str, Any]]) -> str:
+def assign_category_with_ollama(post_content: str, categories: List[Dict[str, Any]]) -> str:
     """
-    Assign a category based on post content and title.
-    This is a simple implementation that could be improved with NLP.
+    Use Ollama to assign a category to a post based on content.
+    
+    Args:
+        post_content: The content of the post (title and body)
+        categories: List of available categories
+        
+    Returns:
+        The ID of the assigned category
+    """
+    # Get the Ollama API URL from environment or use default
+    ollama_url = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
+    
+    # Get the model name from environment or use default
+    model = os.getenv("OLLAMA_MODEL", "llama3")
+    
+    # Create a list of category names
+    category_names = [cat["name"] for cat in categories]
+    
+    # Create the prompt
+    prompt = f"""
+You are tasked with categorizing a post into one of the following categories:
+{', '.join(category_names)}
+
+Please analyze the following post and select the most appropriate category.
+Only respond with the exact name of ONE category. Do not add any explanation.
+
+POST:
+{post_content[:1000]}  # Limit to first 1000 chars to avoid token limits
+"""
+
+    try:
+        # Send request to Ollama
+        response = requests.post(
+            ollama_url,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=10  # 10 second timeout
+        )
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            result = response.json()
+            category_response = result.get("response", "").strip()
+            
+            # Find the closest match in our category names
+            for category in categories:
+                if category["name"].lower() == category_response.lower():
+                    print(f"Ollama assigned category: {category['name']}")
+                    return category["id"]
+            
+            # If no exact match, try to find a partial match
+            for category in categories:
+                if category["name"].lower() in category_response.lower():
+                    print(f"Ollama assigned category (partial match): {category['name']}")
+                    return category["id"]
+                    
+            # If Ollama response doesn't match any category, log and fall back
+            print(f"Ollama response '{category_response}' didn't match any category, falling back to keyword-based assignment")
+            return assign_category_keyword(post_content, categories)
+        else:
+            print(f"Error from Ollama API: {response.status_code} - {response.text}")
+            return assign_category_keyword(post_content, categories)
+    
+    except Exception as e:
+        print(f"Error connecting to Ollama: {e}")
+        return assign_category_keyword(post_content, categories)
+
+
+def assign_category_keyword(post_content: str, categories: List[Dict[str, Any]]) -> str:
+    """
+    Assign a category based on post content and title using keyword matching.
+    This is used as a fallback if Ollama is not available.
     """
     # Define keywords for each category
     category_keywords = {
@@ -158,6 +231,27 @@ def assign_category(post_content: str, categories: List[Dict[str, Any]]) -> str:
     
     # Fallback to first category if no match found
     return categories[0]["id"]
+
+
+def assign_category(post_content: str, categories: List[Dict[str, Any]]) -> str:
+    """
+    Assign a category to a post based on content.
+    Tries to use Ollama if available, otherwise falls back to keyword matching.
+    
+    Args:
+        post_content: The content of the post (title and body)
+        categories: List of available categories
+        
+    Returns:
+        The ID of the assigned category
+    """
+    # Check if OLLAMA_ENABLED is set to true in env
+    use_ollama = os.getenv("OLLAMA_ENABLED", "false").lower() == "true"
+    
+    if use_ollama:
+        return assign_category_with_ollama(post_content, categories)
+    else:
+        return assign_category_keyword(post_content, categories)
 
 
 def generate_display_name(author_name: str) -> str:

@@ -16,6 +16,8 @@ from populate_from_reddit import (
     fetch_posts,
     clean_content,
     assign_category,
+    assign_category_keyword,
+    assign_category_with_ollama,
     generate_display_name
 )
 
@@ -35,7 +37,7 @@ MOCK_CATEGORIES = [
     {"id": "9", "name": "Spiritual"}
 ]
 
-def test_reddit_api(subreddit, limit, time_filter, verbose=False):
+def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=False):
     """
     Test the Reddit API connection and print fetched posts.
     
@@ -44,6 +46,7 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False):
         limit: Number of posts to fetch
         time_filter: Time filter for Reddit API (hour, day, week, month, year, all)
         verbose: Whether to print full post content
+        force_ollama: Whether to force using Ollama for categorization
     """
     print(f"Testing Reddit API connection...")
     print(f"Fetching {limit} posts from r/{subreddit} for time filter: {time_filter}")
@@ -61,6 +64,13 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False):
             return
         
         print(f"\n✅ Successfully fetched {len(posts)} posts\n")
+        
+        # Check if Ollama is enabled
+        use_ollama = os.getenv("OLLAMA_ENABLED", "false").lower() == "true" or force_ollama
+        if use_ollama:
+            print("🤖 Ollama categorization is enabled")
+        else:
+            print("🔍 Using keyword-based categorization")
         
         # Print post information and test processing functions
         for i, post in enumerate(posts, 1):
@@ -82,9 +92,25 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False):
                 print(f"\nCleaned Content Preview: {content_preview}")
             
             # Test category assignment
-            category_id = assign_category(post['title'] + " " + cleaned_content, MOCK_CATEGORIES)
-            category_name = next((cat["name"] for cat in MOCK_CATEGORIES if cat["id"] == category_id), "Unknown")
-            print(f"\nAssigned Category: {category_name} (ID: {category_id})")
+            combined_content = post['title'] + " " + cleaned_content
+            
+            # Compare Ollama vs keyword categorization
+            if use_ollama:
+                category_id_ollama = assign_category_with_ollama(combined_content, MOCK_CATEGORIES)
+                category_name_ollama = next((cat["name"] for cat in MOCK_CATEGORIES if cat["id"] == category_id_ollama), "Unknown")
+                
+                category_id_keyword = assign_category_keyword(combined_content, MOCK_CATEGORIES)
+                category_name_keyword = next((cat["name"] for cat in MOCK_CATEGORIES if cat["id"] == category_id_keyword), "Unknown")
+                
+                print(f"\nAssigned Category (Ollama): {category_name_ollama} (ID: {category_id_ollama})")
+                print(f"Assigned Category (Keyword): {category_name_keyword} (ID: {category_id_keyword})")
+                
+                if category_id_ollama != category_id_keyword:
+                    print(f"📊 DIFFERENT CATEGORIZATIONS: Ollama: {category_name_ollama}, Keyword: {category_name_keyword}")
+            else:
+                category_id = assign_category(combined_content, MOCK_CATEGORIES)
+                category_name = next((cat["name"] for cat in MOCK_CATEGORIES if cat["id"] == category_id), "Unknown")
+                print(f"\nAssigned Category: {category_name} (ID: {category_id})")
             
             # Test display name generation
             display_name = generate_display_name(post['author'])
@@ -106,10 +132,12 @@ def main():
                         default="week", help="Time filter for Reddit API (default: week)")
     parser.add_argument("--verbose", action="store_true", 
                         help="Print full post content instead of preview")
+    parser.add_argument("--force-ollama", action="store_true",
+                        help="Force using Ollama for categorization even if not enabled in .env")
     
     args = parser.parse_args()
     
-    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose)
+    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose, args.force_ollama)
 
 if __name__ == "__main__":
     main() 

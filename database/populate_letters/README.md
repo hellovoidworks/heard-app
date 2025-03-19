@@ -61,6 +61,25 @@ To obtain Supabase credentials:
 3. Click on "API"
 4. Copy the "URL" and "anon public" key to your `.env` file
 
+### Ollama Integration (Optional)
+
+The scripts can use Ollama to improve category assignment accuracy. Ollama is a local LLM server that can be used to categorize posts. To use Ollama:
+
+1. Install Ollama from https://ollama.ai/
+2. Start the Ollama server
+3. Pull a model (recommended: `ollama pull llama3`)
+4. Edit your `.env` file to enable Ollama:
+```
+OLLAMA_ENABLED=true
+OLLAMA_API_URL=http://localhost:11434/api/generate
+OLLAMA_MODEL=llama3
+```
+
+You can test the Ollama categorization without modifying your `.env` by using the `--force-ollama` flag with the test script:
+```bash
+python test_reddit_api.py --force-ollama
+```
+
 ## Usage
 
 ### Configuring User IDs (Required)
@@ -103,9 +122,33 @@ Example:
 python populate_from_multiple_subreddits.py --limit 20 --time week
 ```
 
+### Testing the Reddit API
+
+You can test the Reddit API connection and post processing without saving any data to the database:
+
+```bash
+python test_reddit_api.py
+```
+
+Command line options:
+
+- `--subreddit`: Subreddit to fetch posts from (default: offmychest)
+- `--limit`: Number of posts to fetch (default: 5)
+- `--time`: Time filter for Reddit API (hour, day, week, month, year, all) (default: week)
+- `--verbose`: Print full post content instead of preview
+- `--force-ollama`: Force using Ollama for categorization even if not enabled in .env
+
+Example:
+
+```bash
+python test_reddit_api.py --subreddit relationship_advice --limit 3 --verbose
+```
+
 ## Notes
 
 - The scripts automatically assign categories to the posts based on content analysis
+  - If Ollama is enabled, it will use LLM-based categorization for better accuracy
+  - If Ollama is not available, it will fall back to keyword-based categorization
 - User IDs for letter authors must be specified in the `USER_IDS` array in the script files
 - Display names are generated as fake usernames for all letters
 - The content is cleaned to remove URLs and Reddit-specific formatting 
