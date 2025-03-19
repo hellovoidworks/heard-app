@@ -41,6 +41,15 @@ USER_IDS = ['fd3c4746-5f3a-45da-bd13-4274740c44a8']  # Add your user IDs here, e
 # If USER_IDS is empty, the script will fetch users from the database
 # Whether to rewrite posts using Ollama (default: false, override with OLLAMA_REWRITE=true in .env)
 OLLAMA_REWRITE = os.getenv("OLLAMA_REWRITE", "false").lower() == "true"
+# List of keywords that will cause a post to be skipped if they appear in the content
+# Add any sensitive or unwanted topics here
+SKIP_KEYWORDS = [
+    "suicide", "kill myself", "killing myself",
+    "self harm", "cutting myself",
+    "rape", "molest", "assault",
+    "abuse", "domestic violence",
+    "genocide", "terrorist", "terrorism"
+]
 
 
 def setup_reddit() -> praw.Reddit:
@@ -152,6 +161,7 @@ You are tasked with categorizing a post into one of the following categories:
 {chr(10).join(category_desc)}
 
 Please analyze the following post and select the most appropriate category.
+If the post is about related to sex, select the "Intimacy" category.
 Only respond with the exact name of ONE category from the list. Do not add any explanation.
 
 POST:
@@ -352,11 +362,38 @@ Do not include any other text in your response besides this JSON object.
         return {"title": title, "content": content}
 
 
+def contains_skip_keywords(title: str, content: str) -> bool:
+    """
+    Check if the post contains any of the keywords that should be skipped.
+    
+    Args:
+        title: The post title
+        content: The post content
+        
+    Returns:
+        True if the post contains any skip keywords, False otherwise
+    """
+    # Combine title and content for searching
+    text = (title + " " + content).lower()
+    
+    # Check each keyword
+    for keyword in SKIP_KEYWORDS:
+        if keyword.lower() in text:
+            print(f"⚠️ Skipping post containing keyword: '{keyword}'")
+            return True
+    
+    return False
+
+
 def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any]], user_ids: List[str]) -> Dict[str, Any]:
     """Convert a Reddit post to a letter format for our database."""
     # Clean the content
     cleaned_content = clean_content(post["content"])
     title = post["title"]
+    
+    # Check for skip keywords before further processing
+    if contains_skip_keywords(title, cleaned_content):
+        raise ValueError(f"Post contains skip keywords and will not be processed")
     
     # Rewrite the post if enabled
     if OLLAMA_REWRITE:
@@ -364,6 +401,10 @@ def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any
         rewritten = rewrite_post_with_ollama(title, cleaned_content)
         title = rewritten["title"]
         cleaned_content = rewritten["content"]
+        
+        # Check again after rewriting
+        if contains_skip_keywords(title, cleaned_content):
+            raise ValueError(f"Rewritten post contains skip keywords and will not be processed")
     
     # Generate display name
     display_name = generate_display_name(post["author"])

@@ -118,6 +118,23 @@ USER_IDS = ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426
 
 The scripts will not run if the `USER_IDS` array is empty.
 
+### Content Filtering
+
+The scripts automatically filter out posts containing sensitive or inappropriate content. You can customize which keywords trigger filtering:
+
+1. Open `populate_from_reddit.py`
+2. Locate the `SKIP_KEYWORDS` list near the top of the file
+3. Add or remove keywords as needed:
+```python
+SKIP_KEYWORDS = [
+    "suicide", "kill myself", "killing myself",
+    "self harm", "cutting myself",
+    # Add your own keywords here
+]
+```
+
+When a post contains any of these keywords (in either the title or content), it will be skipped and not added to your database. The filtering happens both before and after content rewriting (if enabled) to ensure sensitive content is properly filtered.
+
 ### Populate from a single subreddit
 
 This script fetches posts from the r/offmychest subreddit by default:
@@ -174,6 +191,9 @@ python test_reddit_api.py --subreddit relationship_advice --limit 3 --verbose
   - If Ollama is enabled, it will use LLM-based categorization for better accuracy
   - If Ollama is not available, it will fall back to keyword-based categorization
 - Posts can be rewritten by Ollama to make them more suitable as personal letters
+- Content filtering is applied to prevent sensitive or inappropriate content from being added
+  - Posts containing keywords from the `SKIP_KEYWORDS` list are automatically skipped
+  - Filtering is applied both before and after content rewriting
 - User IDs for letter authors must be specified in the `USER_IDS` array in the script files
 - Display names are generated as fake usernames for all letters
 - The content is cleaned to remove URLs and Reddit-specific formatting 

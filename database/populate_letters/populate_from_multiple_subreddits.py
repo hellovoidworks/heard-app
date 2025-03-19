@@ -16,7 +16,8 @@ import time
 from populate_from_reddit import (
     setup_reddit, setup_supabase, get_categories,
     fetch_posts, create_letter_from_post, save_letter,
-    get_user_ids, rewrite_post_with_ollama
+    get_user_ids, rewrite_post_with_ollama, 
+    SKIP_KEYWORDS, contains_skip_keywords
 )
 
 # Load environment variables from .env file
