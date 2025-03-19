@@ -80,7 +80,7 @@ const HomeScreen = () => {
           .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id) // Not written by the current user
           .in('category_id', preferredCategoryIds) // From preferred categories
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
           .range(offset, offset + limit - 1);
         
         // If the user has read any letters, exclude those from the results
@@ -116,7 +116,7 @@ const HomeScreen = () => {
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id) // Not written by the current user
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
           .range(remainingOffset, remainingOffset + remainingLimit - 1);
         
         // If we have any IDs to exclude, do so
@@ -165,7 +165,7 @@ const HomeScreen = () => {
             author:user_profiles!letters_author_id_fkey(*)
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
-          .order('created_at', { ascending: false })
+          .order('created_at', { ascending: true }) // Changed to ascending for oldest first
           .limit(INITIAL_LETTERS_LIMIT);
           
         if (error) {
@@ -291,11 +291,11 @@ const HomeScreen = () => {
     </Card>
   );
 
-  const renderFooter = () => {
+  const renderHeader = () => {
     if (!user || letters.length === 0) return null;
     
     return (
-      <View style={styles.footerContainer}>
+      <View style={styles.headerContainer}>
         <Button 
           mode="outlined"
           onPress={loadMoreLetters}
@@ -325,10 +325,7 @@ const HomeScreen = () => {
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListFooterComponent={renderFooter}
+        ListHeaderComponent={renderHeader}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
@@ -411,9 +408,8 @@ const styles = StyleSheet.create({
   writeButton: {
     marginTop: 10,
   },
-  footerContainer: {
-    marginTop: 8,
-    marginBottom: 24,
+  headerContainer: {
+    marginBottom: 16,
     alignItems: 'center',
   },
   loadMoreButton: {
