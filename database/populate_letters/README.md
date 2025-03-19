@@ -63,21 +63,44 @@ To obtain Supabase credentials:
 
 ### Ollama Integration (Optional)
 
-The scripts can use Ollama to improve category assignment accuracy. Ollama is a local LLM server that can be used to categorize posts. To use Ollama:
+The scripts can use Ollama to improve category assignment accuracy and rewrite posts. Ollama is a local LLM server that provides AI capabilities. To use Ollama:
 
 1. Install Ollama from https://ollama.ai/
 2. Start the Ollama server
 3. Pull a model (recommended: `ollama pull llama3`)
-4. Edit your `.env` file to enable Ollama:
+4. Edit your `.env` file to enable Ollama features:
 ```
+# For categorization
 OLLAMA_ENABLED=true
+
+# For post rewriting
+OLLAMA_REWRITE=true
+
+# Common settings
 OLLAMA_API_URL=http://localhost:11434/api/generate
 OLLAMA_MODEL=llama3
 ```
 
-You can test the Ollama categorization without modifying your `.env` by using the `--force-ollama` flag with the test script:
+#### Ollama Features
+
+1. **Categorization**: When enabled, Ollama will analyze post content to determine the most appropriate category, considering category descriptions from your database.
+
+2. **Post Rewriting**: When enabled, Ollama will rewrite Reddit posts to make them more suitable as personal letters. This includes:
+   - Improving flow and structure
+   - Removing Reddit-specific language/references
+   - Making the content more personal and authentic-sounding
+   - Preserving the original meaning and emotions
+
+You can test these features without modifying your `.env` file by using these flags with the test script:
 ```bash
+# Test categorization
 python test_reddit_api.py --force-ollama
+
+# Test post rewriting
+python test_reddit_api.py --test-rewrite
+
+# Test both features
+python test_reddit_api.py --force-ollama --test-rewrite
 ```
 
 ## Usage
@@ -137,6 +160,7 @@ Command line options:
 - `--time`: Time filter for Reddit API (hour, day, week, month, year, all) (default: week)
 - `--verbose`: Print full post content instead of preview
 - `--force-ollama`: Force using Ollama for categorization even if not enabled in .env
+- `--test-rewrite`: Test post rewriting with Ollama
 
 Example:
 
@@ -149,6 +173,7 @@ python test_reddit_api.py --subreddit relationship_advice --limit 3 --verbose
 - The scripts automatically assign categories to the posts based on content analysis
   - If Ollama is enabled, it will use LLM-based categorization for better accuracy
   - If Ollama is not available, it will fall back to keyword-based categorization
+- Posts can be rewritten by Ollama to make them more suitable as personal letters
 - User IDs for letter authors must be specified in the `USER_IDS` array in the script files
 - Display names are generated as fake usernames for all letters
 - The content is cleaned to remove URLs and Reddit-specific formatting 

@@ -14,7 +14,8 @@ from supabase import create_client, Client
 # Import functions from the main script
 from populate_from_reddit import (
     setup_reddit, setup_supabase, get_categories,
-    fetch_posts, create_letter_from_post, save_letters
+    fetch_posts, create_letter_from_post, save_letters,
+    get_user_ids, rewrite_post_with_ollama
 )
 
 # Load environment variables from .env file
@@ -26,6 +27,8 @@ DEFAULT_TIME_FILTER = "month"  # Default time filter
 # User IDs to use for author_id (override random selection)
 USER_IDS = []  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
 # If USER_IDS is empty, the script will fetch users from the database
+# Whether to rewrite posts using Ollama (default: false, override with OLLAMA_REWRITE=true in .env)
+OLLAMA_REWRITE = os.getenv("OLLAMA_REWRITE", "false").lower() == "true"
 
 # Default subreddits grouped by matching categories
 SUBREDDIT_CATEGORIES = {

@@ -39,6 +39,8 @@ TIME_FILTER = "month"  # Options: hour, day, week, month, year, all
 # User IDs to use for author_id (override random selection)
 USER_IDS = ['fd3c4746-5f3a-45da-bd13-4274740c44a8']  # Add your user IDs here, e.g. ["123e4567-e89b-12d3-a456-426614174000", "523e4567-e89b-12d3-a456-426614174001"]
 # If USER_IDS is empty, the script will fetch users from the database
+# Whether to rewrite posts using Ollama (default: false, override with OLLAMA_REWRITE=true in .env)
+OLLAMA_REWRITE = os.getenv("OLLAMA_REWRITE", "false").lower() == "true"
 
 
 def setup_reddit() -> praw.Reddit:
@@ -266,16 +268,108 @@ def generate_display_name(author_name: str) -> str:
     return fake.user_name()
 
 
+def rewrite_post_with_ollama(title: str, content: str) -> Dict[str, str]:
+    """
+    Use Ollama to rewrite the post content and title to make it more suitable as a letter.
+    
+    Args:
+        title: The original post title
+        content: The cleaned post content
+        
+    Returns:
+        Dict with 'title' and 'content' keys containing the rewritten versions
+    """
+    # Get the Ollama API URL from environment or use default
+    ollama_url = os.getenv("OLLAMA_API_URL", "http://localhost:11434/api/generate")
+    
+    # Get the model name from environment or use default
+    model = os.getenv("OLLAMA_MODEL", "llama3")
+    
+    # Create the prompt for content rewriting
+    prompt = f"""
+Please rewrite the following post to make it more suitable as a personal letter. 
+Maintain the original meaning, emotions, and key points, but improve the structure, flow, and readability.
+Remove any Reddit-specific language or references.
+Make it personal and authentic-sounding.
+Do not add any explanations or comments outside of the letter content.
+
+TITLE: {title}
+
+CONTENT:
+{content[:3000]}  # Limit to first 3000 chars to avoid token limits
+
+Respond with a JSON object containing the rewritten title and content in the following format:
+{{
+  "title": "Rewritten title here",
+  "content": "Rewritten content here"
+}}
+Do not include any other text in your response besides this JSON object.
+"""
+
+    try:
+        # Send request to Ollama
+        response = requests.post(
+            ollama_url,
+            json={
+                "model": model,
+                "prompt": prompt,
+                "stream": False
+            },
+            timeout=60  # 60 second timeout (1 minute)
+        )
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            result = response.json()
+            response_text = result.get("response", "").strip()
+            
+            # Try to parse the JSON response
+            try:
+                # Find JSON object in the response
+                json_match = re.search(r'({[\s\S]*})', response_text)
+                if json_match:
+                    json_str = json_match.group(1)
+                    rewritten = eval(json_str)  # Using eval since the JSON might not be perfectly formatted
+                    
+                    # Validate the response has the expected keys
+                    if "title" in rewritten and "content" in rewritten:
+                        print("✅ Successfully rewrote post with Ollama")
+                        return rewritten
+                
+                # If we couldn't parse the JSON properly, return the original
+                print("⚠️ Could not parse Ollama's JSON response, using original content")
+                return {"title": title, "content": content}
+                
+            except Exception as e:
+                print(f"⚠️ Error parsing Ollama's response as JSON: {e}")
+                return {"title": title, "content": content}
+        else:
+            print(f"⚠️ Error from Ollama API: {response.status_code} - {response.text}")
+            return {"title": title, "content": content}
+    
+    except Exception as e:
+        print(f"⚠️ Error connecting to Ollama for rewriting: {e}")
+        return {"title": title, "content": content}
+
+
 def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any]], user_ids: List[str]) -> Dict[str, Any]:
     """Convert a Reddit post to a letter format for our database."""
     # Clean the content
     cleaned_content = clean_content(post["content"])
+    title = post["title"]
+    
+    # Rewrite the post if enabled
+    if OLLAMA_REWRITE:
+        print(f"Rewriting post: {title[:30]}...")
+        rewritten = rewrite_post_with_ollama(title, cleaned_content)
+        title = rewritten["title"]
+        cleaned_content = rewritten["content"]
     
     # Generate display name
     display_name = generate_display_name(post["author"])
     
     # Assign a category
-    category_id = assign_category(post["title"] + " " + cleaned_content, categories)
+    category_id = assign_category(title + " " + cleaned_content, categories)
     
     # Select a random user as the author
     author_id = random.choice(user_ids)
@@ -285,7 +379,7 @@ def create_letter_from_post(post: Dict[str, Any], categories: List[Dict[str, Any
         "id": str(uuid.uuid4()),
         "author_id": author_id,
         "display_name": display_name,
-        "title": post["title"],
+        "title": title,
         "content": cleaned_content,
         "category_id": category_id,
         "created_at": datetime.utcfromtimestamp(post["created_utc"]).isoformat(),

@@ -21,13 +21,14 @@ from populate_from_reddit import (
     assign_category,
     assign_category_keyword,
     assign_category_with_ollama,
+    rewrite_post_with_ollama,
     generate_display_name
 )
 
 # Load environment variables from .env file
 load_dotenv()
 
-def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=False):
+def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=False, test_rewrite=False):
     """
     Test the Reddit API connection and print fetched posts.
     
@@ -37,6 +38,7 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=F
         time_filter: Time filter for Reddit API (hour, day, week, month, year, all)
         verbose: Whether to print full post content
         force_ollama: Whether to force using Ollama for categorization
+        test_rewrite: Whether to test post rewriting with Ollama
     """
     print(f"Testing Reddit API connection...")
     print(f"Fetching {limit} posts from r/{subreddit} for time filter: {time_filter}")
@@ -87,19 +89,40 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=F
             # Test content cleaning
             cleaned_content = clean_content(post['content'])
             
-            if verbose:
-                print(f"\nOriginal Content:")
-                print(post['content'])
-                print(f"\nCleaned Content:")
-                print(cleaned_content)
+            # Test post rewriting if enabled
+            if test_rewrite:
+                print("\n🖊️ Testing post rewriting with Ollama...")
+                rewritten = rewrite_post_with_ollama(post['title'], cleaned_content)
+                print(f"\nOriginal Title: {post['title']}")
+                print(f"Rewritten Title: {rewritten['title']}")
+                
+                if verbose:
+                    print("\nOriginal Content:")
+                    print(cleaned_content)
+                    print("\nRewritten Content:")
+                    print(rewritten['content'])
+                else:
+                    content_preview = cleaned_content[:150] + "..." if len(cleaned_content) > 150 else cleaned_content
+                    rewritten_preview = rewritten['content'][:150] + "..." if len(rewritten['content']) > 150 else rewritten['content']
+                    print(f"\nOriginal Content Preview: {content_preview}")
+                    print(f"Rewritten Content Preview: {rewritten_preview}")
+                
+                # Use the rewritten content for category assignment
+                combined_content = rewritten['title'] + " " + rewritten['content']
             else:
-                content_preview = cleaned_content[:150] + "..." if len(cleaned_content) > 150 else cleaned_content
-                print(f"\nCleaned Content Preview: {content_preview}")
+                if verbose:
+                    print(f"\nOriginal Content:")
+                    print(post['content'])
+                    print(f"\nCleaned Content:")
+                    print(cleaned_content)
+                else:
+                    content_preview = cleaned_content[:150] + "..." if len(cleaned_content) > 150 else cleaned_content
+                    print(f"\nCleaned Content Preview: {content_preview}")
+                
+                # Use the original cleaned content for category assignment
+                combined_content = post['title'] + " " + cleaned_content
             
             # Test category assignment
-            combined_content = post['title'] + " " + cleaned_content
-            
-            # Compare Ollama vs keyword categorization
             if use_ollama:
                 category_id_ollama = assign_category_with_ollama(combined_content, categories)
                 category_name_ollama = next((cat["name"] for cat in categories if cat["id"] == category_id_ollama), "Unknown")
@@ -139,10 +162,12 @@ def main():
                         help="Print full post content instead of preview")
     parser.add_argument("--force-ollama", action="store_true",
                         help="Force using Ollama for categorization even if not enabled in .env")
+    parser.add_argument("--test-rewrite", action="store_true",
+                        help="Test post rewriting with Ollama")
     
     args = parser.parse_args()
     
-    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose, args.force_ollama)
+    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose, args.force_ollama, args.test_rewrite)
 
 if __name__ == "__main__":
     main() 
