@@ -27,20 +27,7 @@ from populate_from_reddit import (
 # Load environment variables from .env file
 load_dotenv()
 
-# Fallback mock categories for testing if Supabase connection fails
-FALLBACK_CATEGORIES = [
-    {"id": "1", "name": "Love", "description": "Posts about relationships, dating, marriage, breakups"},
-    {"id": "2", "name": "Financial", "description": "Money matters, jobs, career, debt, finances"},
-    {"id": "3", "name": "Family", "description": "Parents, children, siblings, family relationships"},
-    {"id": "4", "name": "Friendship", "description": "Friends, social circles, colleagues"},
-    {"id": "5", "name": "Vent", "description": "Complaints, frustrations, anger, rants"},
-    {"id": "6", "name": "Health", "description": "Physical and mental health, medical issues"},
-    {"id": "7", "name": "Reflections", "description": "Self-improvement, thoughts, contemplation"},
-    {"id": "8", "name": "Intimacy", "description": "Sex, physical relationships, attraction"},
-    {"id": "9", "name": "Spiritual", "description": "Religion, faith, spirituality, belief systems"}
-]
-
-def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=False, use_mock=False):
+def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=False):
     """
     Test the Reddit API connection and print fetched posts.
     
@@ -50,7 +37,6 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=F
         time_filter: Time filter for Reddit API (hour, day, week, month, year, all)
         verbose: Whether to print full post content
         force_ollama: Whether to force using Ollama for categorization
-        use_mock: Whether to use mock categories instead of fetching from Supabase
     """
     print(f"Testing Reddit API connection...")
     print(f"Fetching {limit} posts from r/{subreddit} for time filter: {time_filter}")
@@ -60,30 +46,20 @@ def test_reddit_api(subreddit, limit, time_filter, verbose=False, force_ollama=F
         reddit = setup_reddit()
         print("✅ Successfully connected to Reddit API")
         
-        # Get categories from Supabase or use mock categories
-        categories = FALLBACK_CATEGORIES
-        if not use_mock:
-            try:
-                # Setup Supabase client
-                supabase = setup_supabase()
-                print("✅ Successfully connected to Supabase")
-                
-                # Fetch real categories from Supabase
-                categories = get_categories(supabase)
-                print(f"✅ Fetched {len(categories)} categories from Supabase")
-                
-                # Display category info
-                if verbose:
-                    print("\n=== Available Categories ===")
-                    for cat in categories:
-                        print(f"• {cat['name']}: {cat.get('description', 'No description')}")
-                    print("")
-                
-            except Exception as e:
-                print(f"❌ Error connecting to Supabase or fetching categories: {e}")
-                print("⚠️ Using fallback mock categories instead")
-        else:
-            print("ℹ️ Using mock categories as requested")
+        # Setup Supabase client and get categories
+        supabase = setup_supabase()
+        print("✅ Successfully connected to Supabase")
+        
+        # Fetch real categories from Supabase
+        categories = get_categories(supabase)
+        print(f"✅ Fetched {len(categories)} categories from Supabase")
+        
+        # Display category info
+        if verbose:
+            print("\n=== Available Categories ===")
+            for cat in categories:
+                print(f"• {cat['name']}: {cat.get('description', 'No description')}")
+            print("")
         
         # Fetch posts
         posts = fetch_posts(reddit, subreddit, limit, time_filter)
@@ -163,12 +139,10 @@ def main():
                         help="Print full post content instead of preview")
     parser.add_argument("--force-ollama", action="store_true",
                         help="Force using Ollama for categorization even if not enabled in .env")
-    parser.add_argument("--use-mock", action="store_true",
-                        help="Use mock categories instead of fetching from Supabase")
     
     args = parser.parse_args()
     
-    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose, args.force_ollama, args.use_mock)
+    test_reddit_api(args.subreddit, args.limit, args.time, args.verbose, args.force_ollama)
 
 if __name__ == "__main__":
     main() 
