@@ -85,7 +85,7 @@ const HomeScreen = () => {
         
         // If the user has read any letters, exclude those from the results
         if (readLetterIds.length > 0) {
-          query.not('id', 'in', readLetterIds);
+          query.filter('id', 'not.in', `(${readLetterIds.join(',')})`);
         }
         
         const { data: preferredLetters, error: preferredError } = await query;
@@ -121,12 +121,12 @@ const HomeScreen = () => {
         
         // If we have any IDs to exclude, do so
         if (excludeIds.length > 0) {
-          query.not('id', 'in', excludeIds);
+          query.filter('id', 'not.in', `(${excludeIds.join(',')})`);
         }
         
         // Exclude preferred categories since we already queried those
         if (preferredCategoryIds.length > 0) {
-          query.not('category_id', 'in', preferredCategoryIds);
+          query.filter('category_id', 'not.in', `(${preferredCategoryIds.join(',')})`);
         }
         
         const { data: additionalLetters, error: additionalError } = await query;
