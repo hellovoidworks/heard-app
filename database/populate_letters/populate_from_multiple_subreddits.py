@@ -10,11 +10,12 @@ from typing import List, Dict, Any
 import argparse
 from dotenv import load_dotenv
 from supabase import create_client, Client
+import time
 
 # Import functions from the main script
 from populate_from_reddit import (
     setup_reddit, setup_supabase, get_categories,
-    fetch_posts, create_letter_from_post, save_letters,
+    fetch_posts, create_letter_from_post, save_letter,
     get_user_ids, rewrite_post_with_ollama
 )
 
@@ -192,23 +193,25 @@ def main():
         
         print(f"\nFetched {len(posts)} total posts across all categories")
         
-        # Convert posts to letters
-        letters = []
-        for post in posts:
+        # Convert posts to letters and save immediately
+        successful_saves = 0
+        for i, post in enumerate(posts, 1):
             try:
+                print(f"\nProcessing post {i}/{len(posts)}: {post['title'][:30]}...")
                 letter = create_letter_from_post(post, categories, user_ids)
-                letters.append(letter)
-                print(f"Created letter: {letter['title'][:30]}...")
+                
+                # Save the letter immediately
+                if save_letter(supabase, letter):
+                    successful_saves += 1
+                
+                # Small delay to avoid rate limits
+                time.sleep(0.5)
+                
             except Exception as e:
-                print(f"Error creating letter from post {post['id']}: {e}")
+                print(f"❌ Error creating letter from post {post['id']}: {e}")
         
-        # Save letters to the database
-        if letters:
-            print(f"\nSaving {len(letters)} letters to the database...")
-            save_letters(supabase, letters)
-            print("Done!")
-        else:
-            print("\nNo letters created. Exiting.")
+        print(f"\n✅ Successfully saved {successful_saves} out of {len(posts)} letters")
+        print("Done!")
     
     except Exception as e:
         print(f"\nAn error occurred: {e}")

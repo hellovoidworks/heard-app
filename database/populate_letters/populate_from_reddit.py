@@ -398,22 +398,23 @@ def get_user_ids(supabase: Client) -> List[str]:
     return USER_IDS
 
 
-def save_letters(supabase: Client, letters: List[Dict[str, Any]]) -> None:
-    """Save letters to the database."""
-    # Insert in batches to avoid hitting limits
-    batch_size = 10
-    batches = [letters[i:i + batch_size] for i in range(0, len(letters), batch_size)]
+def save_letter(supabase: Client, letter: Dict[str, Any]) -> bool:
+    """Save a single letter to the database.
     
-    total_inserted = 0
-    for batch in batches:
-        response = supabase.table("letters").insert(batch).execute()
+    Returns:
+        True if successful, False otherwise.
+    """
+    try:
+        response = supabase.table("letters").insert(letter).execute()
         if response.data:
-            total_inserted += len(response.data)
-        
-        # Sleep to avoid rate limits
-        time.sleep(1)
-    
-    print(f"Successfully inserted {total_inserted} letters")
+            print(f"✅ Saved letter: {letter['title'][:30]}...")
+            return True
+        else:
+            print(f"❌ Failed to save letter: {letter['title'][:30]}...")
+            return False
+    except Exception as e:
+        print(f"❌ Error saving letter to database: {e}")
+        return False
 
 
 def main():
@@ -436,23 +437,25 @@ def main():
             print("No valid posts found. Exiting.")
             return
         
-        # Convert posts to letters
-        letters = []
-        for post in posts:
+        # Convert posts to letters and save immediately
+        successful_saves = 0
+        for i, post in enumerate(posts, 1):
             try:
+                print(f"\nProcessing post {i}/{len(posts)}: {post['title'][:30]}...")
                 letter = create_letter_from_post(post, categories, user_ids)
-                letters.append(letter)
-                print(f"Created letter: {letter['title'][:30]}...")
+                
+                # Save the letter immediately
+                if save_letter(supabase, letter):
+                    successful_saves += 1
+                
+                # Small delay to avoid rate limits
+                time.sleep(0.5)
+                
             except Exception as e:
-                print(f"Error creating letter from post {post['id']}: {e}")
+                print(f"❌ Error creating letter from post {post['id']}: {e}")
         
-        # Save letters to the database
-        if letters:
-            print(f"Saving {len(letters)} letters to the database...")
-            save_letters(supabase, letters)
-            print("Done!")
-        else:
-            print("No letters created. Exiting.")
+        print(f"\n✅ Successfully saved {successful_saves} out of {len(posts)} letters")
+        print("Done!")
     
     except Exception as e:
         print(f"An error occurred: {e}")
