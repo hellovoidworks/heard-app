@@ -43,15 +43,52 @@ const CorrespondenceTab = () => {
         return;
       }
 
-      if (!authoredLetters || authoredLetters.length === 0) {
+      // Get the unique letter IDs authored by the user
+      const authoredLetterIds = authoredLetters ? authoredLetters.map(letter => letter.id) : [];
+      
+      // Next, get all replies by the current user to find letters they've replied to
+      const { data: myReplies, error: myRepliesError } = await supabase
+        .from('replies')
+        .select('letter_id')
+        .eq('author_id', user.id);
+        
+      if (myRepliesError) {
+        console.error('Error fetching user replies:', myRepliesError);
+        return;
+      }
+      
+      // Extract unique letter IDs from replies (letters the user has replied to)
+      const repliedToLetterIds = myReplies 
+        ? [...new Set(myReplies.map(reply => reply.letter_id))]
+        : [];
+      
+      // Get details of letters the user has replied to (that they did not author)
+      const { data: repliedToLetters, error: repliedToLettersError } = await supabase
+        .from('letters')
+        .select('id, title, content, created_at, author_id')
+        .in('id', repliedToLetterIds)
+        .not('author_id', 'eq', user.id);  // Exclude letters the user authored
+        
+      if (repliedToLettersError) {
+        console.error('Error fetching replied to letters:', repliedToLettersError);
+        return;
+      }
+      
+      // Combine both sets of letters
+      const allRelevantLetters = [
+        ...(authoredLetters || []),
+        ...(repliedToLetters || [])
+      ];
+      
+      if (allRelevantLetters.length === 0) {
         setCorrespondences([]);
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      // Get the letter IDs
-      const letterIds = authoredLetters.map(letter => letter.id);
+      // Get the complete set of letter IDs to work with
+      const allLetterIds = allRelevantLetters.map(letter => letter.id);
 
       // Fetch replies for each letter
       const { data: replyData, error: replyError } = await supabase
@@ -63,7 +100,7 @@ const CorrespondenceTab = () => {
           author_id,
           created_at
         `)
-        .in('letter_id', letterIds)
+        .in('letter_id', allLetterIds)
         .order('created_at', { ascending: false });
 
       if (replyError) {
@@ -74,7 +111,7 @@ const CorrespondenceTab = () => {
       // Get count of unread replies
       const { data: unreadCounts, error: unreadError } = await supabase.rpc(
         'get_unread_reply_count',
-        { p_user_id: user.id, p_letter_ids: letterIds }
+        { p_user_id: user.id, p_letter_ids: allLetterIds }
       );
 
       if (unreadError) {
@@ -101,8 +138,17 @@ const CorrespondenceTab = () => {
       }
 
       // Format correspondences for each letter with replies
-      const formattedCorrespondences = authoredLetters
-        .filter(letter => letterRepliesMap.has(letter.id))
+      const formattedCorrespondences = allRelevantLetters
+        // Include letters authored by the user that have received replies
+        // or letters authored by others that the user has replied to
+        .filter(letter => {
+          // For letters the user authored, only include those with replies from others
+          if (letter.author_id === user.id) {
+            return letterRepliesMap.has(letter.id);
+          }
+          // For letters authored by others, include them as long as the user has replied
+          return letterRepliesMap.has(letter.id);
+        })
         .map(letter => {
           const replies = letterRepliesMap.get(letter.id) || [];
           const latestReply = replies.length > 0 ? replies[0] : null;
@@ -121,7 +167,9 @@ const CorrespondenceTab = () => {
             unread_count: unreadCountMap.get(letter.id) || 0,
             participants: Array.from(participants) as string[],
           };
-        });
+        })
+        // Sort by the most recent message
+        .sort((a, b) => new Date(b.last_message_date).getTime() - new Date(a.last_message_date).getTime());
 
       setCorrespondences(formattedCorrespondences);
     } catch (error) {
