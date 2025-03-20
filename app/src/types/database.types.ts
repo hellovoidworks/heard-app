@@ -32,8 +32,19 @@ export type Letter = {
   title: string;
   content: string;
   category_id: string;
-  parent_id: string | null;
-  thread_id: string | null;
+  parent_id: string | null; // Will be deprecated in favor of replies table
+  thread_id: string | null; // Will be deprecated in favor of replies table
+  created_at: string;
+  updated_at: string;
+};
+
+export type Reply = {
+  id: string;
+  letter_id: string;
+  author_id: string;
+  display_name: string;
+  content: string;
+  reply_to_id: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -72,6 +83,14 @@ export type LetterRead = {
   created_at: string;
 };
 
+export type ReplyRead = {
+  id: string;
+  user_id: string;
+  reply_id: string;
+  read_at: string;
+  created_at: string;
+};
+
 export type LetterReceived = {
   id: string;
   user_id: string;
@@ -87,12 +106,153 @@ export type LetterWithDetails = Letter & {
   category: Category;
   author: UserProfile;
   reactions: Reaction[];
+  replies?: Reply[];
   is_read?: boolean;
   display_order?: number;
+};
+
+export type ReplyWithDetails = Reply & {
+  author: UserProfile;
+  is_read?: boolean;
 };
 
 export type NotificationWithDetails = Notification & {
   sender?: UserProfile;
   letter?: Letter;
   reaction?: Reaction;
-}; 
+};
+
+export interface Database {
+  public: {
+    Tables: {
+      reactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          letter_id: string;
+          reaction_type: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          letter_id: string;
+          reaction_type: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          letter_id?: string;
+          reaction_type?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reactions_letter_id_fkey";
+            columns: ["letter_id"];
+            referencedRelation: "letters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reactions_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      
+      replies: {
+        Row: {
+          id: string;
+          letter_id: string;
+          author_id: string;
+          display_name: string;
+          content: string;
+          reply_to_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          letter_id: string;
+          author_id: string;
+          display_name: string;
+          content: string;
+          reply_to_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          letter_id?: string;
+          author_id?: string;
+          display_name?: string;
+          content?: string;
+          reply_to_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "replies_letter_id_fkey";
+            columns: ["letter_id"];
+            referencedRelation: "letters";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "replies_author_id_fkey";
+            columns: ["author_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "replies_reply_to_id_fkey";
+            columns: ["reply_to_id"];
+            referencedRelation: "replies";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+      
+      reply_reads: {
+        Row: {
+          id: string;
+          user_id: string;
+          reply_id: string;
+          read_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reply_id: string;
+          read_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          reply_id?: string;
+          read_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reply_reads_reply_id_fkey";
+            columns: ["reply_id"];
+            referencedRelation: "replies";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "reply_reads_user_id_fkey";
+            columns: ["user_id"];
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          }
+        ];
+      };
+    };
+  };
+} 

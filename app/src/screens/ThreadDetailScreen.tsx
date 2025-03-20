@@ -17,13 +17,14 @@ import { useAuth } from '../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
-import { LetterWithDetails } from '../types/database.types';
+import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
 const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { threadId } = route.params;
-  const [letters, setLetters] = useState<LetterWithDetails[]>([]);
+  const { letterId } = route.params; // Now using letterId instead of threadId
+  const [letter, setLetter] = useState<LetterWithDetails | null>(null);
+  const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -31,38 +32,57 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { user, profile } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
 
-  const fetchThreadMessages = async () => {
+  const fetchLetterAndReplies = async () => {
     try {
       setLoading(true);
       
-      if (!user || !threadId) return;
+      if (!user || !letterId) return;
 
-      // Get all letters in this thread
-      const { data: lettersData, error: lettersError } = await supabase
+      // Get the original letter
+      const { data: letterData, error: letterError } = await supabase
         .from('letters')
         .select(`
           *,
           category:categories(*),
           author:user_profiles!letters_author_id_fkey(*)
         `)
-        .eq('thread_id', threadId)
-        .order('created_at', { ascending: true });
+        .eq('id', letterId)
+        .single();
 
-      if (lettersError) {
-        console.error('Error fetching thread messages:', lettersError);
+      if (letterError) {
+        console.error('Error fetching letter:', letterError);
         return;
       }
 
-      if (lettersData) {
-        setLetters(lettersData as LetterWithDetails[]);
+      if (letterData) {
+        setLetter(letterData as LetterWithDetails);
         
-        // Mark unread messages as read
-        const unreadLetterIds = lettersData
-          .filter(letter => letter.author_id !== user.id)
-          .map(letter => letter.id);
+        // Get all replies to this letter
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('replies')
+          .select(`
+            *,
+            author:user_profiles!replies_author_id_fkey(*)
+          `)
+          .eq('letter_id', letterId)
+          .order('created_at', { ascending: true });
+
+        if (repliesError) {
+          console.error('Error fetching replies:', repliesError);
+          return;
+        }
+
+        if (repliesData) {
+          setReplies(repliesData as ReplyWithDetails[]);
           
-        if (unreadLetterIds.length > 0) {
-          await markMessagesAsRead(unreadLetterIds);
+          // Mark unread replies as read
+          const unreadReplyIds = repliesData
+            .filter(reply => reply.author_id !== user.id)
+            .map(reply => reply.id);
+            
+          if (unreadReplyIds.length > 0) {
+            await markRepliesAsRead(unreadReplyIds);
+          }
         }
       }
     } catch (error) {
@@ -73,54 +93,52 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
   
-  const markMessagesAsRead = async (letterIds: string[]) => {
+  const markRepliesAsRead = async (replyIds: string[]) => {
     if (!user) return;
     
     try {
-      const readRecords = letterIds.map(letterId => ({
+      const readRecords = replyIds.map(replyId => ({
         user_id: user.id,
-        letter_id: letterId,
+        reply_id: replyId,
         read_at: new Date().toISOString()
       }));
       
       const { error } = await supabase
-        .from('letter_reads')
+        .from('reply_reads')
         .upsert(readRecords, {
-          onConflict: 'user_id,letter_id',
+          onConflict: 'user_id,reply_id',
           ignoreDuplicates: true
         });
         
       if (error) {
-        console.error('Error marking messages as read:', error);
+        console.error('Error marking replies as read:', error);
       }
     } catch (error) {
-      console.error('Error marking messages as read:', error);
+      console.error('Error marking replies as read:', error);
     }
   };
 
   const handleSendReply = async () => {
-    if (!user || !profile || !replyText.trim() || letters.length === 0) return;
+    if (!user || !profile || !replyText.trim() || !letter) return;
     
     try {
       setSendingReply(true);
       
-      // Get the original letter (first letter in the thread)
-      const originalLetter = letters[0];
-      
       const { data, error } = await supabase
-        .from('letters')
+        .from('replies')
         .insert([
           {
+            letter_id: letter.id,
             author_id: user.id,
             display_name: profile.username,
-            title: `Re: ${originalLetter.title}`,
             content: replyText,
-            category_id: originalLetter.category_id,
-            parent_id: originalLetter.id,
-            thread_id: threadId,
+            reply_to_id: null // Direct reply to the letter, not to another reply
           }
         ])
-        .select()
+        .select(`
+          *,
+          author:user_profiles!replies_author_id_fkey(*)
+        `)
         .single();
         
       if (error) {
@@ -129,16 +147,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
       
       if (data) {
-        // Add the new message to the list with author information
-        const newMessage = {
-          ...data,
-          author: {
-            id: user.id,
-            username: profile.username
-          }
-        } as LetterWithDetails;
-        
-        setLetters([...letters, newMessage]);
+        // Add the new reply to the list
+        setReplies([...replies, data as ReplyWithDetails]);
         setReplyText('');
         
         // Scroll to bottom after sending
@@ -154,22 +164,22 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    fetchThreadMessages();
-  }, [threadId, user]);
+    fetchLetterAndReplies();
+  }, [letterId, user]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchThreadMessages();
+    fetchLetterAndReplies();
   };
 
   // Scroll to bottom when thread loads
   useEffect(() => {
-    if (!loading && letters.length > 0) {
+    if (!loading && replies.length > 0) {
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       }, 200);
     }
-  }, [loading, letters.length]);
+  }, [loading, replies.length]);
 
   if (loading && !refreshing) {
     return (
@@ -179,18 +189,16 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   }
 
-  if (letters.length === 0) {
+  if (!letter) {
     return (
       <View style={styles.emptyContainer}>
-        <Text>No messages found</Text>
+        <Text>Letter not found</Text>
         <Button mode="contained" onPress={() => navigation.goBack()}>
           Go Back
         </Button>
       </View>
     );
   }
-
-  const originalLetter = letters[0];
 
   return (
     <KeyboardAvoidingView 
@@ -199,9 +207,9 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
       <View style={styles.header}>
-        <Title>{originalLetter.title}</Title>
+        <Title>{letter.title}</Title>
         <Chip icon="tag" style={styles.categoryChip}>
-          {originalLetter.category?.name}
+          {letter.category?.name}
         </Chip>
       </View>
       
@@ -212,12 +220,28 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {letters.map((letter, index) => {
-          const isFromCurrentUser = user && letter.author_id === user.id;
+        {/* Original Letter */}
+        <Surface style={styles.originalLetter}>
+          <View style={styles.messageHeader}>
+            <Text style={styles.authorName}>
+              {letter.display_name || letter.author?.username || 'Unknown User'}
+            </Text>
+            <Text style={styles.messageDate}>
+              {format(new Date(letter.created_at), 'MMM d, h:mm a')}
+            </Text>
+          </View>
+          <Paragraph style={styles.messageContent}>{letter.content}</Paragraph>
+        </Surface>
+        
+        {replies.length > 0 && <Divider style={styles.divider} />}
+        
+        {/* Replies */}
+        {replies.map((reply) => {
+          const isFromCurrentUser = user && reply.author_id === user.id;
           
           return (
             <Surface 
-              key={letter.id} 
+              key={reply.id} 
               style={[
                 styles.messageBubble, 
                 isFromCurrentUser ? styles.sentBubble : styles.receivedBubble
@@ -225,13 +249,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             >
               <View style={styles.messageHeader}>
                 <Text style={styles.authorName}>
-                  {letter.display_name || letter.author?.username || 'Unknown User'}
+                  {reply.display_name || reply.author?.username || 'Unknown User'}
                 </Text>
                 <Text style={styles.messageDate}>
-                  {format(new Date(letter.created_at), 'MMM d, h:mm a')}
+                  {format(new Date(reply.created_at), 'MMM d, h:mm a')}
                 </Text>
               </View>
-              <Paragraph style={styles.messageContent}>{letter.content}</Paragraph>
+              <Paragraph style={styles.messageContent}>{reply.content}</Paragraph>
             </Surface>
           );
         })}
@@ -286,6 +310,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  originalLetter: {
+    padding: 16,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    marginBottom: 24,
+    elevation: 2,
+  },
   messageBubble: {
     padding: 12,
     borderRadius: 12,
@@ -339,6 +370,9 @@ const styles = StyleSheet.create({
   categoryChip: {
     alignSelf: 'flex-start',
     marginTop: 4,
+  },
+  divider: {
+    marginBottom: 16,
   },
 });
 

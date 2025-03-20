@@ -10,8 +10,8 @@ import { format } from 'date-fns';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-type Thread = {
-  id: string;
+type Correspondence = {
+  letter_id: string;
   title: string;
   last_message: string;
   last_message_date: string;
@@ -19,114 +19,111 @@ type Thread = {
   participants: string[];
 };
 
-interface LetterData {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  thread_id: string;
-  parent_id: string | null;
-  author_id: string;
-  recipient_id: string;
-  is_read?: boolean;
-}
-
 const CorrespondenceTab = () => {
-  const [threads, setThreads] = useState<Thread[]>([]);
+  const [correspondences, setCorrespondences] = useState<Correspondence[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
 
-  const fetchThreads = async () => {
+  const fetchCorrespondences = async () => {
     try {
       setLoading(true);
       
       if (!user) return;
 
-      // Get all letters that the user has either written or received
-      const { data: lettersData, error: lettersError } = await supabase
+      // First, get all letters authored by the current user
+      const { data: authoredLetters, error: letterError } = await supabase
         .from('letters')
-        .select(`
-          id,
-          title,
-          content,
-          created_at,
-          thread_id,
-          parent_id,
-          author_id,
-          recipient_id
-        `)
-        .or(`author_id.eq.${user.id},recipient_id.eq.${user.id}`)
-        .order('created_at', { ascending: false });
+        .select('id, title, content, created_at, author_id')
+        .eq('author_id', user.id);
 
-      if (lettersError) {
-        console.error('Error fetching letters:', lettersError);
+      if (letterError) {
+        console.error('Error fetching authored letters:', letterError);
         return;
       }
 
-      if (!lettersData || lettersData.length === 0) {
-        setThreads([]);
+      if (!authoredLetters || authoredLetters.length === 0) {
+        setCorrespondences([]);
         setLoading(false);
         setRefreshing(false);
         return;
       }
 
-      // Group letters by thread_id
-      const threadMap = new Map<string, {
-        id: string;
-        title: string;
-        letters: LetterData[];
-        participants: Set<string>;
-      }>();
-      
-      for (const letter of lettersData as LetterData[]) {
-        // Skip letters without a thread_id (standalone letters)
-        if (!letter.thread_id) continue;
-        
-        if (!threadMap.has(letter.thread_id)) {
-          threadMap.set(letter.thread_id, {
-            id: letter.thread_id,
-            title: letter.title,
-            letters: [],
-            participants: new Set<string>(),
-          });
-        }
-        
-        const thread = threadMap.get(letter.thread_id)!;
-        thread.letters.push(letter);
-        
-        // Add participants
-        if (letter.author_id) thread.participants.add(letter.author_id);
-        if (letter.recipient_id) thread.participants.add(letter.recipient_id);
+      // Get the letter IDs
+      const letterIds = authoredLetters.map(letter => letter.id);
+
+      // Fetch replies for each letter
+      const { data: replyData, error: replyError } = await supabase
+        .from('replies')
+        .select(`
+          id, 
+          letter_id, 
+          content,
+          author_id,
+          created_at
+        `)
+        .in('letter_id', letterIds)
+        .order('created_at', { ascending: false });
+
+      if (replyError) {
+        console.error('Error fetching replies:', replyError);
+        return;
       }
-      
-      // Format threads for display
-      const formattedThreads = Array.from(threadMap.values()).map(thread => {
-        // Sort letters by date (newest first)
-        const sortedLetters = thread.letters.sort((a: LetterData, b: LetterData) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        
-        // Get the most recent letter
-        const lastLetter = sortedLetters[0];
-        
-        // Count unread letters in this thread
-        const unreadCount = sortedLetters.filter((letter: LetterData) => 
-          letter.recipient_id === user.id && !letter.is_read
-        ).length;
-        
-        return {
-          id: thread.id,
-          title: thread.title,
-          last_message: lastLetter.content.substring(0, 100) + (lastLetter.content.length > 100 ? '...' : ''),
-          last_message_date: lastLetter.created_at,
-          unread_count: unreadCount,
-          participants: Array.from(thread.participants) as string[],
-        };
-      });
-      
-      setThreads(formattedThreads);
+
+      // Get count of unread replies
+      const { data: unreadCounts, error: unreadError } = await supabase.rpc(
+        'get_unread_reply_count',
+        { p_user_id: user.id, p_letter_ids: letterIds }
+      );
+
+      if (unreadError) {
+        console.error('Error fetching unread counts:', unreadError);
+      }
+
+      // Create a map for unread counts
+      const unreadCountMap = new Map<string, number>();
+      if (unreadCounts) {
+        unreadCounts.forEach((item: { letter_id: string, unread_count: number }) => {
+          unreadCountMap.set(item.letter_id, item.unread_count);
+        });
+      }
+
+      // Group replies by letter_id
+      const letterRepliesMap = new Map<string, Array<any>>();
+      if (replyData) {
+        replyData.forEach(reply => {
+          if (!letterRepliesMap.has(reply.letter_id)) {
+            letterRepliesMap.set(reply.letter_id, []);
+          }
+          letterRepliesMap.get(reply.letter_id)!.push(reply);
+        });
+      }
+
+      // Format correspondences for each letter with replies
+      const formattedCorrespondences = authoredLetters
+        .filter(letter => letterRepliesMap.has(letter.id))
+        .map(letter => {
+          const replies = letterRepliesMap.get(letter.id) || [];
+          const latestReply = replies.length > 0 ? replies[0] : null;
+          const participants = new Set<string>();
+          
+          participants.add(letter.author_id);
+          replies.forEach(reply => participants.add(reply.author_id));
+          
+          return {
+            letter_id: letter.id,
+            title: letter.title,
+            last_message: latestReply 
+              ? latestReply.content.substring(0, 100) + (latestReply.content.length > 100 ? '...' : '')
+              : letter.content.substring(0, 100) + (letter.content.length > 100 ? '...' : ''),
+            last_message_date: latestReply ? latestReply.created_at : letter.created_at,
+            unread_count: unreadCountMap.get(letter.id) || 0,
+            participants: Array.from(participants) as string[],
+          };
+        });
+
+      setCorrespondences(formattedCorrespondences);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -136,23 +133,23 @@ const CorrespondenceTab = () => {
   };
 
   useEffect(() => {
-    fetchThreads();
+    fetchCorrespondences();
   }, [user]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchThreads();
+    fetchCorrespondences();
   };
 
-  const handleThreadPress = (thread: Thread) => {
-    // Navigate to the thread detail screen
-    navigation.navigate('ThreadDetail', { threadId: thread.id });
+  const handleCorrespondencePress = (correspondence: Correspondence) => {
+    // Navigate to the thread detail screen with the letter ID
+    navigation.navigate('ThreadDetail', { letterId: correspondence.letter_id });
   };
 
-  const renderThreadItem = ({ item }: { item: Thread }) => (
+  const renderCorrespondenceItem = ({ item }: { item: Correspondence }) => (
     <Card 
       style={[styles.card, item.unread_count > 0 && styles.unreadCard]} 
-      onPress={() => handleThreadPress(item)}
+      onPress={() => handleCorrespondencePress(item)}
     >
       <Card.Content>
         <View style={styles.headerRow}>
@@ -180,9 +177,9 @@ const CorrespondenceTab = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={threads}
-        renderItem={renderThreadItem}
-        keyExtractor={(item) => item.id}
+        data={correspondences}
+        renderItem={renderCorrespondenceItem}
+        keyExtractor={(item) => item.letter_id}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />

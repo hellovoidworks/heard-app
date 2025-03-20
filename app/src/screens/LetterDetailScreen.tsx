@@ -196,20 +196,15 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       setSendingResponse(true);
       
-      // Get thread_id (either the parent's thread_id or the parent's id if it's the first reply)
-      const threadId = letter.thread_id || letter.id;
-      
       const { error } = await supabase
-        .from('letters')
+        .from('replies')
         .insert([
           {
+            letter_id: letter.id,
             author_id: user.id,
             display_name: profile.username,
-            title: `Re: ${letter.title}`,
             content: responseText,
-            category_id: letter.category_id,
-            parent_id: letter.id,
-            thread_id: threadId,
+            reply_to_id: null // Direct reply to the letter
           }
         ]);
         
