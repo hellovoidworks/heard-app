@@ -1,9 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
-import { Linking, Platform, Alert, LogBox } from 'react-native';
+import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
 
 console.log('=== App initialization started ===');
 
@@ -16,6 +16,10 @@ LogBox.ignoreLogs([
 
 export default function App() {
   console.log('=== App component rendering ===');
+  // This reference will be passed to AuthProvider to force a reset when needed
+  const [forceReset, setForceReset] = useState(0);
+  // State to show a loading screen during Magic Link auth
+  const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   
   useEffect(() => {
     console.log('=== App useEffect running ===');
@@ -26,6 +30,8 @@ export default function App() {
       
       if (url && url.includes('auth/callback')) {
         console.log('Auth callback detected in URL');
+        // Show loading overlay during Magic Link auth
+        setMagicLinkLoading(true);
         
         try {
           // Extract the refresh token and access token from the URL
@@ -53,6 +59,7 @@ export default function App() {
               if (error) {
                 console.error('Error setting session:', error);
                 Alert.alert('Authentication Error', 'Failed to authenticate with the provided link.');
+                setMagicLinkLoading(false);
                 return;
               }
               
@@ -66,6 +73,7 @@ export default function App() {
               if (!sessionCheckData?.session?.user) {
                 console.error('Session set but user not available');
                 Alert.alert('Authentication Error', 'Failed to retrieve user data after authentication.');
+                setMagicLinkLoading(false);
                 return;
               }
               
@@ -117,47 +125,34 @@ export default function App() {
                   }
                 } catch (createProfileError) {
                   console.error('Exception creating profile:', createProfileError);
-                  // Continue anyway, as AuthContext will retry profile creation
                 }
               }
               
-              // Manual refresh of auth state to trigger profile loading
-              console.log('Re-triggering auth state change event');
-              // This emulates a SIGNED_IN event to make sure profile is properly loaded
-              const { data: tempListener } = supabase.auth.onAuthStateChange((_, session) => {
-                if (session) {
-                  console.log('Manually triggered auth state event with session');
-                  // Do nothing, just triggering the event
-                }
-              });
+              // Force reset the auth context to refresh the state
+              console.log('Forcing reset of auth context');
+              setForceReset(prev => prev + 1);
               
-              // Refresh the session to trigger auth state change
-              console.log('Refreshing session to trigger auth state change');
-              await supabase.auth.refreshSession();
-              
-              // Remove the temporary listener after a delay
-              setTimeout(() => {
-                console.log('Removing temporary auth listener');
-                tempListener.subscription.unsubscribe();
-              }, 1000);
-              
-              // Force refresh the auth state
+              // Show success message after a short delay
               setTimeout(() => {
                 console.log('Showing success alert after auth');
+                setMagicLinkLoading(false);
                 Alert.alert('Success', 'You have been successfully authenticated!');
-              }, 500);
+              }, 1500);
               
             } catch (sessionError: any) {
               console.error('Exception setting session:', sessionError);
               Alert.alert('Authentication Error', 'Failed to establish your session.');
+              setMagicLinkLoading(false);
             }
           } else {
             console.error('Missing tokens in URL');
             Alert.alert('Authentication Error', 'The authentication link is invalid or expired.');
+            setMagicLinkLoading(false);
           }
         } catch (err) {
           console.error('Exception handling deep link:', err);
           Alert.alert('Authentication Error', 'An error occurred while processing the authentication link.');
+          setMagicLinkLoading(false);
         }
       }
     };
@@ -214,9 +209,27 @@ export default function App() {
   }, []);
 
   console.log('=== Rendering App component with providers ===');
+  
+  // Show a loading screen during Magic Link authentication
+  if (magicLinkLoading) {
+    return (
+      <View style={{ 
+        flex: 1, 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        backgroundColor: '#ffffff'
+      }}>
+        <ActivityIndicator size="large" color="#6200ee" />
+        <Text style={{ marginTop: 15, color: '#6200ee', fontSize: 16 }}>
+          Signing you in...
+        </Text>
+      </View>
+    );
+  }
+  
   return (
     <PaperProvider>
-      <AuthProvider>
+      <AuthProvider key={`auth-provider-${forceReset}`}>
         <AppNavigator />
       </AuthProvider>
     </PaperProvider>

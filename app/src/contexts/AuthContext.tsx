@@ -31,7 +31,7 @@ interface AuthContextData {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
-  signIn: (user: User) => void;
+  signIn: (user: User) => Promise<void>;
   signOut: () => Promise<void>;
   isOnboardingComplete: boolean | null;
   checkOnboardingStatus: () => Promise<boolean>;
@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If no profile found and we haven't exceeded max retries,
         // wait and try again (useful for Magic Link auth where profile creation
         // might happen after auth state change)
-        if (error.code === 'PGRST116' && retryCount < 5) {  // Increase max retries to 5
+        if (error.code === 'PGRST116' && retryCount < 3) {
           console.log(`AuthContext: Profile not found, retrying in ${delay}ms...`);
           
           return new Promise((resolve) => {
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Exception fetching profile:', error);
       
       // Retry on exception too if we haven't exceeded max retries
-      if (retryCount < 5) {  // Increase max retries to 5
+      if (retryCount < 3) {
         console.log(`AuthContext: Exception occurred, retrying in ${delay}ms...`);
         
         return new Promise((resolve) => {
@@ -116,52 +116,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('AuthContext: Active session found for user:', data.session.user.email);
           setUser(data.session.user);
           
-          // Fetch user profile with increased retries and longer delays for Magic Link
-          const userProfile = await fetchProfile(data.session.user.id, 0, 1000);
-          console.log('AuthContext: User profile after fetch:', userProfile ? 'found' : 'not found');
-          
-          if (!userProfile) {
-            console.log('AuthContext: Profile not found, creating a default one');
-            // Create a default profile if none exists to avoid white screen
-            try {
-              const email = data.session.user.email || 'user';
-              const username = email.split('@')[0];
+          try {
+            // Fetch user profile
+            console.log('AuthContext: Fetching profile for active session');
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', data.session.user.id)
+              .single();
+            
+            if (profileError) {
+              console.error('AuthContext: Error fetching profile for active session:', profileError);
               
-              const { error: createError } = await supabase
-                .from('user_profiles')
-                .insert([
-                  { 
+              // If no profile found, create one immediately
+              if (profileError.code === 'PGRST116') {
+                console.log('AuthContext: No profile found for active session, creating one');
+                
+                // Create profile with default values
+                const email = data.session.user.email || 'user';
+                const username = email.split('@')[0];
+                
+                const { error: createError } = await supabase
+                  .from('user_profiles')
+                  .insert([{
                     id: data.session.user.id,
-                    username: username,
+                    username,
                     onboarding_completed: false,
                     notification_preferences: { enabled: false }
-                  }
-                ]);
+                  }]);
                 
-              if (createError) {
-                console.error('AuthContext: Error creating default profile:', createError);
-              } else {
-                console.log('AuthContext: Created default profile');
+                if (createError) {
+                  console.error('AuthContext: Error creating profile during session check:', createError);
+                  setLoading(false);
+                  return;
+                }
+                
                 // Fetch the newly created profile
-                const newProfile = await fetchProfile(data.session.user.id);
-                setProfile(newProfile);
+                const { data: newProfile, error: fetchNewError } = await supabase
+                  .from('user_profiles')
+                  .select('*')
+                  .eq('id', data.session.user.id)
+                  .single();
                 
-                // Set onboarding status
-                const onboardingComplete = newProfile?.onboarding_completed === true;
-                setIsOnboardingComplete(onboardingComplete);
-                console.log('AuthContext: New profile onboarding complete:', onboardingComplete);
+                if (fetchNewError) {
+                  console.error('AuthContext: Error fetching newly created profile:', fetchNewError);
+                  setLoading(false);
+                  return;
+                }
+                
+                // Set profile and onboarding status
+                setProfile(newProfile);
+                setIsOnboardingComplete(newProfile?.onboarding_completed === true);
+                console.log('AuthContext: Created and set profile for active session');
+              } else {
+                setLoading(false);
+                return;
               }
-            } catch (createError) {
-              console.error('AuthContext: Exception creating default profile:', createError);
+            } else {
+              // Profile found, set it
+              console.log('AuthContext: Profile found for active session:', profileData?.username);
+              setProfile(profileData);
+              setIsOnboardingComplete(profileData?.onboarding_completed === true);
             }
-          } else {
-            // Profile was found
-            setProfile(userProfile);
-            
-            // Check onboarding status from profile
-            const onboardingComplete = userProfile?.onboarding_completed === true;
-            setIsOnboardingComplete(onboardingComplete);
-            console.log('AuthContext: Onboarding complete:', onboardingComplete);
+          } catch (e) {
+            console.error('AuthContext: Exception during profile fetch:', e);
           }
         } else {
           console.log('AuthContext: No active session found');
@@ -190,55 +208,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthContext: Auth state changed:', event);
+        
         if (session?.user) {
           console.log('AuthContext: User authenticated:', session.user.email, 'ID:', session.user.id);
           setUser(session.user);
           
-          // For auth state changes, we need more reliable profile fetching with retries
-          const userProfile = await fetchProfile(session.user.id, 0, 1000);
-          console.log('AuthContext: User profile after auth state change:', userProfile ? 'found' : 'not found');
-          
-          if (!userProfile) {
-            console.log('AuthContext: Profile not found after auth, attempting to create default one');
-            // Create a default profile if none exists
-            try {
-              const email = session.user.email || 'user';
-              const username = email.split('@')[0];
+          try {
+            // Fetch user profile directly without retries
+            console.log('AuthContext: Fetching profile after auth state change');
+            const { data: profileData, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profileError) {
+              console.error('AuthContext: Error fetching profile after auth state change:', profileError);
               
-              const { error: createError } = await supabase
-                .from('user_profiles')
-                .insert([
-                  { 
+              // If no profile found, create one immediately
+              if (profileError.code === 'PGRST116') {
+                console.log('AuthContext: No profile found after auth state change, creating one');
+                
+                // Create profile with default values
+                const email = session.user.email || 'user';
+                const username = email.split('@')[0];
+                
+                const { error: createError } = await supabase
+                  .from('user_profiles')
+                  .insert([{
                     id: session.user.id,
-                    username: username,
+                    username,
                     onboarding_completed: false,
                     notification_preferences: { enabled: false }
-                  }
-                ]);
+                  }]);
                 
-              if (createError) {
-                console.error('AuthContext: Error creating default profile after auth:', createError);
-              } else {
-                console.log('AuthContext: Created default profile after auth');
+                if (createError) {
+                  console.error('AuthContext: Error creating profile after auth state change:', createError);
+                  setLoading(false);
+                  return;
+                }
+                
                 // Fetch the newly created profile
-                const newProfile = await fetchProfile(session.user.id);
-                setProfile(newProfile);
+                const { data: newProfile, error: fetchNewError } = await supabase
+                  .from('user_profiles')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .single();
                 
-                // Set onboarding status
-                const onboardingComplete = newProfile?.onboarding_completed === true;
-                setIsOnboardingComplete(onboardingComplete);
+                if (fetchNewError) {
+                  console.error('AuthContext: Error fetching newly created profile after auth state change:', fetchNewError);
+                  setLoading(false);
+                  return;
+                }
+                
+                // Set profile and onboarding status
+                setProfile(newProfile);
+                setIsOnboardingComplete(newProfile?.onboarding_completed === true);
+                console.log('AuthContext: Created and set profile after auth state change');
+              } else {
+                setLoading(false);
+                return;
               }
-            } catch (createError) {
-              console.error('AuthContext: Exception creating default profile after auth:', createError);
+            } else {
+              // Profile found, set it
+              console.log('AuthContext: Profile found after auth state change:', profileData?.username);
+              setProfile(profileData);
+              setIsOnboardingComplete(profileData?.onboarding_completed === true);
             }
-          } else {
-            // Profile was found
-            setProfile(userProfile);
-            
-            // Check onboarding status from profile
-            const onboardingComplete = userProfile?.onboarding_completed === true;
-            setIsOnboardingComplete(onboardingComplete);
-            console.log('AuthContext: Onboarding complete after auth state change:', onboardingComplete);
+          } catch (e) {
+            console.error('AuthContext: Exception during profile fetch after auth state change:', e);
           }
         } else {
           console.log('AuthContext: No user session after auth state change');
@@ -246,6 +284,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setProfile(null);
           setIsOnboardingComplete(null);
         }
+        
         console.log('AuthContext: Setting loading to false after auth state change');
         setLoading(false);
       }
@@ -260,64 +299,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Enhanced signIn function with more reliable profile fetching
-  const signIn = (newUser: User) => {
+  // Simplified signIn function that directly fetches or creates the profile
+  const signIn = async (newUser: User) => {
     console.log('AuthContext: Manual sign in for user:', newUser.email, 'ID:', newUser.id);
     setUser(newUser);
-    
-    // Immediately set loading to true to prevent UI from rendering too early
     setLoading(true);
     
-    // Fetch user profile with increased retries
-    fetchProfile(newUser.id, 0, 1000).then(userProfile => {
-      console.log('AuthContext: Profile fetched during manual sign in:', userProfile ? 'found' : 'not found');
-      
-      if (!userProfile) {
-        console.log('AuthContext: No profile found during manual sign in, creating a default one');
-        // Create default profile if none exists
-        const email = newUser.email || 'user';
-        const username = email.split('@')[0];
+    try {
+      // Directly fetch the profile
+      console.log('AuthContext: Fetching profile during manual sign in');
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', newUser.id)
+        .single();
         
-        // Use async/await in a self-executing function to handle errors cleanly
-        (async () => {
-          try {
-            const { error } = await supabase
-              .from('user_profiles')
-              .insert([
-                { 
-                  id: newUser.id,
-                  username: username,
-                  onboarding_completed: false,
-                  notification_preferences: { enabled: false }
-                }
-              ]);
-              
-            if (error) {
-              console.error('AuthContext: Error creating default profile during manual sign in:', error);
-              setLoading(false);
-            } else {
-              console.log('AuthContext: Created default profile during manual sign in');
-              // Fetch the newly created profile
-              const newProfile = await fetchProfile(newUser.id);
-              setProfile(newProfile);
-              const onboardingComplete = newProfile?.onboarding_completed === true;
-              setIsOnboardingComplete(onboardingComplete);
-              setLoading(false);
-            }
-          } catch (error: unknown) {
-            console.error('AuthContext: Exception creating default profile during manual sign in:', error);
+      if (profileError) {
+        console.error('AuthContext: Error fetching profile during manual sign in:', profileError);
+        
+        // If profile not found, create one
+        if (profileError.code === 'PGRST116') {
+          console.log('AuthContext: No profile found during manual sign in, creating one');
+          
+          // Create profile with default values
+          const email = newUser.email || 'user';
+          const username = email.split('@')[0];
+          
+          const { error: createError } = await supabase
+            .from('user_profiles')
+            .insert([{ 
+              id: newUser.id,
+              username,
+              onboarding_completed: false,
+              notification_preferences: { enabled: false }
+            }]);
+            
+          if (createError) {
+            console.error('AuthContext: Error creating profile during manual sign in:', createError);
             setLoading(false);
+            return;
           }
-        })();
+          
+          // Fetch the newly created profile
+          const { data: newProfile, error: fetchNewError } = await supabase
+            .from('user_profiles')
+            .select('*')
+            .eq('id', newUser.id)
+            .single();
+            
+          if (fetchNewError) {
+            console.error('AuthContext: Error fetching newly created profile during manual sign in:', fetchNewError);
+            setLoading(false);
+            return;
+          }
+          
+          // Set profile and onboarding status
+          setProfile(newProfile);
+          setIsOnboardingComplete(newProfile?.onboarding_completed === true);
+          console.log('AuthContext: Created and set profile during manual sign in');
+        }
       } else {
-        // Profile found, update state
-        setProfile(userProfile);
-        const onboardingComplete = userProfile?.onboarding_completed === true;
-        setIsOnboardingComplete(onboardingComplete);
-        setLoading(false);
-        console.log('AuthContext: Onboarding complete after manual sign in:', onboardingComplete);
+        // Profile found, set it
+        console.log('AuthContext: Profile found during manual sign in:', profileData?.username);
+        setProfile(profileData);
+        setIsOnboardingComplete(profileData?.onboarding_completed === true);
       }
-    });
+    } catch (e) {
+      console.error('AuthContext: Exception during profile fetch in manual sign in:', e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
@@ -346,9 +397,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('AuthContext: Checking onboarding status for user:', user.id);
-      // Check onboarding status from profile instead of metadata
-      const userProfile = await fetchProfile(user.id);
-      const onboardingComplete = userProfile?.onboarding_completed === true;
+      // Direct database query to check onboarding status
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('onboarding_completed')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) {
+        console.error('AuthContext: Error checking onboarding status:', error);
+        return false;
+      }
+      
+      const onboardingComplete = data?.onboarding_completed === true;
       console.log('AuthContext: Onboarding status check result:', onboardingComplete);
       setIsOnboardingComplete(onboardingComplete);
       return onboardingComplete;
@@ -382,8 +443,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('AuthContext: Profile updated successfully, fetching updated profile');
-      // Fetch updated profile
-      const updatedProfile = await fetchProfile(user.id);
+      
+      // Fetch updated profile directly
+      const { data: updatedProfile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (fetchError) {
+        console.error('AuthContext: Error fetching updated profile:', fetchError);
+        return { error: new Error(fetchError.message) };
+      }
+      
       setProfile(updatedProfile);
       console.log('AuthContext: Updated profile:', updatedProfile);
       
