@@ -52,15 +52,15 @@ CREATE OR REPLACE FUNCTION public.handle_new_reply()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Insert a notification for the original letter author
-  INSERT INTO public.notifications (recipient_id, type, related_id, actor_id)
-  SELECT l.author_id, 'reply', NEW.letter_id, NEW.author_id
+  INSERT INTO public.notifications (recipient_id, sender_id, letter_id, type)
+  SELECT l.author_id, NEW.author_id, NEW.letter_id, 'reply'
   FROM public.letters l
   WHERE l.id = NEW.letter_id AND l.author_id != NEW.author_id;
   
   -- If this is a reply to another reply, also notify that reply's author
   IF NEW.reply_to_id IS NOT NULL THEN
-    INSERT INTO public.notifications (recipient_id, type, related_id, actor_id)
-    SELECT r.author_id, 'reply', NEW.letter_id, NEW.author_id
+    INSERT INTO public.notifications (recipient_id, sender_id, letter_id, type)
+    SELECT r.author_id, NEW.author_id, NEW.letter_id, 'reply'
     FROM public.replies r
     WHERE r.id = NEW.reply_to_id AND r.author_id != NEW.author_id;
   END IF;
