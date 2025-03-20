@@ -110,7 +110,7 @@ export type LetterWithDetails = Letter & {
 };
 
 export type ReplyWithDetails = Reply & {
-  author: UserProfile;
+  author?: UserProfile;
   is_read?: boolean;
 };
 

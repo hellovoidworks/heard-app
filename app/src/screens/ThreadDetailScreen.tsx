@@ -61,8 +61,14 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         const { data: repliesData, error: repliesError } = await supabase
           .from('replies')
           .select(`
-            *,
-            author:user_profiles!replies_author_id_fkey(*)
+            id,
+            letter_id,
+            author_id,
+            display_name,
+            content,
+            reply_to_id,
+            created_at,
+            updated_at
           `)
           .eq('letter_id', letterId)
           .order('created_at', { ascending: true });
@@ -135,10 +141,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             reply_to_id: null // Direct reply to the letter, not to another reply
           }
         ])
-        .select(`
-          *,
-          author:user_profiles!replies_author_id_fkey(*)
-        `)
+        .select()
         .single();
         
       if (error) {
