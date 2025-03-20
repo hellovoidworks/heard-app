@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If no profile found and we haven't exceeded max retries,
         // wait and try again (useful for Magic Link auth where profile creation
         // might happen after auth state change)
-        if (error.code === 'PGRST116' && retryCount < 3) {
+        if (error.code === 'PGRST116' && retryCount < 5) {  // Increase max retries to 5
           console.log(`AuthContext: Profile not found, retrying in ${delay}ms...`);
           
           return new Promise((resolve) => {
@@ -84,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Exception fetching profile:', error);
       
       // Retry on exception too if we haven't exceeded max retries
-      if (retryCount < 3) {
+      if (retryCount < 5) {  // Increase max retries to 5
         console.log(`AuthContext: Exception occurred, retrying in ${delay}ms...`);
         
         return new Promise((resolve) => {
@@ -260,19 +260,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
+  // Enhanced signIn function with more reliable profile fetching
   const signIn = (newUser: User) => {
     console.log('AuthContext: Manual sign in for user:', newUser.email, 'ID:', newUser.id);
     setUser(newUser);
     
-    // Fetch user profile
-    fetchProfile(newUser.id).then(userProfile => {
+    // Immediately set loading to true to prevent UI from rendering too early
+    setLoading(true);
+    
+    // Fetch user profile with increased retries
+    fetchProfile(newUser.id, 0, 1000).then(userProfile => {
       console.log('AuthContext: Profile fetched during manual sign in:', userProfile ? 'found' : 'not found');
-      setProfile(userProfile);
       
-      // Check onboarding status from profile instead of metadata
-      const onboardingComplete = userProfile?.onboarding_completed === true;
-      setIsOnboardingComplete(onboardingComplete);
-      console.log('AuthContext: Onboarding complete after manual sign in:', onboardingComplete);
+      if (!userProfile) {
+        console.log('AuthContext: No profile found during manual sign in, creating a default one');
+        // Create default profile if none exists
+        const email = newUser.email || 'user';
+        const username = email.split('@')[0];
+        
+        // Use async/await in a self-executing function to handle errors cleanly
+        (async () => {
+          try {
+            const { error } = await supabase
+              .from('user_profiles')
+              .insert([
+                { 
+                  id: newUser.id,
+                  username: username,
+                  onboarding_completed: false,
+                  notification_preferences: { enabled: false }
+                }
+              ]);
+              
+            if (error) {
+              console.error('AuthContext: Error creating default profile during manual sign in:', error);
+              setLoading(false);
+            } else {
+              console.log('AuthContext: Created default profile during manual sign in');
+              // Fetch the newly created profile
+              const newProfile = await fetchProfile(newUser.id);
+              setProfile(newProfile);
+              const onboardingComplete = newProfile?.onboarding_completed === true;
+              setIsOnboardingComplete(onboardingComplete);
+              setLoading(false);
+            }
+          } catch (error: unknown) {
+            console.error('AuthContext: Exception creating default profile during manual sign in:', error);
+            setLoading(false);
+          }
+        })();
+      } else {
+        // Profile found, update state
+        setProfile(userProfile);
+        const onboardingComplete = userProfile?.onboarding_completed === true;
+        setIsOnboardingComplete(onboardingComplete);
+        setLoading(false);
+        console.log('AuthContext: Onboarding complete after manual sign in:', onboardingComplete);
+      }
     });
   };
 

@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
-import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
+import { Linking, Platform, Alert, LogBox } from 'react-native';
 
 console.log('=== App initialization started ===');
 
@@ -16,43 +16,9 @@ LogBox.ignoreLogs([
 
 export default function App() {
   console.log('=== App component rendering ===');
-  const [initializing, setInitializing] = useState(true);
-  const [initError, setInitError] = useState<Error | null>(null);
-  
-  // Add a timeout to prevent infinite initialization
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (initializing) {
-        console.log('=== App initialization timeout reached, forcing continue ===');
-        setInitializing(false);
-      }
-    }, 5000);
-    
-    return () => clearTimeout(timer);
-  }, [initializing]);
   
   useEffect(() => {
     console.log('=== App useEffect running ===');
-    
-    const initializeApp = async () => {
-      try {
-        // Ensure Supabase is initialized
-        if (!supabase) {
-          throw new Error('Supabase client failed to initialize');
-        }
-        
-        // Initialize any app-level services here
-        
-        // Mark app as initialized
-        setInitializing(false);
-      } catch (error) {
-        console.error('=== App initialization error ===', error);
-        setInitError(error as Error);
-        setInitializing(false);
-      }
-    };
-    
-    initializeApp();
     
     // Handle deep linking for magic link authentication
     const handleDeepLink = async (url: string) => {
@@ -155,6 +121,26 @@ export default function App() {
                 }
               }
               
+              // Manual refresh of auth state to trigger profile loading
+              console.log('Re-triggering auth state change event');
+              // This emulates a SIGNED_IN event to make sure profile is properly loaded
+              const { data: tempListener } = supabase.auth.onAuthStateChange((_, session) => {
+                if (session) {
+                  console.log('Manually triggered auth state event with session');
+                  // Do nothing, just triggering the event
+                }
+              });
+              
+              // Refresh the session to trigger auth state change
+              console.log('Refreshing session to trigger auth state change');
+              await supabase.auth.refreshSession();
+              
+              // Remove the temporary listener after a delay
+              setTimeout(() => {
+                console.log('Removing temporary auth listener');
+                tempListener.subscription.unsubscribe();
+              }, 1000);
+              
               // Force refresh the auth state
               setTimeout(() => {
                 console.log('Showing success alert after auth');
@@ -198,46 +184,6 @@ export default function App() {
     console.log('Setting up auth state listener');
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       console.log('Auth state changed:', event, session ? `User authenticated: ${session.user.email}` : 'No session');
-      
-      // If user just signed in, ensure we have their profile
-      if (event === 'SIGNED_IN' && session) {
-        console.log('User just signed in, checking for profile');
-        (async () => {
-          try {
-            const { data: profileData, error } = await supabase
-              .from('user_profiles')
-              .select('id')
-              .eq('id', session.user.id)
-              .single();
-              
-            if (error) {
-              console.log('No profile found for newly signed in user, creating one');
-              const email = session.user.email || 'user';
-              const username = email.split('@')[0]; 
-              
-              try {
-                await supabase
-                  .from('user_profiles')
-                  .insert([
-                    { 
-                      id: session.user.id,
-                      username: username,
-                      onboarding_completed: false,
-                      notification_preferences: { enabled: false }
-                    }
-                  ]);
-                console.log('Created profile for newly signed in user');
-              } catch (createError) {
-                console.error('Error creating profile after sign in:', createError);
-              }
-            } else {
-              console.log('Profile exists for newly signed in user');
-            }
-          } catch (e) {
-            console.error('Error checking profile after sign in:', e);
-          }
-        })();
-      }
     });
 
     // Check for an existing session on app start
@@ -266,26 +212,6 @@ export default function App() {
       authListener?.subscription?.unsubscribe();
     };
   }, []);
-
-  if (initializing) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={{ marginTop: 10 }}>Starting Heard...</Text>
-      </View>
-    );
-  }
-
-  if (initError) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-        <Text style={{ color: 'red', fontSize: 18, marginBottom: 10 }}>
-          Error starting app
-        </Text>
-        <Text>{initError.message}</Text>
-      </View>
-    );
-  }
 
   console.log('=== Rendering App component with providers ===');
   return (

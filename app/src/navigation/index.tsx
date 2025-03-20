@@ -144,23 +144,12 @@ const MainNavigator = () => (
 // App root navigator
 const AppNavigator = () => {
   const { user, loading, isOnboardingComplete } = useAuth();
-  const [initializationTimeout, setInitializationTimeout] = React.useState(false);
 
   console.log('AppNavigator rendering with state:', { 
     hasUser: !!user,
     loading,
     isOnboardingComplete: isOnboardingComplete
   });
-
-  useEffect(() => {
-    // Failsafe timeout - if loading state gets stuck, force continue after timeout
-    const timeoutId = setTimeout(() => {
-      console.log('Navigation initialization timeout reached, forcing continue');
-      setInitializationTimeout(true);
-    }, 5000); // 5 second timeout
-    
-    return () => clearTimeout(timeoutId);
-  }, []);
 
   useEffect(() => {
     if (user && isOnboardingComplete) {
@@ -201,8 +190,7 @@ const AppNavigator = () => {
     }
   }, [user, isOnboardingComplete]);
 
-  // Proceed with rendering the app after timeout even if loading is still true
-  if ((loading && !initializationTimeout) || (user && isOnboardingComplete === null && !initializationTimeout)) {
+  if (loading || (user && isOnboardingComplete === null)) {
     console.log('Navigation is in loading state, returning null view');
     return null;
   }
