@@ -19,24 +19,7 @@ type Letter = {
     id: string;
     name: string;
   } | null;
-  reply_count: number;
 };
-
-interface ReplyCount {
-  parent_id: string;
-  count: string;
-}
-
-interface LetterData {
-  id: string;
-  title: string;
-  content: string;
-  created_at: string;
-  category: {
-    id: string;
-    name: string;
-  } | null;
-}
 
 const MyLettersTab = () => {
   const [letters, setLetters] = useState<Letter[]>([]);
@@ -77,36 +60,18 @@ const MyLettersTab = () => {
         return;
       }
 
-      // Get reply counts for each letter
-      const letterIds = data.map(letter => letter.id);
-      
-      // Use a raw SQL query for the group by functionality
-      const { data: replyCounts, error: replyError } = await supabase
-        .rpc('get_reply_counts', { letter_ids: letterIds });
-
-      if (replyError) {
-        console.error('Error fetching reply counts:', replyError);
-      }
-
-      // Create a map of letter ID to reply count
-      const replyCountMap = new Map<string, number>();
-      if (replyCounts) {
-        (replyCounts as ReplyCount[]).forEach(item => {
-          replyCountMap.set(item.parent_id, parseInt(item.count));
-        });
-      }
-
-      // Add reply count to each letter
-      const lettersWithReplyCounts = (data as LetterData[]).map(letter => ({
+      // Process the data to ensure category is correctly formatted
+      const processedLetters = data.map(letter => ({
         id: letter.id,
         title: letter.title,
         content: letter.content,
         created_at: letter.created_at,
-        category: letter.category,
-        reply_count: replyCountMap.get(letter.id) || 0
+        category: Array.isArray(letter.category) 
+          ? (letter.category.length > 0 ? letter.category[0] : null) 
+          : letter.category
       }));
 
-      setLetters(lettersWithReplyCounts);
+      setLetters(processedLetters as Letter[]);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -140,7 +105,6 @@ const MyLettersTab = () => {
           {item.category && (
             <Chip icon="tag" style={styles.chip}>{item.category.name}</Chip>
           )}
-          <Chip icon="message-reply" style={styles.chip}>{item.reply_count} replies</Chip>
           <Text style={styles.date}>
             {format(new Date(item.created_at), 'MMM d, yyyy')}
           </Text>
