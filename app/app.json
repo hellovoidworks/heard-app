@@ -18,7 +18,7 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yourcompany.heard",
+      "bundleIdentifier": "co.voidworks.heardapp",
       "associatedDomains": [
         "applinks:lrdylsehrfkkrjzicczz.supabase.co"
       ],
@@ -27,7 +27,7 @@
           {
             "CFBundleURLSchemes": [
               "heardapp",
-              "com.yourcompany.heard"
+              "co.voidworks.heardapp"
             ]
           }
         ]
