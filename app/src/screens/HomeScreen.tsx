@@ -420,8 +420,8 @@ const HomeScreen = () => {
   /**
    * Loads initial letters when the component mounts
    */
-  const loadInitialLetters = async (retryCount = 0) => {
-    console.log(`Loading initial letters (retry ${retryCount})`);
+  const loadInitialLetters = async () => {
+    console.log('Loading initial letters');
     
     if (!user) {
       console.log('No user found, deferring letter loading');
@@ -441,19 +441,9 @@ const HomeScreen = () => {
         
       if (profileError) {
         console.error('Error fetching user profile during letter loading:', profileError);
-        
-        if (retryCount < 3) {
-          // Wait and retry if profile not found (might be due to race condition after auth)
-          console.log(`Profile not found, retrying in ${(retryCount + 1) * 1000}ms...`);
-          setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1000);
-          return;
-        } else {
-          // After max retries, stop loading and show the empty state
-          console.log('Max retries reached for profile loading, showing empty state');
-          setLoading(false);
-          setLetters([]);
-          return;
-        }
+        setLoading(false);
+        setLetters([]);
+        return;
       }
       
       const fetchedLetters = await getLettersForCurrentWindow();
@@ -462,34 +452,14 @@ const HomeScreen = () => {
         console.log(`Loaded ${fetchedLetters.length} letters successfully`);
         setLetters(fetchedLetters);
       } else {
-        if (retryCount < 2) {
-          // If no letters were found and this is one of the first attempts,
-          // it might be because the user just authenticated and delivery records
-          // haven't been created yet. Retry after a delay.
-          console.log(`No letters found, retrying in ${(retryCount + 1) * 1500}ms...`);
-          setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1500);
-          return;
-        } else {
-          // After max retries, stop loading and show the empty state
-          console.log('No letters available to display after retries, showing empty state');
-          setLetters([]);
-        }
+        console.log('No letters available to display, showing empty state');
+        setLetters([]);
       }
     } catch (error) {
       console.error('Error loading initial letters:', error);
-      
-      if (retryCount < 3) {
-        // Retry on error
-        console.log(`Error loading letters, retrying in ${(retryCount + 1) * 1000}ms...`);
-        setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1000);
-        return;
-      }
+      setLetters([]);
     } finally {
-      // Always set loading to false after max retries, regardless of result
-      if (retryCount >= 2) {
-        console.log('Max retries reached or letters found, ending loading state');
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
   
@@ -600,24 +570,6 @@ const HomeScreen = () => {
       setLoading(false);
     }
   }, [user]);
-
-  useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    if (loading) {
-      // If loading takes more than 8 seconds, force end loading state
-      timeout = setTimeout(() => {
-        console.log('Loading timeout reached');
-        setLoading(false);
-      }, 8000);
-    }
-    
-    return () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    };
-  }, [loading]);
 
   const handleRefresh = () => {
     setRefreshing(true);
