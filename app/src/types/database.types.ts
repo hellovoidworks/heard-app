@@ -77,6 +77,7 @@ export type LetterReceived = {
   user_id: string;
   letter_id: string;
   received_at: string;
+  display_order: number;
   created_at: string;
   updated_at: string;
 };
@@ -87,6 +88,7 @@ export type LetterWithDetails = Letter & {
   author: UserProfile;
   reactions: Reaction[];
   is_read?: boolean;
+  display_order?: number;
 };
 
 export type NotificationWithDetails = Notification & {

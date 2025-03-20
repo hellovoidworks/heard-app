@@ -89,10 +89,11 @@ const HomeScreen = () => {
       // First, check if there are any letters already delivered in the current window
       const { data: existingDeliveries, error: deliveryError } = await supabase
         .from('letter_received')
-        .select('letter_id')
+        .select('letter_id, display_order')
         .eq('user_id', user.id)
         .gte('received_at', currentWindow.start.toISOString())
-        .lt('received_at', currentWindow.end.toISOString());
+        .lt('received_at', currentWindow.end.toISOString())
+        .order('display_order', { ascending: true });
       
       if (deliveryError) {
         console.error('Error checking for existing deliveries:', deliveryError);
@@ -104,6 +105,12 @@ const HomeScreen = () => {
         console.log(`Found ${existingDeliveries.length} letters already delivered in this window`);
         setAnyLettersInWindow(true);
         
+        // Create a map of letter ID to display order for later sorting
+        const letterDisplayOrders = new Map<string, number>();
+        existingDeliveries.forEach(delivery => {
+          letterDisplayOrders.set(delivery.letter_id, delivery.display_order);
+        });
+        
         const letterIds = existingDeliveries.map(delivery => delivery.letter_id);
         
         const { data: letters, error: lettersError } = await supabase
@@ -113,8 +120,7 @@ const HomeScreen = () => {
             category:categories(*),
             author:user_profiles!letters_author_id_fkey(*)
           `)
-          .in('id', letterIds)
-          .order('created_at', { ascending: true });
+          .in('id', letterIds);
         
         if (lettersError) {
           console.error('Error fetching delivered letters:', lettersError);
@@ -138,8 +144,12 @@ const HomeScreen = () => {
         // Add read status to each letter
         const lettersWithReadStatus = letters ? letters.map(letter => ({
           ...letter,
-          is_read: readLetterIds.has(letter.id)
+          is_read: readLetterIds.has(letter.id),
+          display_order: letterDisplayOrders.get(letter.id) || 0
         })) : [];
+        
+        // Sort by display_order to maintain consistent order
+        lettersWithReadStatus.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
         
         return lettersWithReadStatus;
       } else {
@@ -366,11 +376,12 @@ const HomeScreen = () => {
       // Track which letters were received by the user
       if (resultLetters.length > 0 && user) {
         try {
-          // Create letter_received entries for each letter
-          const letterReceivedEntries = resultLetters.map(letter => ({
+          // Create letter_received entries for each letter with display_order
+          const letterReceivedEntries = resultLetters.map((letter, index) => ({
             user_id: user.id,
             letter_id: letter.id,
-            received_at: new Date().toISOString()
+            received_at: new Date().toISOString(),
+            display_order: index // Use the index as the display order (0-based)
           }));
           
           // Insert the records
@@ -378,7 +389,7 @@ const HomeScreen = () => {
             .from('letter_received')
             .upsert(letterReceivedEntries, { 
               onConflict: 'user_id,letter_id', 
-              ignoreDuplicates: true 
+              ignoreDuplicates: false // Changed to false to update display_order if needed
             });
           
           if (insertError) {
@@ -459,6 +470,11 @@ const HomeScreen = () => {
     try {
       setLoadingMore(true);
       
+      // Calculate the next display order value (max current + 1)
+      const nextDisplayOrder = letters.length > 0 
+        ? Math.max(...letters.map(letter => letter.display_order || 0)) + 1
+        : 0;
+      
       // Fetch more random unread letters
       const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT);
       
@@ -467,10 +483,31 @@ const HomeScreen = () => {
         return;
       }
       
-      // Mark all as unread
-      const moreWithReadStatus = moreLetters.map(letter => ({
+      // Create letter_received entries for each additional letter with incremental display_order
+      const letterReceivedEntries = moreLetters.map((letter, index) => ({
+        user_id: user.id,
+        letter_id: letter.id,
+        received_at: new Date().toISOString(),
+        display_order: nextDisplayOrder + index // Continue from the last display order
+      }));
+      
+      // Insert the records
+      const { error: insertError } = await supabase
+        .from('letter_received')
+        .upsert(letterReceivedEntries, { 
+          onConflict: 'user_id,letter_id', 
+          ignoreDuplicates: false // Update display_order if entry exists
+        });
+      
+      if (insertError) {
+        console.error('Error tracking received letters:', insertError);
+      }
+      
+      // Mark all as unread and add display_order
+      const moreWithReadStatus = moreLetters.map((letter, index) => ({
         ...letter,
-        is_read: false
+        is_read: false,
+        display_order: nextDisplayOrder + index
       }));
       
       // Append to the existing letters
@@ -495,10 +532,11 @@ const HomeScreen = () => {
       // Get new unread letters
       const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
       
-      // Add read status
-      const lettersWithReadStatus = newLetters.map(letter => ({
+      // Add read status and display_order
+      const lettersWithReadStatus = newLetters.map((letter, index) => ({
         ...letter,
-        is_read: false
+        is_read: false,
+        display_order: index
       }));
       
       // Update state
