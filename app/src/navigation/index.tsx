@@ -17,6 +17,7 @@ import {
   NotificationsScreen,
   WriteLetterScreen,
   LetterDetailScreen,
+  ThreadDetailScreen,
   MailboxScreen,
   NotificationSettingsScreen,
   CategoryPreferencesSettingsScreen,
@@ -140,7 +141,7 @@ const MainNavigator = () => (
   </Tab.Navigator>
 );
 
-// Root navigator
+// App root navigator
 const AppNavigator = () => {
   const { user, loading, isOnboardingComplete } = useAuth();
 
@@ -198,6 +199,7 @@ const AppNavigator = () => {
             <>
               <Stack.Screen name="Main" component={MainNavigator} />
               <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
+              <Stack.Screen name="ThreadDetail" component={ThreadDetailScreen} options={{ headerShown: true, title: 'Conversation' }} />
               <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
               <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
               <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />

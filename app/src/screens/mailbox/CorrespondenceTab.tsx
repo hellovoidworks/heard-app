@@ -145,8 +145,8 @@ const CorrespondenceTab = () => {
   };
 
   const handleThreadPress = (thread: Thread) => {
-    // Navigate to the first letter in the thread
-    navigation.navigate('LetterDetail', { letterId: thread.id });
+    // Navigate to the thread detail screen
+    navigation.navigate('ThreadDetail', { threadId: thread.id });
   };
 
   const renderThreadItem = ({ item }: { item: Thread }) => (

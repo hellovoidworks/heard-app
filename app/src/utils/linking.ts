@@ -36,6 +36,12 @@ const linking: LinkingOptions<RootStackParamList> = {
           letterId: (letterId: string) => letterId,
         },
       },
+      ThreadDetail: {
+        path: 'thread/:threadId',
+        parse: {
+          threadId: (threadId: string) => threadId,
+        },
+      },
       WriteLetter: {
         path: 'write/:categoryId?/:parentId?/:threadId?',
         parse: {

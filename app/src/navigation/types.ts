@@ -4,6 +4,7 @@ export type RootStackParamList = {
   Main: undefined;
   Onboarding: undefined;
   LetterDetail: { letterId: string };
+  ThreadDetail: { threadId: string };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   Profile: undefined;
   Notifications: undefined;

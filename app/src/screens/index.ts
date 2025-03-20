@@ -14,6 +14,7 @@ export { default as ProfileScreen } from './ProfileScreen';
 export { default as NotificationsScreen } from './NotificationsScreen';
 export { default as WriteLetterScreen } from './WriteLetterScreen';
 export { default as LetterDetailScreen } from './LetterDetailScreen';
+export { default as ThreadDetailScreen } from './ThreadDetailScreen';
 export { default as MailboxScreen } from './MailboxScreen';
 
 // Settings screens
