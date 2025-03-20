@@ -9,6 +9,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   NotificationSettings: undefined;
   CategoryPreferencesSettings: undefined;
+  AccountSettings: undefined;
 };
 
 export type AuthStackParamList = {

@@ -82,7 +82,6 @@ const ProfileScreen = () => {
         ) : (
           <View style={styles.profileInfo}>
             <Text style={styles.username}>{profile?.username}</Text>
-            <Text style={styles.email}>{user?.email}</Text>
             <Button 
               mode="outlined" 
               onPress={() => setEditing(true)}
@@ -98,6 +97,12 @@ const ProfileScreen = () => {
 
       <List.Section>
         <List.Subheader>Account</List.Subheader>
+        <List.Item
+          title="Account Settings"
+          left={props => <List.Icon {...props} icon="account-cog" />}
+          right={props => <List.Icon {...props} icon="chevron-right" />}
+          onPress={() => navigation.navigate('AccountSettings')}
+        />
         <List.Item
           title="Notification Settings"
           left={props => <List.Icon {...props} icon="bell" />}
@@ -149,11 +154,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 4,
-  },
-  email: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 16,
   },
   editButton: {
     marginTop: 8,

@@ -19,7 +19,8 @@ import {
   LetterDetailScreen,
   MailboxScreen,
   NotificationSettingsScreen,
-  CategoryPreferencesSettingsScreen
+  CategoryPreferencesSettingsScreen,
+  AccountSettingsScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -202,6 +203,7 @@ const AppNavigator = () => {
               <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
               <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: true, title: 'Notification Settings' }} />
               <Stack.Screen name="CategoryPreferencesSettings" component={CategoryPreferencesSettingsScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ headerShown: true, title: 'Account Settings' }} />
             </>
           )
         ) : (
