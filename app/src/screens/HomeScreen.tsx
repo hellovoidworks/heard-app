@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Banner } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Letter, LetterWithDetails } from '../types/database.types';
@@ -8,6 +8,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
+import { 
+  getCurrentDeliveryWindow, 
+  formatDeliveryWindow, 
+  getTimeUntilNextWindow 
+} from '../utils/deliveryWindow';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -16,6 +21,15 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [timeUntilNext, setTimeUntilNext] = useState<{ hours: number; minutes: number }>({ hours: 0, minutes: 0 });
+  const [currentWindow, setCurrentWindow] = useState<{ start: Date, end: Date, isNewWindow: boolean }>({ 
+    start: new Date(), 
+    end: new Date(), 
+    isNewWindow: false 
+  });
+  const [formattedWindow, setFormattedWindow] = useState('');
+  const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
+
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   
@@ -23,13 +37,113 @@ const HomeScreen = () => {
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 5;
 
+  // Update the time until next window every minute
+  useEffect(() => {
+    const updateTimeUntilNext = () => {
+      setTimeUntilNext(getTimeUntilNextWindow());
+    };
+
+    // Update now and set up interval
+    updateTimeUntilNext();
+    const interval = setInterval(updateTimeUntilNext, 60000); // Every minute
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Determine the current delivery window when the component mounts or user changes
+  useEffect(() => {
+    const window = getCurrentDeliveryWindow();
+    setCurrentWindow(window);
+    setFormattedWindow(formatDeliveryWindow(window.start, window.end));
+  }, [user]);
+
+  /**
+   * Gets letters delivered in the current window
+   * If no letters have been delivered yet in this window, delivers new ones
+   */
+  const getLettersForCurrentWindow = async () => {
+    if (!user) return [];
+    
+    try {
+      // First, check if there are any letters already delivered in the current window
+      const { data: existingDeliveries, error: deliveryError } = await supabase
+        .from('letter_received')
+        .select('letter_id')
+        .eq('user_id', user.id)
+        .gte('received_at', currentWindow.start.toISOString())
+        .lt('received_at', currentWindow.end.toISOString());
+      
+      if (deliveryError) {
+        console.error('Error checking for existing deliveries:', deliveryError);
+        return [];
+      }
+      
+      // If we already have letters delivered in this window, fetch and return them
+      if (existingDeliveries && existingDeliveries.length > 0) {
+        console.log(`Found ${existingDeliveries.length} letters already delivered in this window`);
+        setAnyLettersInWindow(true);
+        
+        const letterIds = existingDeliveries.map(delivery => delivery.letter_id);
+        
+        const { data: letters, error: lettersError } = await supabase
+          .from('letters')
+          .select(`
+            *,
+            category:categories(*),
+            author:user_profiles!letters_author_id_fkey(*)
+          `)
+          .in('id', letterIds)
+          .order('created_at', { ascending: true });
+        
+        if (lettersError) {
+          console.error('Error fetching delivered letters:', lettersError);
+          return [];
+        }
+        
+        // Get read status for these letters
+        const { data: readData, error: readError } = await supabase
+          .from('letter_reads')
+          .select('letter_id')
+          .eq('user_id', user.id)
+          .in('letter_id', letterIds);
+          
+        if (readError) {
+          console.error('Error fetching read status:', readError);
+        }
+        
+        // Convert read data to a Set for faster lookups
+        const readLetterIds = new Set(readData ? readData.map(item => item.letter_id) : []);
+        
+        // Add read status to each letter
+        const lettersWithReadStatus = letters ? letters.map(letter => ({
+          ...letter,
+          is_read: readLetterIds.has(letter.id)
+        })) : [];
+        
+        return lettersWithReadStatus;
+      } else {
+        // No letters delivered in this window yet, let's deliver new ones
+        console.log('No letters delivered in this window yet, fetching new ones');
+        setAnyLettersInWindow(false);
+        
+        const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+        return newLetters.map(letter => ({
+          ...letter,
+          is_read: false
+        }));
+      }
+    } catch (error) {
+      console.error('Error getting letters for current window:', error);
+      return [];
+    }
+  };
+
   /**
    * Gets a specific number of unread letters not authored by the current user
    * Returns random letters from all categories, prioritizing preferred categories
    * @param limit Number of letters to fetch
-   * @param offset Number of letters to skip (for pagination)
    */
-  const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT, offset: number = 0) => {
+  const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT) => {
     if (!user) return [];
     
     try {
@@ -65,6 +179,19 @@ const HomeScreen = () => {
       
       console.log(`User has ${preferredCategoryIds.length} preferred categories`);
       
+      // Also get all letters already received by this user in any window
+      const { data: receivedData, error: receivedError } = await supabase
+        .from('letter_received')
+        .select('letter_id')
+        .eq('user_id', user.id);
+        
+      if (receivedError) {
+        console.error('Error fetching previously received letters:', receivedError);
+      }
+      
+      // Extract previously received letter IDs
+      const receivedLetterIds = receivedData ? receivedData.map(item => item.letter_id) : [];
+      
       // If user has preferences, first try to get unread letters from preferred categories
       let resultLetters: any[] = [];
       
@@ -78,22 +205,59 @@ const HomeScreen = () => {
             author:user_profiles!letters_author_id_fkey(*)
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
-          .neq('author_id', user.id) // Not written by the current user
-          .in('category_id', preferredCategoryIds) // From preferred categories;
+          .neq('author_id', user.id); // Not written by the current user
+        
+        // Filter by preferred categories
+        query.in('category_id', preferredCategoryIds);
         
         // If the user has read any letters, exclude those from the results
         if (readLetterIds.length > 0) {
           query.filter('id', 'not.in', `(${readLetterIds.join(',')})`);
         }
         
-        // Get letters with a random ordering
-        const { data: preferredLetters, error: preferredError } = await query.order('created_at', { ascending: Math.random() > 0.5 }).limit(limit);
-        
-        if (preferredError) {
-          console.error('Error fetching preferred category letters:', preferredError);
-        } else if (preferredLetters) {
-          console.log(`Found ${preferredLetters.length} unread letters from preferred categories`);
-          resultLetters = preferredLetters;
+        // If the user has received any letters in previous windows, prioritize new content
+        if (receivedLetterIds.length > 0) {
+          // First try to get only letters that haven't been received before
+          const { data: newLetters, error: newLettersError } = await query
+            .filter('id', 'not.in', `(${receivedLetterIds.join(',')})`)
+            .order('created_at', { ascending: Math.random() > 0.5 })
+            .limit(limit);
+            
+          if (newLettersError) {
+            console.error('Error fetching new preferred letters:', newLettersError);
+          } else if (newLetters && newLetters.length > 0) {
+            console.log(`Found ${newLetters.length} new unread letters from preferred categories`);
+            resultLetters = newLetters;
+          }
+          
+          // If we didn't get enough new letters, fill in with previously received ones
+          if (resultLetters.length < limit) {
+            const remainingLimit = limit - resultLetters.length;
+            console.log(`Fetching ${remainingLimit} more letters from previously received`);
+            
+            const { data: oldLetters, error: oldLettersError } = await query
+              .filter('id', 'in', `(${receivedLetterIds.join(',')})`)
+              .order('created_at', { ascending: Math.random() > 0.5 })
+              .limit(remainingLimit);
+              
+            if (oldLettersError) {
+              console.error('Error fetching old preferred letters:', oldLettersError);
+            } else if (oldLetters) {
+              resultLetters = [...resultLetters, ...oldLetters];
+            }
+          }
+        } else {
+          // User hasn't received any letters yet, so just get random ones
+          const { data: preferredLetters, error: preferredError } = await query
+            .order('created_at', { ascending: Math.random() > 0.5 })
+            .limit(limit);
+          
+          if (preferredError) {
+            console.error('Error fetching preferred category letters:', preferredError);
+          } else if (preferredLetters) {
+            console.log(`Found ${preferredLetters.length} unread letters from preferred categories`);
+            resultLetters = preferredLetters;
+          }
         }
       }
       
@@ -113,7 +277,7 @@ const HomeScreen = () => {
             author:user_profiles!letters_author_id_fkey(*)
           `)
           .is('parent_id', null) // Only get top-level letters, not replies
-          .neq('author_id', user.id) // Not written by the current user;
+          .neq('author_id', user.id); // Not written by the current user
         
         // If we have any IDs to exclude, do so
         if (excludeIds.length > 0) {
@@ -125,14 +289,46 @@ const HomeScreen = () => {
           query.filter('category_id', 'not.in', `(${preferredCategoryIds.join(',')})`);
         }
         
-        // Get random letters
-        const { data: additionalLetters, error: additionalError } = await query.order('created_at', { ascending: Math.random() > 0.5 }).limit(remainingLimit);
-        
-        if (additionalError) {
-          console.error('Error fetching additional letters:', additionalError);
-        } else if (additionalLetters) {
-          console.log(`Found ${additionalLetters.length} additional unread letters from other categories`);
-          resultLetters = [...resultLetters, ...additionalLetters];
+        // First try to get letters that haven't been received before
+        if (receivedLetterIds.length > 0) {
+          const { data: newAdditionalLetters, error: newAdditionalError } = await query
+            .filter('id', 'not.in', `(${receivedLetterIds.join(',')})`)
+            .order('created_at', { ascending: Math.random() > 0.5 })
+            .limit(remainingLimit);
+            
+          if (newAdditionalError) {
+            console.error('Error fetching new additional letters:', newAdditionalError);
+          } else if (newAdditionalLetters && newAdditionalLetters.length > 0) {
+            console.log(`Found ${newAdditionalLetters.length} new additional letters`);
+            resultLetters = [...resultLetters, ...newAdditionalLetters];
+          }
+          
+          // If we still need more, get previously received ones
+          if (resultLetters.length < limit) {
+            const finalLimit = limit - resultLetters.length;
+            const { data: oldAdditionalLetters, error: oldAdditionalError } = await query
+              .filter('id', 'in', `(${receivedLetterIds.join(',')})`)
+              .order('created_at', { ascending: Math.random() > 0.5 })
+              .limit(finalLimit);
+              
+            if (oldAdditionalError) {
+              console.error('Error fetching old additional letters:', oldAdditionalError);
+            } else if (oldAdditionalLetters) {
+              resultLetters = [...resultLetters, ...oldAdditionalLetters];
+            }
+          }
+        } else {
+          // User hasn't received any letters yet
+          const { data: additionalLetters, error: additionalError } = await query
+            .order('created_at', { ascending: Math.random() > 0.5 })
+            .limit(remainingLimit);
+          
+          if (additionalError) {
+            console.error('Error fetching additional letters:', additionalError);
+          } else if (additionalLetters) {
+            console.log(`Found ${additionalLetters.length} additional unread letters`);
+            resultLetters = [...resultLetters, ...additionalLetters];
+          }
         }
       }
       
@@ -158,6 +354,7 @@ const HomeScreen = () => {
             console.error('Error tracking received letters:', insertError);
           } else {
             console.log(`Tracked ${letterReceivedEntries.length} letters as received by user`);
+            setAnyLettersInWindow(true);
           }
         } catch (trackError) {
           console.error('Error tracking received letters:', trackError);
@@ -202,17 +399,10 @@ const HomeScreen = () => {
         return;
       }
       
-      // Get random unread letters for logged in user
-      const unreadLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
-      
-      // Mark all as unread (since we know they're unread)
-      const lettersWithReadStatus = unreadLetters.map(letter => ({
-        ...letter,
-        is_read: false
-      }));
-      
-      setLetters(lettersWithReadStatus as LetterWithDetails[]);
-      console.log(`Loaded ${unreadLetters.length} initial letters`);
+      // Get letters for the current delivery window
+      const windowLetters = await getLettersForCurrentWindow();
+      setLetters(windowLetters as LetterWithDetails[]);
+      console.log(`Loaded ${windowLetters.length} letters for current window`);
       
     } catch (error) {
       console.error('Error loading initial letters:', error);
@@ -258,10 +448,14 @@ const HomeScreen = () => {
 
   useEffect(() => {
     loadInitialLetters();
-  }, [user]);
+  }, [user, currentWindow]);
 
   const handleRefresh = () => {
     setRefreshing(true);
+    // Update window and then load letters
+    const window = getCurrentDeliveryWindow();
+    setCurrentWindow(window);
+    setFormattedWindow(formatDeliveryWindow(window.start, window.end));
     loadInitialLetters();
   };
 
@@ -289,6 +483,24 @@ const HomeScreen = () => {
         console.error('Error marking letter as read:', error);
       }
     }
+  };
+
+  const renderNextWindowInfo = () => {
+    if (!user) return null;
+
+    return (
+      <Banner
+        visible={true}
+        actions={[]}
+        icon="clock-outline"
+        style={styles.banner}
+      >
+        <Text style={styles.bannerTitle}>Letters for {formattedWindow}</Text>
+        <Text style={styles.bannerText}>
+          Next batch in {timeUntilNext.hours}h {timeUntilNext.minutes}m
+        </Text>
+      </Banner>
+    );
   };
 
   const renderLetterItem = ({ item }: { item: LetterWithDetails }) => (
@@ -342,17 +554,23 @@ const HomeScreen = () => {
 
   return (
     <View style={styles.container}>
+      {renderNextWindowInfo()}
       <FlatList
         data={letters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>
               {user 
-                ? "No unread letters in your preferred categories yet" 
+                ? (anyLettersInWindow 
+                    ? "No more letters available in this window" 
+                    : "No letters available for this window yet")
                 : "No letters found"}
             </Text>
             <Button 
@@ -436,6 +654,17 @@ const styles = StyleSheet.create({
   },
   loadMoreButton: {
     width: '80%',
+  },
+  banner: {
+    marginBottom: 8,
+  },
+  bannerTitle: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginBottom: 4,
+  },
+  bannerText: {
+    fontSize: 14,
   },
 });
 
