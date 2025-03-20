@@ -420,48 +420,76 @@ const HomeScreen = () => {
   /**
    * Loads initial letters when the component mounts
    */
-  const loadInitialLetters = async () => {
+  const loadInitialLetters = async (retryCount = 0) => {
+    console.log(`Loading initial letters (retry ${retryCount})`);
+    
+    if (!user) {
+      console.log('No user found, deferring letter loading');
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
       
-      if (!user) {
-        // If no user is logged in, just fetch random letters
-        const { data, error } = await supabase
-          .from('letters')
-          .select(`
-            *,
-            category:categories(*),
-            author:user_profiles!letters_author_id_fkey(*)
-          `)
-          .order('created_at', { ascending: Math.random() > 0.5 }) // Random order
-          .limit(INITIAL_LETTERS_LIMIT);
-          
-        if (error) {
-          console.error('Error fetching letters:', error);
+      // Check if the user profile exists before proceeding
+      const { data: profileData, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+        
+      if (profileError) {
+        console.error('Error fetching user profile during letter loading:', profileError);
+        
+        if (retryCount < 3) {
+          // Wait and retry if profile not found (might be due to race condition after auth)
+          console.log(`Profile not found, retrying in ${(retryCount + 1) * 1000}ms...`);
+          setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1000);
+          return;
+        } else {
+          // After max retries, stop loading and show the empty state
+          console.log('Max retries reached for profile loading, showing empty state');
+          setLoading(false);
+          setLetters([]);
           return;
         }
-        
-        setLetters(data as LetterWithDetails[]);
-        return;
       }
       
-      // Get letters for the current delivery window
-      const windowLetters = await getLettersForCurrentWindow();
+      const fetchedLetters = await getLettersForCurrentWindow();
       
-      if (windowLetters.length === 0 && !currentWindow.isNewWindow) {
-        // If we don't have letters and it's not a new window,
-        // we'll show a special empty state where the user can manually get letters
-        console.log('No letters in current window and not a new window');
+      if (fetchedLetters && fetchedLetters.length > 0) {
+        console.log(`Loaded ${fetchedLetters.length} letters successfully`);
+        setLetters(fetchedLetters);
+      } else {
+        if (retryCount < 2) {
+          // If no letters were found and this is one of the first attempts,
+          // it might be because the user just authenticated and delivery records
+          // haven't been created yet. Retry after a delay.
+          console.log(`No letters found, retrying in ${(retryCount + 1) * 1500}ms...`);
+          setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1500);
+          return;
+        } else {
+          // After max retries, stop loading and show the empty state
+          console.log('No letters available to display after retries, showing empty state');
+          setLetters([]);
+        }
       }
-      
-      setLetters(windowLetters as LetterWithDetails[]);
-      console.log(`Loaded ${windowLetters.length} letters for current window`);
-      
     } catch (error) {
       console.error('Error loading initial letters:', error);
+      
+      if (retryCount < 3) {
+        // Retry on error
+        console.log(`Error loading letters, retrying in ${(retryCount + 1) * 1000}ms...`);
+        setTimeout(() => loadInitialLetters(retryCount + 1), (retryCount + 1) * 1000);
+        return;
+      }
     } finally {
-      setLoading(false);
-      setRefreshing(false);
+      // Always set loading to false after max retries, regardless of result
+      if (retryCount >= 2) {
+        console.log('Max retries reached or letters found, ending loading state');
+        setLoading(false);
+      }
     }
   };
   
@@ -536,35 +564,60 @@ const HomeScreen = () => {
    */
   const forceDeliverLetters = async () => {
     try {
+      console.log('Manually delivering letters...');
       setLoading(true);
       
-      // Get new unread letters
+      // Get the current delivery window
+      const window = getCurrentDeliveryWindow();
+      
+      // Get unread letters not by the current user
       const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
       
-      // Calculate a high display order to ensure new letters appear at the top
-      const baseOrder = 2000; // Even higher than regular letters
-      
-      // Add read status and display_order (higher values first)
-      const lettersWithReadStatus = newLetters.map((letter, index) => ({
-        ...letter,
-        is_read: false,
-        display_order: baseOrder + (newLetters.length - index - 1)
-      }));
-      
-      // Update state
-      setLetters(lettersWithReadStatus as LetterWithDetails[]);
-      console.log(`Forcefully delivered ${newLetters.length} new letters`);
-      
+      if (newLetters && newLetters.length > 0) {
+        console.log(`Delivered ${newLetters.length} new letters`);
+        setLetters(newLetters.map(letter => ({
+          ...letter,
+          is_read: false
+        })));
+        setAnyLettersInWindow(true);
+      } else {
+        console.log('No new letters available to deliver');
+      }
     } catch (error) {
-      console.error('Error forcing letter delivery:', error);
+      console.error('Error delivering letters:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadInitialLetters();
-  }, [user, currentWindow]);
+    console.log('HomeScreen mounted or user changed');
+    if (user) {
+      console.log('User is authenticated, loading letters');
+      loadInitialLetters();
+    } else {
+      console.log('No user, skipping letter loading');
+      setLoading(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    
+    if (loading) {
+      // If loading takes more than 8 seconds, force end loading state
+      timeout = setTimeout(() => {
+        console.log('Loading timeout reached');
+        setLoading(false);
+      }, 8000);
+    }
+    
+    return () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [loading]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -660,66 +713,65 @@ const HomeScreen = () => {
     );
   };
 
-  if (loading && !refreshing) {
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6200ee" />
+          <Text style={styles.loadingText}>Loading your letters...</Text>
+        </View>
+      );
+    }
+    
+    if (!user) {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Please log in to view your letters.</Text>
+        </View>
+      );
+    }
+    
+    if (letters.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No letters available at the moment.</Text>
+          <Text style={styles.emptySubText}>New letters will be delivered in the next window.</Text>
+          {renderNextWindowInfo()}
+          <Button
+            mode="contained"
+            onPress={forceDeliverLetters}
+            style={styles.deliverButton}
+            icon="email"
+          >
+            Deliver Letters Now
+          </Button>
+          <Button
+            mode="outlined"
+            onPress={() => navigation.navigate('WriteLetter', {})}
+            style={styles.writeButton}
+            icon="pencil"
+            labelStyle={styles.buttonLabel}
+          >
+            Write a Letter
+          </Button>
+        </View>
+      );
+    }
+    
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
-  }
-
-  return (
-    <View style={styles.container}>
-      {renderNextWindowInfo()}
       <FlatList
         data={letters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderHeader}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>
-              {user 
-                ? (anyLettersInWindow 
-                    ? "No more letters available in this window" 
-                    : currentWindow.isNewWindow
-                      ? "No letters available for this window yet"
-                      : "No letters found for this time window")
-                : "No letters found"}
-            </Text>
-            
-            {user && !anyLettersInWindow && !currentWindow.isNewWindow ? (
-              <>
-                <Text style={styles.emptySubText}>
-                  You haven't received any letters in this time window.
-                </Text>
-                <Button 
-                  mode="contained" 
-                  onPress={forceDeliverLetters}
-                  style={styles.actionButton}
-                  icon="mail"
-                >
-                  Deliver Letters Now
-                </Button>
-                <View style={styles.buttonSpacer} />
-              </>
-            ) : null}
-            
-            <Button 
-              mode="contained" 
-              onPress={() => navigation.navigate('WriteLetter', {})}
-              style={styles.writeButton}
-              icon="pencil"
-            >
-              Write a Letter
-            </Button>
-          </View>
-        }
       />
+    );
+  };
+
+  return (
+    <View style={styles.container}>
+      {renderContent()}
     </View>
   );
 };
@@ -733,6 +785,54 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#6200ee',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 18,
+    color: '#d32f2f',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  emptySubText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  deliverButton: {
+    marginTop: 20,
+    marginBottom: 15,
+    width: '80%',
+  },
+  writeButton: {
+    marginTop: 10,
+    width: '80%',
+  },
+  buttonLabel: {
+    fontSize: 14,
   },
   listContent: {
     padding: 16,
@@ -773,23 +873,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginLeft: 'auto',
   },
-  emptyContainer: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
-  },
-  writeButton: {
-    marginTop: 10,
-  },
   headerContainer: {
     marginBottom: 16,
     alignItems: 'center',
@@ -807,12 +890,6 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontSize: 14,
-  },
-  actionButton: {
-    marginBottom: 10,
-  },
-  buttonSpacer: {
-    width: 10,
   },
 });
 

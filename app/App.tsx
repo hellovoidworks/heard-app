@@ -28,42 +28,82 @@ export default function App() {
           if (refreshToken && accessToken) {
             // Set the auth session in Supabase
             console.log('Setting session with tokens');
-            const { error } = await supabase.auth.setSession({
-              refresh_token: refreshToken,
-              access_token: accessToken,
-            });
             
-            if (error) {
-              console.error('Error setting session:', error);
-              Alert.alert('Authentication Error', 'Failed to authenticate with the provided link.');
-            } else {
-              console.log('Session set successfully');
-              // Force refresh the auth state
-              const { data } = await supabase.auth.getSession();
-              if (data?.session) {
-                console.log('User authenticated:', data.session.user.email);
-                
-                // Fetch the user's profile to ensure it exists
-                const { data: profileData, error: profileError } = await supabase
-                  .from('user_profiles')
-                  .select('*')
-                  .eq('id', data.session.user.id)
-                  .single();
-                
-                if (profileError && profileError.code !== 'PGRST116') {
-                  console.error('Error fetching user profile:', profileError);
-                }
-                
-                if (profileData) {
-                  console.log('User profile found:', profileData.username);
-                } else {
-                  console.log('No user profile found, it should be created by the database trigger');
-                  // The database trigger will automatically create a profile for new users
-                  // We don't need to manually create it here
-                }
-                
-                Alert.alert('Success', 'You have been successfully authenticated!');
+            try {
+              const { data: sessionData, error } = await supabase.auth.setSession({
+                refresh_token: refreshToken,
+                access_token: accessToken,
+              });
+              
+              if (error) {
+                console.error('Error setting session:', error);
+                Alert.alert('Authentication Error', 'Failed to authenticate with the provided link.');
+                return;
               }
+              
+              console.log('Session set successfully');
+              
+              // Get the current session immediately to ensure we have the user
+              const { data: sessionCheckData } = await supabase.auth.getSession();
+              if (!sessionCheckData?.session?.user) {
+                console.error('Session set but user not available');
+                Alert.alert('Authentication Error', 'Failed to retrieve user data after authentication.');
+                return;
+              }
+              
+              const userId = sessionCheckData.session.user.id;
+              console.log('User authenticated:', sessionCheckData.session.user.email);
+              
+              // Check if profile exists already
+              const { data: existingProfile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('id, username, onboarding_completed')
+                .eq('id', userId)
+                .single();
+                
+              if (profileError && profileError.code !== 'PGRST116') {
+                console.error('Error checking for existing profile:', profileError);
+              }
+              
+              if (existingProfile) {
+                console.log('User profile exists:', existingProfile.username);
+              } else {
+                // If profile doesn't exist, explicitly create one
+                console.log('No profile found, creating one...');
+                
+                // Get user's email for username
+                const email = sessionCheckData.session.user.email || 'user';
+                const username = email.split('@')[0]; // Use part before @ as default username
+                
+                const { data: newProfile, error: createError } = await supabase
+                  .from('user_profiles')
+                  .insert([
+                    { 
+                      id: userId,
+                      username: username,
+                      onboarding_completed: false,
+                      notification_preferences: { enabled: false }
+                    }
+                  ])
+                  .select()
+                  .single();
+                  
+                if (createError) {
+                  console.error('Error creating profile:', createError);
+                  // Continue anyway, as the DB trigger might still create it
+                } else {
+                  console.log('Profile created successfully:', newProfile?.username);
+                }
+              }
+              
+              // Force refresh the auth state
+              setTimeout(() => {
+                Alert.alert('Success', 'You have been successfully authenticated!');
+              }, 500);
+              
+            } catch (sessionError: any) {
+              console.error('Exception setting session:', sessionError);
+              Alert.alert('Authentication Error', 'Failed to establish your session.');
             }
           } else {
             console.error('Missing tokens in URL');
@@ -92,18 +132,22 @@ export default function App() {
 
     // Add a listener for auth state changes
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state changed:', event, session ? 'User authenticated' : 'No session');
+      console.log('Auth state changed:', event, session ? `User authenticated: ${session.user.email}` : 'No session');
     });
 
     // Check for an existing session on app start
     const checkSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error('Error checking session:', error);
-      } else if (data?.session) {
-        console.log('Existing session found:', data.session.user.email);
-      } else {
-        console.log('No existing session found');
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Error checking session:', error);
+        } else if (data?.session) {
+          console.log('Existing session found:', data.session.user.email);
+        } else {
+          console.log('No existing session found');
+        }
+      } catch (e) {
+        console.error('Exception checking session:', e);
       }
     };
     
