@@ -45,7 +45,7 @@ const MyLettersTab = () => {
           category:categories(id, name)
         `)
         .eq('author_id', user.id)
-        .is('parent_id', null) // Only get top-level letters, not replies
+        // No longer filtering by parent_id as we've moved to using the replies table
         .order('created_at', { ascending: false });
 
       if (error) {

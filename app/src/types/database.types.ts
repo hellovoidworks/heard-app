@@ -32,8 +32,6 @@ export type Letter = {
   title: string;
   content: string;
   category_id: string;
-  parent_id: string | null; // Will be deprecated in favor of replies table
-  thread_id: string | null; // Will be deprecated in favor of replies table
   created_at: string;
   updated_at: string;
 };

@@ -249,7 +249,6 @@ const HomeScreen = () => {
             category:categories(*),
             author:user_profiles!letters_author_id_fkey(*)
           `)
-          .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id); // Not written by the current user
         
         // Filter by preferred categories
@@ -321,7 +320,6 @@ const HomeScreen = () => {
             category:categories(*),
             author:user_profiles!letters_author_id_fkey(*)
           `)
-          .is('parent_id', null) // Only get top-level letters, not replies
           .neq('author_id', user.id); // Not written by the current user
         
         // If we have any IDs to exclude, do so
@@ -435,7 +433,6 @@ const HomeScreen = () => {
             category:categories(*),
             author:user_profiles!letters_author_id_fkey(*)
           `)
-          .is('parent_id', null) // Only get top-level letters, not replies
           .order('created_at', { ascending: Math.random() > 0.5 }) // Random order
           .limit(INITIAL_LETTERS_LIMIT);
           
