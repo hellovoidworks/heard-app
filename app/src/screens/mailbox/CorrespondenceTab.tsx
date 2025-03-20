@@ -208,7 +208,7 @@ const CorrespondenceTab = () => {
         </View>
         <Paragraph numberOfLines={2}>{item.last_message}</Paragraph>
         <Text style={styles.date}>
-          {format(new Date(item.last_message_date), 'MMM d, yyyy')}
+          {format(new Date(item.last_message_date), 'MMM d')}
         </Text>
       </Card.Content>
     </Card>
