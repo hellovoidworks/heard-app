@@ -53,4 +53,5 @@ DROP INDEX IF EXISTS idx_letters_thread_id;
 
 -- Now drop the columns
 ALTER TABLE letters DROP COLUMN IF EXISTS parent_id;
-ALTER TABLE letters DROP COLUMN IF EXISTS thread_id; 
+ALTER TABLE letters DROP COLUMN IF EXISTS thread_id;
+ALTER TABLE letters DROP COLUMN IF EXISTS recipient_id; 
