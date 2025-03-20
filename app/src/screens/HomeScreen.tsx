@@ -52,9 +52,30 @@ const HomeScreen = () => {
 
   // Determine the current delivery window when the component mounts or user changes
   useEffect(() => {
-    const window = getCurrentDeliveryWindow();
-    setCurrentWindow(window);
-    setFormattedWindow(formatDeliveryWindow(window.start, window.end));
+    const updateWindowAndFetch = async () => {
+      const window = getCurrentDeliveryWindow();
+      setCurrentWindow(window);
+      setFormattedWindow(formatDeliveryWindow(window.start, window.end));
+      
+      // Check if we've already set anyLettersInWindow for this window
+      if (user) {
+        const { data: existingDeliveries, error } = await supabase
+          .from('letter_received')
+          .select('id')
+          .eq('user_id', user.id)
+          .gte('received_at', window.start.toISOString())
+          .lt('received_at', window.end.toISOString());
+          
+        if (error) {
+          console.error('Error checking for existing deliveries:', error);
+        } else {
+          // If we already have letters in this window, set the flag
+          setAnyLettersInWindow(existingDeliveries && existingDeliveries.length > 0);
+        }
+      }
+    };
+    
+    updateWindowAndFetch();
   }, [user]);
 
   /**
@@ -122,15 +143,25 @@ const HomeScreen = () => {
         
         return lettersWithReadStatus;
       } else {
-        // No letters delivered in this window yet, let's deliver new ones
+        // No letters delivered in this window yet, deliver new ones and store them
         console.log('No letters delivered in this window yet, fetching new ones');
         setAnyLettersInWindow(false);
         
-        const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
-        return newLetters.map(letter => ({
-          ...letter,
-          is_read: false
-        }));
+        // Check if this is a new window we just entered
+        if (currentWindow.isNewWindow) {
+          console.log('New delivery window detected, delivering fresh letters');
+          const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+          return newLetters.map(letter => ({
+            ...letter,
+            is_read: false
+          }));
+        } else {
+          // If it's not a new window but we don't have letters, it might be due to
+          // the app being force closed or cleared from memory. Let's not deliver
+          // new letters automatically in this case to avoid too many letters.
+          console.log('Not a new window but no letters found, returning empty set');
+          return [];
+        }
       }
     } catch (error) {
       console.error('Error getting letters for current window:', error);
@@ -401,6 +432,13 @@ const HomeScreen = () => {
       
       // Get letters for the current delivery window
       const windowLetters = await getLettersForCurrentWindow();
+      
+      if (windowLetters.length === 0 && !currentWindow.isNewWindow) {
+        // If we don't have letters and it's not a new window,
+        // we'll show a special empty state where the user can manually get letters
+        console.log('No letters in current window and not a new window');
+      }
+      
       setLetters(windowLetters as LetterWithDetails[]);
       console.log(`Loaded ${windowLetters.length} letters for current window`);
       
@@ -443,6 +481,34 @@ const HomeScreen = () => {
       console.error('Error loading more letters:', error);
     } finally {
       setLoadingMore(false);
+    }
+  };
+
+  /**
+   * Force fetches new letters for this window, 
+   * even if it's not a new window
+   */
+  const forceDeliverLetters = async () => {
+    try {
+      setLoading(true);
+      
+      // Get new unread letters
+      const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+      
+      // Add read status
+      const lettersWithReadStatus = newLetters.map(letter => ({
+        ...letter,
+        is_read: false
+      }));
+      
+      // Update state
+      setLetters(lettersWithReadStatus as LetterWithDetails[]);
+      console.log(`Forcefully delivered ${newLetters.length} new letters`);
+      
+    } catch (error) {
+      console.error('Error forcing letter delivery:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -570,13 +636,34 @@ const HomeScreen = () => {
               {user 
                 ? (anyLettersInWindow 
                     ? "No more letters available in this window" 
-                    : "No letters available for this window yet")
+                    : currentWindow.isNewWindow
+                      ? "No letters available for this window yet"
+                      : "No letters found for this time window")
                 : "No letters found"}
             </Text>
+            
+            {user && !anyLettersInWindow && !currentWindow.isNewWindow ? (
+              <>
+                <Text style={styles.emptySubText}>
+                  You haven't received any letters in this time window.
+                </Text>
+                <Button 
+                  mode="contained" 
+                  onPress={forceDeliverLetters}
+                  style={styles.actionButton}
+                  icon="mail"
+                >
+                  Deliver Letters Now
+                </Button>
+                <View style={styles.buttonSpacer} />
+              </>
+            ) : null}
+            
             <Button 
               mode="contained" 
               onPress={() => navigation.navigate('WriteLetter', {})}
               style={styles.writeButton}
+              icon="pencil"
             >
               Write a Letter
             </Button>
@@ -645,6 +732,11 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 20,
   },
+  emptySubText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
+  },
   writeButton: {
     marginTop: 10,
   },
@@ -665,6 +757,12 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontSize: 14,
+  },
+  actionButton: {
+    marginBottom: 10,
+  },
+  buttonSpacer: {
+    width: 10,
   },
 });
 
