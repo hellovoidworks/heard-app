@@ -187,13 +187,6 @@ const CorrespondenceTab = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <Text style={styles.emptyText}>No correspondence found</Text>
-            <Button 
-              mode="contained" 
-              onPress={() => navigation.navigate('WriteLetter', {})}
-              style={styles.writeButton}
-            >
-              Start a Conversation
-            </Button>
           </View>
         }
       />
