@@ -148,8 +148,8 @@ const HomeScreen = () => {
           display_order: letterDisplayOrders.get(letter.id) || 0
         })) : [];
         
-        // Sort by display_order to maintain consistent order
-        lettersWithReadStatus.sort((a, b) => (a.display_order || 0) - (b.display_order || 0));
+        // Sort by display_order to maintain consistent order (higher values at the top)
+        lettersWithReadStatus.sort((a, b) => (b.display_order || 0) - (a.display_order || 0));
         
         return lettersWithReadStatus;
       } else {
@@ -377,11 +377,14 @@ const HomeScreen = () => {
       if (resultLetters.length > 0 && user) {
         try {
           // Create letter_received entries for each letter with display_order
+          // Start with a high value to ensure consistency with other functions
+          const baseOrder = 1000;
           const letterReceivedEntries = resultLetters.map((letter, index) => ({
             user_id: user.id,
             letter_id: letter.id,
             received_at: new Date().toISOString(),
-            display_order: index // Use the index as the display order (0-based)
+            // Using descending display_order (latest first) - higher index = higher priority
+            display_order: baseOrder + (resultLetters.length - index - 1)
           }));
           
           // Insert the records
@@ -470,10 +473,14 @@ const HomeScreen = () => {
     try {
       setLoadingMore(true);
       
-      // Calculate the next display order value (max current + 1)
-      const nextDisplayOrder = letters.length > 0 
-        ? Math.max(...letters.map(letter => letter.display_order || 0)) + 1
-        : 0;
+      // Calculate display order for new letters - use values higher than current max
+      // to ensure new letters appear at the top
+      let maxDisplayOrder = 0;
+      if (letters.length > 0) {
+        // Find the highest current display_order value
+        maxDisplayOrder = Math.max(...letters.map(letter => letter.display_order || 0)) + 1000; 
+        // Add a big increment to ensure new letters have higher values
+      }
       
       // Fetch more random unread letters
       const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT);
@@ -483,12 +490,13 @@ const HomeScreen = () => {
         return;
       }
       
-      // Create letter_received entries for each additional letter with incremental display_order
+      // Create letter_received entries for each additional letter with higher display_order
+      // so they appear at the top
       const letterReceivedEntries = moreLetters.map((letter, index) => ({
         user_id: user.id,
         letter_id: letter.id,
         received_at: new Date().toISOString(),
-        display_order: nextDisplayOrder + index // Continue from the last display order
+        display_order: maxDisplayOrder + index // Higher values to appear at the top
       }));
       
       // Insert the records
@@ -507,13 +515,13 @@ const HomeScreen = () => {
       const moreWithReadStatus = moreLetters.map((letter, index) => ({
         ...letter,
         is_read: false,
-        display_order: nextDisplayOrder + index
+        display_order: maxDisplayOrder + index
       }));
       
-      // Append to the existing letters
-      setLetters(prevLetters => [...prevLetters, ...moreWithReadStatus] as LetterWithDetails[]);
+      // Prepend to the existing letters
+      setLetters(prevLetters => [...moreWithReadStatus, ...prevLetters] as LetterWithDetails[]);
       
-      console.log(`Loaded ${moreLetters.length} more letters`);
+      console.log(`Loaded ${moreLetters.length} more letters at the top`);
     } catch (error) {
       console.error('Error loading more letters:', error);
     } finally {
@@ -532,11 +540,14 @@ const HomeScreen = () => {
       // Get new unread letters
       const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
       
-      // Add read status and display_order
+      // Calculate a high display order to ensure new letters appear at the top
+      const baseOrder = 2000; // Even higher than regular letters
+      
+      // Add read status and display_order (higher values first)
       const lettersWithReadStatus = newLetters.map((letter, index) => ({
         ...letter,
         is_read: false,
-        display_order: index
+        display_order: baseOrder + (newLetters.length - index - 1)
       }));
       
       // Update state
