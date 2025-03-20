@@ -21,7 +21,11 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [timeUntilNext, setTimeUntilNext] = useState<{ hours: number; minutes: number }>({ hours: 0, minutes: 0 });
+  const [timeUntilNext, setTimeUntilNext] = useState<{ hours: number; minutes: number; seconds: number }>({ 
+    hours: 0, 
+    minutes: 0,
+    seconds: 0
+  });
   const [currentWindow, setCurrentWindow] = useState<{ start: Date, end: Date, isNewWindow: boolean }>({ 
     start: new Date(), 
     end: new Date(), 
@@ -37,7 +41,7 @@ const HomeScreen = () => {
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 5;
 
-  // Update the time until next window every minute
+  // Update the time until next window every second
   useEffect(() => {
     const updateTimeUntilNext = () => {
       setTimeUntilNext(getTimeUntilNextWindow());
@@ -45,7 +49,7 @@ const HomeScreen = () => {
 
     // Update now and set up interval
     updateTimeUntilNext();
-    const interval = setInterval(updateTimeUntilNext, 60000); // Every minute
+    const interval = setInterval(updateTimeUntilNext, 1000); // Update every second
     
     return () => clearInterval(interval);
   }, []);
@@ -612,7 +616,7 @@ const HomeScreen = () => {
       >
         <Text style={styles.bannerTitle}>Letters for {formattedWindow}</Text>
         <Text style={styles.bannerText}>
-          Next batch in {timeUntilNext.hours}h {timeUntilNext.minutes}m
+          Next batch in {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
         </Text>
       </Banner>
     );

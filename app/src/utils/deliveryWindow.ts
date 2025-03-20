@@ -97,9 +97,9 @@ export const formatDeliveryWindow = (start: Date, end: Date): string => {
 
 /**
  * Calculate time until the next delivery window
- * @returns Object with hours and minutes until next window
+ * @returns Object with hours, minutes, and seconds until next window
  */
-export const getTimeUntilNextWindow = (): { hours: number, minutes: number } => {
+export const getTimeUntilNextWindow = (): { hours: number, minutes: number, seconds: number } => {
   const now = new Date();
   const pstNow = convertToPST(now);
   const pstHour = pstNow.getHours();
@@ -129,6 +129,7 @@ export const getTimeUntilNextWindow = (): { hours: number, minutes: number } => 
   const timeDiff = nextWindowDate.getTime() - now.getTime();
   const hoursDiff = Math.floor(timeDiff / (1000 * 60 * 60));
   const minutesDiff = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+  const secondsDiff = Math.floor((timeDiff % (1000 * 60)) / 1000);
   
-  return { hours: hoursDiff, minutes: minutesDiff };
+  return { hours: hoursDiff, minutes: minutesDiff, seconds: secondsDiff };
 }; 
