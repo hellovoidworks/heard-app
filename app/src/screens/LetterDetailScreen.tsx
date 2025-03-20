@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Alert } from 'react-native';
-import { Text, Card, Title, Paragraph, Divider, Button, Chip, ActivityIndicator, TextInput } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { Text, Card, Title, Paragraph, Chip, ActivityIndicator } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { LetterWithDetails, Letter } from '../types/database.types';
+import { LetterWithDetails } from '../types/database.types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
@@ -13,14 +13,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { letterId } = route.params;
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
-  const [replies, setReplies] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [replyContent, setReplyContent] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
-  const fetchLetterAndReplies = async () => {
+  const fetchLetter = async () => {
     try {
       setLoading(true);
       
@@ -43,20 +40,24 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       if (letterData) {
         setLetter(letterData as LetterWithDetails);
         
-        // Fetch replies to this letter
-        const { data: repliesData, error: repliesError } = await supabase
-          .from('letters')
-          .select(`
-            *,
-            author:user_profiles!letters_author_id_fkey(*)
-          `)
-          .eq('parent_id', letterId)
-          .order('created_at', { ascending: true });
-
-        if (repliesError) {
-          console.error('Error fetching replies:', repliesError);
-        } else if (repliesData) {
-          setReplies(repliesData as LetterWithDetails[]);
+        // Record that the user has read this letter if they are logged in
+        if (user && user.id !== letterData.author_id) {
+          const { error: readError } = await supabase
+            .from('letter_reads')
+            .upsert([
+              {
+                user_id: user.id,
+                letter_id: letterId,
+                read_at: new Date().toISOString()
+              }
+            ], { 
+              onConflict: 'user_id,letter_id',
+              ignoreDuplicates: true 
+            });
+            
+          if (readError) {
+            console.error('Error recording letter read:', readError);
+          }
         }
       }
     } catch (error) {
@@ -68,59 +69,12 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    fetchLetterAndReplies();
-  }, [letterId]);
+    fetchLetter();
+  }, [letterId, user]);
 
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchLetterAndReplies();
-  };
-
-  const handleSubmitReply = async () => {
-    if (!user || !profile) {
-      Alert.alert('Error', 'You must be logged in to reply');
-      return;
-    }
-
-    if (!replyContent.trim()) {
-      Alert.alert('Error', 'Reply cannot be empty');
-      return;
-    }
-
-    setSubmitting(true);
-
-    try {
-      // Get thread_id (either the parent's thread_id or the parent's id if it's the first reply)
-      const threadId = letter?.thread_id || letter?.id;
-
-      const { data, error } = await supabase
-        .from('letters')
-        .insert([
-          {
-            author_id: user.id,
-            display_name: profile.username, // Using username as display name by default
-            title: `Re: ${letter?.title}`,
-            content: replyContent,
-            category_id: letter?.category_id,
-            parent_id: letter?.id,
-            thread_id: threadId,
-          },
-        ])
-        .select();
-
-      if (error) {
-        Alert.alert('Error', error.message);
-      } else if (data) {
-        // Clear input and refresh to show the new reply
-        setReplyContent('');
-        fetchLetterAndReplies();
-      }
-    } catch (error) {
-      console.error('Error submitting reply:', error);
-      Alert.alert('Error', 'Failed to submit reply');
-    } finally {
-      setSubmitting(false);
-    }
+    fetchLetter();
   };
 
   if (loading && !refreshing) {
@@ -161,49 +115,6 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Paragraph style={styles.content}>{letter.content}</Paragraph>
         </Card.Content>
       </Card>
-
-      <Divider style={styles.divider} />
-
-      <View style={styles.repliesContainer}>
-        <Text style={styles.repliesTitle}>Replies ({replies.length})</Text>
-        
-        {replies.map((reply) => (
-          <Card key={reply.id} style={styles.replyCard}>
-            <Card.Content>
-              <View style={styles.replyHeader}>
-                <Text style={styles.replyAuthor}>{reply.display_name}</Text>
-                <Text style={styles.replyDate}>
-                  {format(new Date(reply.created_at), 'MMM d, yyyy')}
-                </Text>
-              </View>
-              <Paragraph>{reply.content}</Paragraph>
-            </Card.Content>
-          </Card>
-        ))}
-
-        {user && (
-          <Card style={styles.replyInputCard}>
-            <Card.Content>
-              <TextInput
-                label="Write a reply"
-                value={replyContent}
-                onChangeText={setReplyContent}
-                multiline
-                style={styles.replyInput}
-              />
-              <Button
-                mode="contained"
-                onPress={handleSubmitReply}
-                loading={submitting}
-                disabled={submitting || !replyContent.trim()}
-                style={styles.submitButton}
-              >
-                Reply
-              </Button>
-            </Card.Content>
-          </Card>
-        )}
-      </View>
     </ScrollView>
   );
 };
@@ -249,41 +160,6 @@ const styles = StyleSheet.create({
   content: {
     fontSize: 16,
     lineHeight: 24,
-  },
-  divider: {
-    marginVertical: 16,
-  },
-  repliesContainer: {
-    padding: 16,
-  },
-  repliesTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  replyCard: {
-    marginBottom: 12,
-  },
-  replyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  replyAuthor: {
-    fontWeight: 'bold',
-  },
-  replyDate: {
-    fontSize: 12,
-    color: '#666',
-  },
-  replyInputCard: {
-    marginTop: 16,
-  },
-  replyInput: {
-    marginBottom: 16,
-  },
-  submitButton: {
-    alignSelf: 'flex-end',
   },
 });
 
