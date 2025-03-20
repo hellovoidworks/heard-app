@@ -230,7 +230,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               {letter.display_name || letter.author?.username || 'Unknown User'}
             </Text>
             <Text style={styles.messageDate}>
-              {format(new Date(letter.created_at), 'MMM d, h:mm a')}
+              {format(new Date(letter.created_at), 'MMM d')}
             </Text>
           </View>
           <Paragraph style={styles.messageContent}>{letter.content}</Paragraph>
@@ -255,7 +255,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   {reply.display_name || reply.author?.username || 'Unknown User'}
                 </Text>
                 <Text style={styles.messageDate}>
-                  {format(new Date(reply.created_at), 'MMM d, h:mm a')}
+                  {format(new Date(reply.created_at), 'MMM d')}
                 </Text>
               </View>
               <Paragraph style={styles.messageContent}>{reply.content}</Paragraph>
