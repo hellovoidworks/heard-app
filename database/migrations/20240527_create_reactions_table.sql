@@ -42,7 +42,7 @@ CREATE OR REPLACE FUNCTION public.handle_new_reaction()
 RETURNS TRIGGER AS $$
 BEGIN
   -- Insert a notification for the letter author
-  INSERT INTO public.notifications (user_id, type, related_id, actor_id)
+  INSERT INTO public.notifications (recipient_id, type, related_id, actor_id)
   SELECT l.author_id, 'reaction', NEW.letter_id, NEW.user_id
   FROM public.letters l
   WHERE l.id = NEW.letter_id AND l.author_id != NEW.user_id;
