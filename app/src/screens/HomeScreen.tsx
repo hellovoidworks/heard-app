@@ -469,9 +469,9 @@ const HomeScreen = () => {
   };
   
   /**
-   * Loads more random letters when the user presses the "Load More" button
+   * Delivers more random letters when the user presses the "Deliver More Letters" button
    */
-  const loadMoreLetters = async () => {
+  const deliverMoreLetters = async () => {
     if (loadingMore || !user) return;
     
     try {
@@ -525,9 +525,9 @@ const HomeScreen = () => {
       // Prepend to the existing letters
       setLetters(prevLetters => [...moreWithReadStatus, ...prevLetters] as LetterWithDetails[]);
       
-      console.log(`Loaded ${moreLetters.length} more letters at the top`);
+      console.log(`Delivered ${moreLetters.length} more letters at the top`);
     } catch (error) {
-      console.error('Error loading more letters:', error);
+      console.error('Error delivering more letters:', error);
     } finally {
       setLoadingMore(false);
     }
@@ -651,13 +651,13 @@ const HomeScreen = () => {
       <View style={styles.headerContainer}>
         <Button 
           mode="outlined"
-          onPress={loadMoreLetters}
+          onPress={deliverMoreLetters}
           loading={loadingMore}
           disabled={loadingMore}
           icon="refresh"
-          style={styles.loadMoreButton}
+          style={styles.deliverMoreButton}
         >
-          Load More Letters
+          Deliver More Letters
         </Button>
       </View>
     );
@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
   },
-  loadMoreButton: {
+  deliverMoreButton: {
     width: '80%',
   },
   banner: {
