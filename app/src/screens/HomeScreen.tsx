@@ -654,7 +654,7 @@ const HomeScreen = () => {
           onPress={deliverMoreLetters}
           loading={loadingMore}
           disabled={loadingMore}
-          icon="mail-plus"
+          icon="email"
           style={styles.deliverMoreButton}
         >
           Deliver More Letters
