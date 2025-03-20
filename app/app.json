@@ -38,7 +38,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.yourcompany.heard",
+      "package": "co.voidworks.heardapp",
       "intentFilters": [
         {
           "action": "VIEW",
