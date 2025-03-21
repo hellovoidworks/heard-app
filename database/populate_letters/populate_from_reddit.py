@@ -177,7 +177,7 @@ POST:
                 "prompt": prompt,
                 "stream": False
             },
-            timeout=60  # 60 second timeout (1 minute)
+            timeout=120  # 60 second timeout (1 minute)
         )
         
         # Check if the request was successful
@@ -297,7 +297,7 @@ def rewrite_post_with_ollama(title: str, content: str) -> Dict[str, str]:
     
     # Create the prompt for content rewriting
     prompt = f"""
-Please rewrite the following post to make it more suitable as a personal letter. 
+Please rewrite the following post. 
 Maintain the original meaning, emotions, and key points, but improve the structure, flow, and readability.
 Remove any Reddit-specific language or references.
 Make it personal and authentic-sounding.
