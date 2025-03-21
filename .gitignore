@@ -105,9 +105,15 @@ yarn-error.*
 .env.development
 .env.test
 .env.production
+.keys
 
 # Supabase
 .supabase/ 
 
 #cursor
 .cursor
+
+# python
+venv/
+*.pyc
+__pycache__/
