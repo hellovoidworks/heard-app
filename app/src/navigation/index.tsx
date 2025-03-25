@@ -114,7 +114,7 @@ const MainNavigator = () => {
           backgroundColor: '#121212',
           paddingBottom: insets.bottom,
         },
-        tabBarActiveTintColor: '#476EF1',
+        tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',
       }}
       tabBar={props => (
@@ -137,7 +137,7 @@ const MainNavigator = () => {
             onPress={() => props.navigation.navigate('Home')}
           >
             <Text style={{
-              color: props.state.index === 0 ? '#476EF1' : '#666666',
+              color: props.state.index === 0 ? '#FFFFFF' : '#666666',
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
@@ -174,7 +174,7 @@ const MainNavigator = () => {
             onPress={() => props.navigation.navigate('Mailbox')}
           >
             <Text style={{
-              color: props.state.index === 1 ? '#476EF1' : '#666666',
+              color: props.state.index === 1 ? '#FFFFFF' : '#666666',
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
