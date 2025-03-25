@@ -1090,12 +1090,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   letterTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
     color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
     lineHeight: 22,
+    letterSpacing: -1,
   },
   letterContent: {
     fontSize: 14,
@@ -1114,7 +1115,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     marginRight: 4,
     marginBottom: 4,
-    borderRadius: 5,
     opacity: 0.8,
   },
   letterFooter: {
