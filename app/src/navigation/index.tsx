@@ -9,6 +9,7 @@ import linking from '../utils/linking';
 import { supabase } from '../services/supabase';
 import { CommonActions } from '@react-navigation/native';
 import { View, TouchableOpacity, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Import screens from the index file
 import {
@@ -98,6 +99,8 @@ const OnboardingNavigator = () => {
 
 // Main tab navigator
 const MainNavigator = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={{
@@ -107,9 +110,9 @@ const MainNavigator = () => {
         headerTintColor: '#FFFFFF',
         tabBarShowLabel: true,
         tabBarStyle: {
-          height: 60,
+          height: 60 + insets.bottom,
           backgroundColor: '#121212',
-          borderTopColor: '#2C2C2C',
+          paddingBottom: insets.bottom,
         },
         tabBarActiveTintColor: '#BB86FC',
         tabBarInactiveTintColor: '#666666',
@@ -117,10 +120,11 @@ const MainNavigator = () => {
       tabBar={props => (
         <View style={{
           flexDirection: 'row',
-          height: 60,
+          height: 60 + insets.bottom,
           backgroundColor: '#121212',
           alignItems: 'center',
           justifyContent: 'space-around',
+          paddingBottom: insets.bottom,
         }}>
           {/* Home Tab */}
           <TouchableOpacity
@@ -128,6 +132,7 @@ const MainNavigator = () => {
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              paddingBottom: insets.bottom > 0 ? insets.bottom / 3 : 0,
             }}
             onPress={() => props.navigation.navigate('Home')}
           >
@@ -150,7 +155,8 @@ const MainNavigator = () => {
               backgroundColor: '#3F51B5',
               alignItems: 'center',
               justifyContent: 'center',
-              bottom: 5,
+              bottom: 15,
+              marginBottom: insets.bottom > 0 ? -insets.bottom / 2 : 0,
             }}
             onPress={() => props.navigation.getParent()?.navigate('WriteLetter')}
           >
@@ -163,6 +169,7 @@ const MainNavigator = () => {
               flex: 1,
               alignItems: 'center',
               justifyContent: 'center',
+              paddingBottom: insets.bottom > 0 ? insets.bottom / 3 : 0,
             }}
             onPress={() => props.navigation.navigate('Mailbox')}
           >
