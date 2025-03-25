@@ -138,9 +138,6 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       keyboardType="email-address"
                       autoFocus
                     />
-                    {email && !isValidEmail && (
-                      <Text style={styles.errorText}>Please enter a valid email address</Text>
-                    )}
                   </View>
                 </View>
                 
