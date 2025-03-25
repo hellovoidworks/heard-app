@@ -6,6 +6,7 @@ import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fontNames } from '../../utils/fonts';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'CategoryPreferences'>;
 
@@ -151,14 +152,19 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
       selected={selectedCategories.includes(item.id)}
       onPress={() => toggleCategory(item.id)}
       selectedColor="#FFFFFF"
-      textStyle={{ color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface }}
+      textStyle={{ 
+        color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface,
+        fontFamily: fontNames.sourceCodeProSemiBold,
+        textTransform: 'uppercase',
+        fontSize: 12
+      }}
       mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
       style={[
         styles.chip,
         selectedCategories.includes(item.id) && { backgroundColor: item.color || theme.colors.primary }
       ]}
     >
-      {item.name}
+      {item.name.toUpperCase()}
     </Chip>
   );
 
@@ -201,14 +207,19 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
               selectedColor="#FFFFFF"
-              textStyle={{ color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface }}
+              textStyle={{ 
+                color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface,
+                fontFamily: fontNames.sourceCodeProSemiBold,
+                textTransform: 'uppercase',
+                fontSize: 12
+              }}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
               style={[
                 styles.chip,
                 selectedCategories.includes(category.id) && { backgroundColor: category.color || theme.colors.primary }
               ]}
             >
-              {category.name}
+              {category.name.toUpperCase()}
             </Chip>
           ))}
         </View>
