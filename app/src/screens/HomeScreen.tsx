@@ -16,6 +16,61 @@ import {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
+// Add chunking utility for large arrays in Supabase queries
+const chunkArray = <T,>(array: T[], chunkSize: number): T[][] => {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+};
+
+// Add timeout utility at the top level
+const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
+    )
+  ]);
+};
+
+// Handle large arrays in IN clause by chunking
+const safeInClause = async <T extends Record<string, any>>(
+  query: any, 
+  field: string, 
+  values: string[], 
+  chunkSize: number = 95
+): Promise<T[]> => {
+  // If the array is small enough, just use a single query
+  if (values.length <= chunkSize) {
+    const { data, error } = await query.in(field, values);
+    if (error) {
+      console.error(`Error in safeInClause with ${values.length} values:`, error);
+      return [];
+    }
+    return data || [];
+  }
+  
+  // For large arrays, split into chunks and perform multiple queries
+  console.log(`Using chunked queries for ${values.length} values`);
+  const chunks = chunkArray(values, chunkSize);
+  const results: T[] = [];
+  
+  for (const chunk of chunks) {
+    const { data, error } = await query.in(field, chunk);
+    if (error) {
+      console.error(`Error in safeInClause chunk with ${chunk.length} values:`, error);
+      continue;
+    }
+    if (data) {
+      results.push(...data);
+    }
+  }
+  
+  return results;
+};
+
 const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +88,7 @@ const HomeScreen = () => {
   });
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
@@ -91,7 +147,12 @@ const HomeScreen = () => {
     if (!user) return [];
     
     try {
+      console.log('DEBUG: getLettersForCurrentWindow - Start');
+      
       // First, check if there are any letters already delivered in the current window
+      console.log('DEBUG: Checking for existing deliveries in current window:', 
+        currentWindow.start.toISOString(), 'to', currentWindow.end.toISOString());
+      
       const { data: existingDeliveries, error: deliveryError } = await supabase
         .from('letter_received')
         .select('letter_id, display_order')
@@ -105,6 +166,8 @@ const HomeScreen = () => {
         return [];
       }
       
+      console.log('DEBUG: existingDeliveries query completed', existingDeliveries?.length || 0);
+      
       // If we already have letters delivered in this window, fetch and return them
       if (existingDeliveries && existingDeliveries.length > 0) {
         console.log(`Found ${existingDeliveries.length} letters already delivered in this window`);
@@ -117,6 +180,8 @@ const HomeScreen = () => {
         });
         
         const letterIds = existingDeliveries.map(delivery => delivery.letter_id);
+        
+        console.log('DEBUG: Fetching letters with IDs:', letterIds);
         
         const { data: letters, error: lettersError } = await supabase
           .from('letters')
@@ -132,7 +197,10 @@ const HomeScreen = () => {
           return [];
         }
         
+        console.log('DEBUG: Letters query returned', letters?.length || 0, 'letters');
+        
         // Get read status for these letters
+        console.log('DEBUG: Checking read status for letters');
         const { data: readData, error: readError } = await supabase
           .from('letter_reads')
           .select('letter_id')
@@ -142,6 +210,8 @@ const HomeScreen = () => {
         if (readError) {
           console.error('Error fetching read status:', readError);
         }
+        
+        console.log('DEBUG: Read status query completed');
         
         // Convert read data to a Set for faster lookups
         const readLetterIds = new Set(readData ? readData.map(item => item.letter_id) : []);
@@ -156,6 +226,7 @@ const HomeScreen = () => {
         // Sort by display_order to maintain consistent order (higher values at the top)
         lettersWithReadStatus.sort((a, b) => (b.display_order || 0) - (a.display_order || 0));
         
+        console.log('DEBUG: Returning', lettersWithReadStatus.length, 'letters with read status');
         return lettersWithReadStatus;
       } else {
         // No letters delivered in this window yet, deliver new ones and store them
@@ -165,7 +236,9 @@ const HomeScreen = () => {
         // Check if this is a new window we just entered
         if (currentWindow.isNewWindow) {
           console.log('New delivery window detected, delivering fresh letters');
+          console.log('DEBUG: Calling getUnreadLettersNotByUser');
           const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+          console.log('DEBUG: getUnreadLettersNotByUser returned', newLetters?.length || 0, 'letters');
           return newLetters.map(letter => ({
             ...letter,
             is_read: false
@@ -190,10 +263,13 @@ const HomeScreen = () => {
    * @param limit Number of letters to fetch
    */
   const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT) => {
+    console.log('DEBUG: getUnreadLettersNotByUser - Start', limit);
+    
     if (!user) return [];
     
     try {
       // Get all read letter IDs for the current user
+      console.log('DEBUG: Fetching read letters');
       const { data: readData, error: readError } = await supabase
         .from('letter_reads')
         .select('letter_id')
@@ -206,8 +282,10 @@ const HomeScreen = () => {
       
       // Extract read letter IDs into an array
       const readLetterIds = readData ? readData.map(item => item.letter_id) : [];
+      console.log(`DEBUG: User has read ${readLetterIds.length} letters`);
       
       // Get user's category preferences
+      console.log('DEBUG: Fetching category preferences');
       const { data: categoryPreferences, error: preferencesError } = await supabase
         .from('user_category_preferences')
         .select('category_id')
@@ -226,6 +304,7 @@ const HomeScreen = () => {
       console.log(`User has ${preferredCategoryIds.length} preferred categories`);
       
       // Also get all letters already received by this user in any window
+      console.log('DEBUG: Fetching previously received letters');
       const { data: receivedData, error: receivedError } = await supabase
         .from('letter_received')
         .select('letter_id')
@@ -237,6 +316,7 @@ const HomeScreen = () => {
       
       // Extract previously received letter IDs
       const receivedLetterIds = receivedData ? receivedData.map(item => item.letter_id) : [];
+      console.log(`DEBUG: User has received ${receivedLetterIds.length} letters previously`);
       
       // If user has preferences, first try to get unread letters from preferred categories
       let resultLetters: any[] = [];
@@ -257,11 +337,29 @@ const HomeScreen = () => {
         
         // If the user has read any letters, exclude those from the results
         if (readLetterIds.length > 0) {
-          query.filter('id', 'not.in', `(${readLetterIds.join(',')})`);
+          // FIX: Use a safer approach for larger arrays
+          if (readLetterIds.length > 100) {
+            // If there are too many read letters, just fetch a large sample and filter in memory
+            console.log('DEBUG: Too many read letters, using simplified query');
+            const { data: allLetters, error: allLettersError } = await query
+              .order('created_at', { ascending: false })
+              .limit(100);
+              
+            if (allLettersError) {
+              console.error('Error fetching letters with simplified query:', allLettersError);
+            } else if (allLetters) {
+              const filteredLetters = allLetters.filter(letter => !readLetterIds.includes(letter.id));
+              resultLetters = filteredLetters.slice(0, limit);
+            }
+          } else {
+            query.filter('id', 'not.in', `(${readLetterIds.join(',')})`);
+          }
         }
         
-        // If the user has received any letters in previous windows, prioritize new content
-        if (receivedLetterIds.length > 0) {
+        // If we didn't get letters with the simplified approach, and there aren't too many received letters
+        if (resultLetters.length === 0 && receivedLetterIds.length <= 100) {
+          // If the user has received any letters in previous windows, prioritize new content
+          console.log('DEBUG: Fetching new preferred letters not previously received');
           // First try to get only letters that haven't been received before
           const { data: newLetters, error: newLettersError } = await query
             .filter('id', 'not.in', `(${receivedLetterIds.join(',')})`)
@@ -274,29 +372,30 @@ const HomeScreen = () => {
             console.log(`Found ${newLetters.length} new unread letters from preferred categories`);
             resultLetters = newLetters;
           }
-          
+            
           // If we didn't get enough new letters, fill in with previously received ones
-          if (resultLetters.length < limit) {
+          if (resultLetters.length < limit && receivedLetterIds.length > 0) {
             const remainingLimit = limit - resultLetters.length;
             console.log(`Fetching ${remainingLimit} more letters from previously received`);
-            
+              
             const { data: oldLetters, error: oldLettersError } = await query
               .filter('id', 'in', `(${receivedLetterIds.join(',')})`)
               .order('created_at', { ascending: Math.random() > 0.5 })
               .limit(remainingLimit);
-              
+                
             if (oldLettersError) {
               console.error('Error fetching old preferred letters:', oldLettersError);
             } else if (oldLetters) {
               resultLetters = [...resultLetters, ...oldLetters];
             }
           }
-        } else {
+        } else if (resultLetters.length === 0) {
           // User hasn't received any letters yet, so just get random ones
+          console.log('DEBUG: Fetching random preferred letters');
           const { data: preferredLetters, error: preferredError } = await query
             .order('created_at', { ascending: Math.random() > 0.5 })
             .limit(limit);
-          
+            
           if (preferredError) {
             console.error('Error fetching preferred category letters:', preferredError);
           } else if (preferredLetters) {
@@ -308,77 +407,36 @@ const HomeScreen = () => {
       
       // If we didn't get enough letters from preferred categories, get more from any category
       if (resultLetters.length < limit) {
-        const remainingLimit = limit - resultLetters.length;
+        // FIX: Just get a few random letters as a fallback to avoid complex queries
+        console.log('DEBUG: Fetching fallback letters');
         
-        // Need to exclude IDs of letters we already have
-        const excludeIds = [...readLetterIds, ...resultLetters.map(letter => letter.id)];
-        
-        // Query for remaining random unread letters from any category
-        const query = supabase
+        const { data: fallbackLetters, error: fallbackError } = await supabase
           .from('letters')
           .select(`
             *,
             category:categories(*),
             author:user_profiles!letters_author_id_fkey(*)
           `)
-          .neq('author_id', user.id); // Not written by the current user
-        
-        // If we have any IDs to exclude, do so
-        if (excludeIds.length > 0) {
-          query.filter('id', 'not.in', `(${excludeIds.join(',')})`);
-        }
-        
-        // Exclude preferred categories since we already queried those
-        if (preferredCategoryIds.length > 0) {
-          query.filter('category_id', 'not.in', `(${preferredCategoryIds.join(',')})`);
-        }
-        
-        // First try to get letters that haven't been received before
-        if (receivedLetterIds.length > 0) {
-          const { data: newAdditionalLetters, error: newAdditionalError } = await query
-            .filter('id', 'not.in', `(${receivedLetterIds.join(',')})`)
-            .order('created_at', { ascending: Math.random() > 0.5 })
-            .limit(remainingLimit);
-            
-          if (newAdditionalError) {
-            console.error('Error fetching new additional letters:', newAdditionalError);
-          } else if (newAdditionalLetters && newAdditionalLetters.length > 0) {
-            console.log(`Found ${newAdditionalLetters.length} new additional letters`);
-            resultLetters = [...resultLetters, ...newAdditionalLetters];
-          }
+          .neq('author_id', user.id) // Not written by the current user
+          .order('created_at', { ascending: false })
+          .limit(limit - resultLetters.length);
           
-          // If we still need more, get previously received ones
-          if (resultLetters.length < limit) {
-            const finalLimit = limit - resultLetters.length;
-            const { data: oldAdditionalLetters, error: oldAdditionalError } = await query
-              .filter('id', 'in', `(${receivedLetterIds.join(',')})`)
-              .order('created_at', { ascending: Math.random() > 0.5 })
-              .limit(finalLimit);
-              
-            if (oldAdditionalError) {
-              console.error('Error fetching old additional letters:', oldAdditionalError);
-            } else if (oldAdditionalLetters) {
-              resultLetters = [...resultLetters, ...oldAdditionalLetters];
-            }
-          }
-        } else {
-          // User hasn't received any letters yet
-          const { data: additionalLetters, error: additionalError } = await query
-            .order('created_at', { ascending: Math.random() > 0.5 })
-            .limit(remainingLimit);
+        if (fallbackError) {
+          console.error('Error fetching fallback letters:', fallbackError);
+        } else if (fallbackLetters) {
+          // Filter out any letters we already have
+          const existingIds = new Set(resultLetters.map(letter => letter.id));
+          const newFallbackLetters = fallbackLetters.filter(letter => !existingIds.has(letter.id));
           
-          if (additionalError) {
-            console.error('Error fetching additional letters:', additionalError);
-          } else if (additionalLetters) {
-            console.log(`Found ${additionalLetters.length} additional unread letters`);
-            resultLetters = [...resultLetters, ...additionalLetters];
-          }
+          console.log(`Found ${newFallbackLetters.length} fallback letters`);
+          resultLetters = [...resultLetters, ...newFallbackLetters];
         }
       }
       
       // Track which letters were received by the user
       if (resultLetters.length > 0 && user) {
         try {
+          console.log('DEBUG: Tracking letters as received');
           // Create letter_received entries for each letter with display_order
           // Start with a high value to ensure consistency with other functions
           const baseOrder = 1000;
@@ -409,7 +467,7 @@ const HomeScreen = () => {
         }
       }
       
-      console.log(`Returning total of ${resultLetters.length} random unread letters`);
+      console.log(`DEBUG: getUnreadLettersNotByUser - Returning ${resultLetters.length} letters`);
       return resultLetters;
       
     } catch (error) {
@@ -418,6 +476,100 @@ const HomeScreen = () => {
     }
   };
   
+  /**
+   * A simplified method to get letters
+   * This is used as a fallback when the main method times out
+   */
+  const getSimpleLetters = async (limit: number = INITIAL_LETTERS_LIMIT) => {
+    if (!user) return [];
+    
+    try {
+      console.log('DEBUG: Using simplified letter fetching method');
+      
+      // Simple query to get the most recent letters without complex filtering
+      const { data: letters, error } = await supabase
+        .from('letters')
+        .select(`
+          *,
+          category:categories(*),
+          author:user_profiles!letters_author_id_fkey(*)
+        `)
+        .neq('author_id', user.id) // Not written by the current user
+        .order('created_at', { ascending: false }) // Get newest first
+        .limit(limit);
+      
+      if (error) {
+        console.error('Error fetching simple letters:', error);
+        return [];
+      }
+      
+      if (!letters || letters.length === 0) {
+        console.log('No letters found with simplified query');
+        return [];
+      }
+      
+      console.log(`Found ${letters.length} letters with simplified query`);
+      
+      // Get read status for these letters
+      const letterIds = letters.map(letter => letter.id);
+      const { data: readData, error: readError } = await supabase
+        .from('letter_reads')
+        .select('letter_id')
+        .eq('user_id', user.id)
+        .in('letter_id', letterIds);
+        
+      if (readError) {
+        console.error('Error fetching read status:', readError);
+      }
+      
+      // Convert read data to a Set for faster lookups
+      const readLetterIds = new Set(readData ? readData.map(item => item.letter_id) : []);
+      
+      // Add read status to each letter
+      const lettersWithReadStatus = letters.map(letter => ({
+        ...letter,
+        is_read: readLetterIds.has(letter.id),
+        display_order: 0 // Default display order
+      }));
+      
+      // Track which letters were received by the user
+      if (lettersWithReadStatus.length > 0) {
+        try {
+          // Create letter_received entries for each letter
+          const baseOrder = 1000;
+          const letterReceivedEntries = lettersWithReadStatus.map((letter, index) => ({
+            user_id: user.id,
+            letter_id: letter.id,
+            received_at: new Date().toISOString(),
+            display_order: baseOrder + (lettersWithReadStatus.length - index - 1)
+          }));
+          
+          // Insert the records
+          const { error: insertError } = await supabase
+            .from('letter_received')
+            .upsert(letterReceivedEntries, { 
+              onConflict: 'user_id,letter_id', 
+              ignoreDuplicates: false 
+            });
+          
+          if (insertError) {
+            console.error('Error tracking received letters in simple method:', insertError);
+          } else {
+            console.log(`Tracked ${letterReceivedEntries.length} letters as received`);
+            setAnyLettersInWindow(true);
+          }
+        } catch (trackError) {
+          console.error('Error tracking received letters in simple method:', trackError);
+        }
+      }
+      
+      return lettersWithReadStatus;
+    } catch (error) {
+      console.error('Error in simplified letter fetching:', error);
+      return [];
+    }
+  };
+
   /**
    * Loads initial letters when the component mounts
    */
@@ -432,8 +584,26 @@ const HomeScreen = () => {
     
     try {
       setLoading(true);
+      setLoadError(null);
+      
+      // Add debug code - test a simple query first
+      console.log('DEBUG: Testing simple database query...');
+      const { data: testData, error: testError } = await supabase
+        .from('categories')
+        .select('*')
+        .limit(1);
+        
+      if (testError) {
+        console.error('DEBUG: Error with simple query:', testError);
+        setLoading(false);
+        setLoadError('Database connection error. Please check your internet connection and try again.');
+        return;
+      }
+      
+      console.log('DEBUG: Simple query succeeded:', testData);
       
       // Check if the user profile exists before proceeding
+      console.log('DEBUG: Fetching user profile...');
       const { data: profileData, error: profileError } = await supabase
         .from('user_profiles')
         .select('id')
@@ -444,23 +614,59 @@ const HomeScreen = () => {
         console.error('Error fetching user profile during letter loading:', profileError);
         setLoading(false);
         setLetters([]);
+        setLoadError('Could not load your profile data. Please try again later.');
         return;
       }
       
-      const fetchedLetters = await getLettersForCurrentWindow();
+      console.log('DEBUG: User profile fetch succeeded', profileData);
+      console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');
       
-      if (fetchedLetters && fetchedLetters.length > 0) {
-        console.log(`Loaded ${fetchedLetters.length} letters successfully`);
-        setLetters(fetchedLetters);
-      } else {
-        console.log('No letters available to display, showing empty state');
-        setLetters([]);
+      try {
+        // Set a 10-second timeout for this operation
+        const fetchedLetters = await timeoutPromise(getLettersForCurrentWindow(), 10000);
+        
+        console.log('DEBUG: getLettersForCurrentWindow returned', fetchedLetters?.length || 0, 'letters');
+        
+        if (fetchedLetters && fetchedLetters.length > 0) {
+          console.log(`Loaded ${fetchedLetters.length} letters successfully`);
+          setLetters(fetchedLetters);
+        } else {
+          console.log('No letters available to display, delivering new letters automatically');
+          // Automatically deliver new letters if none exist
+          const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+          if (newLetters && newLetters.length > 0) {
+            console.log(`Delivered ${newLetters.length} new letters automatically`);
+            setLetters(newLetters.map(letter => ({
+              ...letter,
+              is_read: false
+            })));
+            setAnyLettersInWindow(true);
+          } else {
+            console.log('No new letters available to deliver');
+            setLetters([]);
+          }
+        }
+      } catch (timeoutError) {
+        console.error('Letters loading timed out:', timeoutError);
+        // Try the simplified method as a fallback
+        console.log('Trying simplified letter fetching as fallback');
+        const simpleLetters = await getSimpleLetters();
+        if (simpleLetters && simpleLetters.length > 0) {
+          console.log(`Loaded ${simpleLetters.length} letters using simplified method`);
+          setLetters(simpleLetters);
+        } else {
+          // Show empty state if all methods fail
+          setLetters([]);
+          setLoadError('Letter loading timed out. Please try refreshing or check your internet connection.');
+        }
       }
     } catch (error) {
       console.error('Error loading initial letters:', error);
       setLetters([]);
+      setLoadError('An error occurred while loading letters. Please try again later.');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
   
@@ -574,6 +780,7 @@ const HomeScreen = () => {
 
   const handleRefresh = () => {
     setRefreshing(true);
+    setLoadError(null);
     // Update window and then load letters
     const window = getCurrentDeliveryWindow();
     setCurrentWindow(window);
@@ -688,6 +895,22 @@ const HomeScreen = () => {
         <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[styles.loadingText, { color: theme.colors.primary }]}>Loading your letters...</Text>
+        </View>
+      );
+    }
+    
+    if (loadError) {
+      return (
+        <View style={[styles.errorContainer, { backgroundColor: theme.colors.background }]}>
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>{loadError}</Text>
+          <Button
+            mode="contained"
+            onPress={handleRefresh}
+            style={styles.retryButton}
+            icon="refresh"
+          >
+            Retry
+          </Button>
         </View>
       );
     }
@@ -860,6 +1083,10 @@ const styles = StyleSheet.create({
   },
   bannerText: {
     fontSize: 14,
+  },
+  retryButton: {
+    marginTop: 20,
+    width: '80%',
   },
 });
 
