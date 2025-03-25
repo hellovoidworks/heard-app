@@ -220,7 +220,7 @@ const LoginScreen = ({ navigation }: Props) => {
                       onPress={() => setShowEmailInput(true)}
                       disabled={loading}
                     >
-                      <View style={styles.gradientButton}>
+                      <View style={styles.gradientBackground}>
                         <Text style={styles.emailButtonText}>Sign in with Email</Text>
                       </View>
                     </TouchableOpacity>
@@ -324,19 +324,33 @@ const styles = StyleSheet.create({
     height: 56,
     borderRadius: 28,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  gradientButton: {
+  gradientBackground: {
     width: '100%',
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 28,
     backgroundColor: '#62DDD2',
+    // CSS gradient workaround using border with transparency
+    borderWidth: 0,
+    borderLeftWidth: 56 * 2,
+    borderColor: '#62DDD2',
+    borderLeftColor: '#9292FF',
   },
   emailButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    textAlign: 'center',
+    width: '100%',
+    position: 'absolute',
+    zIndex: 2,
   },
   input: {
     width: '100%',
