@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText } from 'react-native';
 import { TextInput, Button, Text, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -12,8 +12,29 @@ type WriteLetterDetailsParams = {
   category?: any;
 };
 
-// Common emoji moods that users can select quickly
-const SUGGESTED_MOODS = ['😊', '😔', '😡', '😢', '😂', '😍', '🤔', '😴', '😎', '😒', '👍', '👎', '❤️', '😱', '🙏'];
+// Mood options with emojis and labels
+const MOOD_OPTIONS = [
+  { emoji: '😌', label: 'Calm' },
+  { emoji: '🙌', label: 'Excited' },
+  { emoji: '👌', label: 'Okay' },
+  { emoji: '💗', label: 'Grateful' },
+  { emoji: '😄', label: 'Happy' },
+  { emoji: '🥱', label: 'Bored' },
+  { emoji: '😢', label: 'Lonely' },
+  { emoji: '😕', label: 'Confused' },
+  { emoji: '😖', label: 'Stressed' },
+  { emoji: '😈', label: 'Playful' },
+  { emoji: '😟', label: 'Worried' },
+  { emoji: '😴', label: 'Tired' },
+  { emoji: '😥', label: 'Sad' },
+  { emoji: '😶', label: 'Numb' },
+  { emoji: '💔', label: 'Heartbroken' },
+  { emoji: '😫', label: 'Upset' },
+  { emoji: '😠', label: 'Angry' },
+  { emoji: '😮', label: 'Surprised' },
+  { emoji: '😨', label: 'Scared' },
+  { emoji: '🫠', label: 'Overwhelmed' },
+];
 
 const WriteLetterDetailsScreen = () => {
   const { user, profile } = useAuth();
@@ -142,8 +163,15 @@ const WriteLetterDetailsScreen = () => {
   };
 
   const handleEmojiSelect = (emoji: string) => {
-    setMoodEmoji(emoji === moodEmoji ? '' : emoji); // Toggle the emoji if it's already selected
+    // Select the emoji or deselect if already selected
+    setMoodEmoji(emoji === moodEmoji ? '' : emoji);
   };
+
+  // Create rows of 5 emojis each for the grid layout
+  const moodRows = [];
+  for (let i = 0; i < MOOD_OPTIONS.length; i += 5) {
+    moodRows.push(MOOD_OPTIONS.slice(i, i + 5));
+  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -156,45 +184,28 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <View style={styles.titlePreview}>
-            <Text style={[styles.previewLabel, { color: theme.colors.onSurfaceDisabled }]}>Title:</Text>
-            <Text style={[styles.previewContent, { color: theme.colors.onSurface }]} numberOfLines={1}>
-              {title}
-            </Text>
-          </View>
+          <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
           
-          <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />
-
-          <View style={styles.moodContainer}>
-            <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood</Text>
-            
-            <View style={[styles.selectedEmojiContainer, { 
-              backgroundColor: theme.colors.surface,
-              borderColor: theme.colors.outline
-            }]}>
-              {moodEmoji ? (
-                <Text style={styles.selectedEmoji}>{moodEmoji}</Text>
-              ) : (
-                <Text style={[styles.placeholderEmoji, { color: theme.colors.onSurfaceDisabled }]}>Select an emoji</Text>
-              )}
-            </View>
-            
-            <Surface style={[styles.emojiSuggestions, { backgroundColor: theme.colors.surface }]}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {SUGGESTED_MOODS.map((emoji, index) => (
-                  <TouchableOpacity 
-                    key={index} 
+          <View style={styles.moodGrid}>
+            {moodRows.map((row, rowIndex) => (
+              <View key={`row-${rowIndex}`} style={styles.moodRow}>
+                {row.map((option) => (
+                  <TouchableOpacity
+                    key={option.label}
                     style={[
-                      styles.emojiOption,
-                      emoji === moodEmoji && [styles.selectedEmojiOption, { backgroundColor: theme.colors.primary }]
+                      styles.moodOption,
+                      moodEmoji === option.emoji && [styles.selectedMoodOption, { borderColor: 'white' }]
                     ]}
-                    onPress={() => handleEmojiSelect(emoji)}
+                    onPress={() => handleEmojiSelect(option.emoji)}
                   >
-                    <Text style={styles.emojiText}>{emoji}</Text>
+                    <Text style={styles.emojiText}>{option.emoji}</Text>
+                    <RNText style={[styles.moodLabel, { color: theme.colors.onSurface }]}>
+                      {option.label}
+                    </RNText>
                   </TouchableOpacity>
                 ))}
-              </ScrollView>
-            </Surface>
+              </View>
+            ))}
           </View>
           
           <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
@@ -274,53 +285,39 @@ const styles = StyleSheet.create({
   contentContainer: {
     padding: 16,
   },
-  titlePreview: {
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 24,
     marginTop: 8,
-    marginBottom: 8,
   },
-  previewLabel: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  previewContent: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  divider: {
-    marginVertical: 16,
-  },
-  moodContainer: {
+  moodGrid: {
     marginBottom: 24,
   },
-  selectedEmojiContainer: {
-    height: 60,
+  moodRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  moodOption: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#333333',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-    borderRadius: 8,
-    borderWidth: 1,
+    marginHorizontal: 2,
   },
-  selectedEmoji: {
-    fontSize: 36,
-  },
-  placeholderEmoji: {
-    fontSize: 16,
-  },
-  emojiSuggestions: {
-    padding: 12,
-    borderRadius: 8,
-    elevation: 2,
-  },
-  emojiOption: {
-    padding: 8,
-    marginHorizontal: 4,
-    borderRadius: 20,
-  },
-  selectedEmojiOption: {
-    borderWidth: 1,
+  selectedMoodOption: {
+    borderWidth: 2,
   },
   emojiText: {
-    fontSize: 28,
+    fontSize: 24,
+  },
+  moodLabel: {
+    fontSize: 10,
+    textAlign: 'center',
+    marginTop: 4,
   },
   label: {
     fontSize: 16,
