@@ -13,6 +13,7 @@ interface Category {
   id: string;
   name: string;
   description: string;
+  color: string;
 }
 
 const CategoryPreferencesScreen = ({ navigation }: Props) => {
@@ -150,8 +151,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
       selected={selectedCategories.includes(item.id)}
       onPress={() => toggleCategory(item.id)}
       style={styles.chip}
-      selectedColor={theme.colors.primary}
-      textStyle={{ color: selectedCategories.includes(item.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
+      selectedColor={item.color || theme.colors.primary}
+      textStyle={{ color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface }}
       mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
     >
       {item.name}
@@ -197,8 +198,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
               style={styles.chip}
-              selectedColor={theme.colors.primary}
-              textStyle={{ color: selectedCategories.includes(category.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
+              selectedColor={category.color || theme.colors.primary}
+              textStyle={{ color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface }}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
             >
               {category.name}
@@ -276,6 +277,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     margin: 5,
+    borderRadius: 20,
   },
   selectionCount: {
     textAlign: 'center',
