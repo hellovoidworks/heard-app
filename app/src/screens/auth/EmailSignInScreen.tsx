@@ -94,10 +94,53 @@ const EmailSignInScreen = ({ navigation }: Props) => {
           </View>
 
           <View style={styles.content}>
-            <Text style={styles.title}>Sign in with Email</Text>
-
-            {magicLinkSent ? (
+            {!magicLinkSent ? (
+              <>
+                <Text style={styles.title}>Sign in with Email</Text>
+                
+                <Text style={styles.emailInstructions}>
+                  Enter your email address and we'll send you a magic link to sign in.
+                </Text>
+                
+                <View style={styles.inputRow}>
+                  <Text style={[styles.inputLabel, { color: theme.colors.onBackground }]}>Email</Text>
+                  <View style={styles.inputWrapper}>
+                    <TextInput
+                      value={email}
+                      onChangeText={setEmail}
+                      placeholder="Enter your email address"
+                      placeholderTextColor={theme.colors.onSurfaceDisabled}
+                      style={[styles.emailInput, { backgroundColor: 'transparent', color: theme.colors.onSurface }]}
+                      maxLength={100}
+                      theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+                      underlineColor="transparent"
+                      activeUnderlineColor="transparent"
+                      mode="flat"
+                      dense
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                      autoFocus
+                    />
+                  </View>
+                </View>
+                
+                <View style={styles.divider} />
+                
+                <Button
+                  mode="contained"
+                  onPress={handleSendMagicLink}
+                  style={styles.button}
+                  loading={loading}
+                  disabled={loading || !email.trim()}
+                  labelStyle={styles.buttonLabelStyle}
+                >
+                  Send Magic Link
+                </Button>
+              </>
+            ) : (
               <View style={styles.magicLinkSentContainer}>
+                <Text style={styles.title}>Magic Link Sent</Text>
+                
                 <Text style={styles.magicLinkText}>
                   Magic link sent! Check your email at {email} and click the link to sign in.
                 </Text>
@@ -120,36 +163,6 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   Go Back
                 </Button>
               </View>
-            ) : (
-              <>
-                <Text style={styles.emailInstructions}>
-                  Enter your email address and we'll send you a magic link to sign in.
-                </Text>
-                
-                <TextInput
-                  label="Email"
-                  value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                  style={styles.input}
-                  disabled={loading}
-                  autoFocus
-                  placeholderTextColor={theme.colors.onSurfaceDisabled}
-                  theme={{ colors: { text: theme.colors.onSurface } }}
-                />
-                
-                <Button
-                  mode="contained"
-                  onPress={handleSendMagicLink}
-                  style={styles.button}
-                  loading={loading}
-                  disabled={loading || !email.trim()}
-                  labelStyle={styles.buttonLabelStyle}
-                >
-                  Send Magic Link
-                </Button>
-              </>
             )}
           </View>
         </ScrollView>
@@ -197,6 +210,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
     color: '#FFFFFF',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingTop: 8,
+  },
+  inputLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    width: '22%',
+    marginRight: 8,
+    paddingTop: 8,
+  },
+  inputWrapper: {
+    flex: 1,
+  },
+  emailInput: {
+    fontSize: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    minHeight: 40,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+    marginVertical: 24,
   },
   input: {
     width: '100%',
