@@ -252,7 +252,6 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         styles.footer, 
         { 
           backgroundColor: theme.colors.background, 
-          borderTopColor: theme.colors.outline,
           paddingBottom: Math.max(insets.bottom, 20)
         }
       ]}>
@@ -328,8 +327,6 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 20,
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   button: {
     width: '100%',
