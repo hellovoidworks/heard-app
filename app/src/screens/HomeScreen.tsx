@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Banner, useTheme } from 'react-native-paper';
-import { supabase } from '../services/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { Letter, LetterWithDetails } from '../types/database.types';
+import { View, StyleSheet, FlatList } from 'react-native';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
+import { supabase } from '../services/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { LetterWithDetails } from '../types/database.types';
+import { RootStackParamList } from '../navigation/types';
 import { 
   getCurrentDeliveryWindow, 
   formatDeliveryWindow, 
@@ -16,16 +16,7 @@ import {
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Add chunking utility for large arrays in Supabase queries
-const chunkArray = <T,>(array: T[], chunkSize: number): T[][] => {
-  const chunks = [];
-  for (let i = 0; i < array.length; i += chunkSize) {
-    chunks.push(array.slice(i, i + chunkSize));
-  }
-  return chunks;
-};
-
-// Add timeout utility at the top level
+// Add timeout utility
 const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
   return Promise.race([
     promise,
@@ -35,47 +26,14 @@ const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
   ]);
 };
 
-// Handle large arrays in IN clause by chunking
-const safeInClause = async <T extends Record<string, any>>(
-  query: any, 
-  field: string, 
-  values: string[], 
-  chunkSize: number = 95
-): Promise<T[]> => {
-  // If the array is small enough, just use a single query
-  if (values.length <= chunkSize) {
-    const { data, error } = await query.in(field, values);
-    if (error) {
-      console.error(`Error in safeInClause with ${values.length} values:`, error);
-      return [];
-    }
-    return data || [];
-  }
-  
-  // For large arrays, split into chunks and perform multiple queries
-  console.log(`Using chunked queries for ${values.length} values`);
-  const chunks = chunkArray(values, chunkSize);
-  const results: T[] = [];
-  
-  for (const chunk of chunks) {
-    const { data, error } = await query.in(field, chunk);
-    if (error) {
-      console.error(`Error in safeInClause chunk with ${chunk.length} values:`, error);
-      continue;
-    }
-    if (data) {
-      results.push(...data);
-    }
-  }
-  
-  return results;
-};
-
 const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const { user } = useAuth();
+  const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
   const [timeUntilNext, setTimeUntilNext] = useState<{ hours: number; minutes: number; seconds: number }>({ 
     hours: 0, 
     minutes: 0,
@@ -88,12 +46,7 @@ const HomeScreen = () => {
   });
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
 
-  const { user } = useAuth();
-  const navigation = useNavigation<NavigationProp>();
-  const theme = useTheme();
-  
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 5;
@@ -666,7 +619,6 @@ const HomeScreen = () => {
       setLoadError('An error occurred while loading letters. Please try again later.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
   
@@ -777,16 +729,6 @@ const HomeScreen = () => {
       setLoading(false);
     }
   }, [user]);
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    setLoadError(null);
-    // Update window and then load letters
-    const window = getCurrentDeliveryWindow();
-    setCurrentWindow(window);
-    setFormattedWindow(formatDeliveryWindow(window.start, window.end));
-    loadInitialLetters();
-  };
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
     // Navigate to letter detail
@@ -916,7 +858,7 @@ const HomeScreen = () => {
           <Text style={[styles.errorText, { color: theme.colors.error }]}>{loadError}</Text>
           <Button
             mode="contained"
-            onPress={handleRefresh}
+            onPress={loadInitialLetters}
             style={styles.retryButton}
             icon="refresh"
           >
@@ -968,13 +910,6 @@ const HomeScreen = () => {
         data={unreadLetters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
         ListHeaderComponent={renderHeader}
       />
     );
