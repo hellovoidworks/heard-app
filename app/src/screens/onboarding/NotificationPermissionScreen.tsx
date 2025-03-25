@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
-import { Button, Text, Title, IconButton } from 'react-native-paper';
+import { Button, Text, Title, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
@@ -13,6 +13,7 @@ type Props = NativeStackScreenProps<OnboardingStackParamList, 'NotificationPermi
 const NotificationPermissionScreen = ({ navigation }: Props) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const theme = useTheme();
 
   const handleEnableNotifications = async () => {
     setLoading(true);
@@ -148,12 +149,12 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   const completeOnboarding = () => {
-    console.log('Completing onboarding, resetting navigation to Main...');
-    // Navigate to the main app
+    console.log('Completing onboarding, resetting navigation to Root...');
+    // Navigate to the root stack first
     try {
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Main' as any }],
+        routes: [{ name: 'Root' as any }],
       });
       console.log('Navigation reset successful');
     } catch (error) {
@@ -162,7 +163,7 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       // Fallback navigation if reset fails
       try {
         // @ts-ignore - This is a workaround for navigation issues
-        navigation.navigate('Root', { screen: 'Main' });
+        navigation.navigate('Root');
         console.log('Fallback navigation successful');
       } catch (fallbackError) {
         console.error('Fallback navigation failed:', fallbackError);
@@ -175,24 +176,25 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
         <IconButton
           icon="arrow-left"
           size={24}
           onPress={handleGoBack}
+          iconColor={theme.colors.onBackground}
         />
         <View style={{ width: 40 }} />
       </View>
       
       <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Ionicons name="notifications" size={100} color="#6200ee" />
+        <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+          <Ionicons name="notifications" size={100} color={theme.colors.primary} />
         </View>
         
-        <Title style={styles.title}>Stay Updated</Title>
+        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Stay Updated</Title>
         
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: theme.colors.onBackground }]}>
           Enable notifications to receive updates when someone responds to your letters or sends you a message.
         </Text>
         
@@ -202,6 +204,9 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
           style={styles.primaryButton}
           loading={loading}
           disabled={loading}
+          buttonColor={theme.colors.primary}
+          textColor={theme.colors.onPrimary}
+          labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
         >
           Enable Notifications
         </Button>
@@ -211,6 +216,8 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
           onPress={handleSkip}
           style={styles.skipButton}
           disabled={loading}
+          textColor={theme.colors.primary}
+          labelStyle={{ fontSize: 16 }}
         >
           Not Now
         </Button>
@@ -222,14 +229,12 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingTop: 20,
+    padding: 16,
   },
   content: {
     padding: 20,
@@ -247,9 +252,8 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   title: {
-    fontSize: 24,
-    marginBottom: 20,
     textAlign: 'center',
+    marginBottom: 20,
   },
   description: {
     textAlign: 'center',
@@ -261,6 +265,7 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: 6,
     marginBottom: 16,
+    borderRadius: 28,
   },
   skipButton: {
     marginTop: 8,
