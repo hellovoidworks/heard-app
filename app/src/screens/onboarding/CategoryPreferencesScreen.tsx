@@ -152,11 +152,12 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
       selected={selectedCategories.includes(item.id)}
       onPress={() => toggleCategory(item.id)}
       selectedColor="#FFFFFF"
+      showSelectedCheck={false}
       textStyle={{ 
         color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface,
         fontFamily: fontNames.sourceCodeProSemiBold,
         textTransform: 'uppercase',
-        fontSize: 12
+        fontSize: 14
       }}
       mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
       style={[
@@ -207,11 +208,12 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
               selectedColor="#FFFFFF"
+              showSelectedCheck={false}
               textStyle={{ 
                 color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface,
                 fontFamily: fontNames.sourceCodeProSemiBold,
                 textTransform: 'uppercase',
-                fontSize: 12
+                fontSize: 14
               }}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
               style={[
