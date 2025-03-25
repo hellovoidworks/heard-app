@@ -119,8 +119,6 @@ const MainNavigator = () => {
           flexDirection: 'row',
           height: 60,
           backgroundColor: '#121212',
-          borderTopColor: '#2C2C2C',
-          borderTopWidth: 1,
           alignItems: 'center',
           justifyContent: 'space-around',
         }}>
@@ -146,9 +144,9 @@ const MainNavigator = () => {
           {/* Write Button (Center) - Opens Write Screen as Modal */}
           <TouchableOpacity
             style={{
-              width: 50,
-              height: 50,
-              borderRadius: 25,
+              width: 58,
+              height: 58,
+              borderRadius: 29,
               backgroundColor: '#3F51B5',
               alignItems: 'center',
               justifyContent: 'center',
@@ -156,7 +154,7 @@ const MainNavigator = () => {
             }}
             onPress={() => props.navigation.getParent()?.navigate('WriteLetter')}
           >
-            <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>+</Text>
+            <Ionicons name="add" size={30} color="white" />
           </TouchableOpacity>
 
           {/* Mailbox Tab */}
