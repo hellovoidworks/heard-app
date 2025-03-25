@@ -133,11 +133,8 @@ const WriteLetterDetailsScreen = () => {
   };
 
   const handleBack = () => {
-    // Navigate back to content screen with title and content
-    navigation.navigate('WriteLetterContent', {
-      title,
-      content,
-    });
+    // Standard back navigation will be handled by the header back button
+    navigation.goBack();
   };
 
   const handleCategorySelect = (category: any) => {
@@ -250,14 +247,6 @@ const WriteLetterDetailsScreen = () => {
         
         <View style={styles.buttonContainer}>
           <Button
-            mode="outlined"
-            onPress={handleBack}
-            style={[styles.backButton, { borderColor: theme.colors.primary }]}
-          >
-            Back
-          </Button>
-          
-          <Button
             mode="contained"
             onPress={handleSubmit}
             style={styles.submitButton}
@@ -360,17 +349,15 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-  },
-  backButton: {
-    flex: 1,
-    marginRight: 8,
+    padding: 16,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 16,
+    borderTopWidth: 1,
+    borderTopColor: '#333',
   },
   submitButton: {
-    flex: 2,
-    marginLeft: 8,
+    padding: 8,
+    // Make the button take full width since we removed the back button
+    width: '100%'
   },
   loading: {
     marginVertical: 16,

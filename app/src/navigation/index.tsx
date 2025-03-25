@@ -377,7 +377,7 @@ const AppNavigator = () => {
                   title: 'Write Letter',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
-                  presentation: 'modal',
+                  presentation: 'card',
                   headerLeft: () => (
                     <Ionicons 
                       name="close-outline" 
@@ -397,7 +397,7 @@ const AppNavigator = () => {
                   title: 'Write Letter',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
-                  presentation: 'modal',
+                  presentation: 'card',
                   headerLeft: () => (
                     <Ionicons 
                       name="close-outline" 
@@ -417,7 +417,7 @@ const AppNavigator = () => {
                   title: 'Letter Details',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
-                  presentation: 'modal',
+                  presentation: 'card',
                 })} 
               />
               <Stack.Screen 
