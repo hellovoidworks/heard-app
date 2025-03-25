@@ -107,6 +107,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   onPress={openMailApp}
                   style={styles.mailButton}
                   icon="email"
+                  labelStyle={styles.buttonLabelStyle}
                 >
                   Open Mail App
                 </Button>
@@ -144,6 +145,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   style={styles.button}
                   loading={loading}
                   disabled={loading || !email.trim()}
+                  labelStyle={styles.buttonLabelStyle}
                 >
                   Send Magic Link
                 </Button>
@@ -224,6 +226,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     paddingVertical: 6,
     borderRadius: 28,
+  },
+  buttonLabelStyle: {
+    fontSize: 18,
   },
 });
 
