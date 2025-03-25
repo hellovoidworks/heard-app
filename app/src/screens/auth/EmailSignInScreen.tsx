@@ -125,8 +125,8 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       style={[styles.emailInput, { 
                         backgroundColor: 'transparent', 
                         color: theme.colors.onSurface,
-                        borderBottomColor: email ? (isValidEmail ? theme.colors.primary : '#FF5252') : 'transparent',
-                        borderBottomWidth: email ? 1 : 0,
+                        borderBottomColor: email && isValidEmail ? theme.colors.primary : 'transparent',
+                        borderBottomWidth: email && isValidEmail ? 1 : 0,
                       }]}
                       maxLength={100}
                       theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
@@ -261,6 +261,7 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#333',
     marginVertical: 24,
+    display: 'none',
   },
   input: {
     width: '100%',
