@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Button, Text, Title, Chip, ActivityIndicator, Appbar } from 'react-native-paper';
+import { Button, Text, Title, Chip, ActivityIndicator, Appbar, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -18,6 +18,7 @@ const CategoryPreferencesSettingsScreen = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const theme = useTheme();
   
   // Fetch both categories and user preferences
   useEffect(() => {
@@ -148,28 +149,28 @@ const CategoryPreferencesSettingsScreen = () => {
   
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <Appbar.Header>
           <Appbar.BackAction onPress={() => navigation.goBack()} />
           <Appbar.Content title="Category Preferences" />
         </Appbar.Header>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}>Loading...</Text>
         </View>
       </View>
     );
   }
   
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Appbar.Header>
         <Appbar.BackAction onPress={() => navigation.goBack()} />
         <Appbar.Content title="Category Preferences" />
       </Appbar.Header>
       
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: theme.colors.onSurface }]}>
           Select categories that interest you. We'll use these to personalize your letters.
         </Text>
         
@@ -180,15 +181,16 @@ const CategoryPreferencesSettingsScreen = () => {
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
               style={styles.chip}
-              selectedColor="#6200ee"
+              selectedColor={theme.colors.primary}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
+              textStyle={{ color: selectedCategories.includes(category.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
             >
               {category.name}
             </Chip>
           ))}
         </View>
         
-        <Text style={styles.selectionCount}>
+        <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
           {selectedCategories.length} of {categories.length} selected
           {selectedCategories.length < 3 && ' (minimum 3)'}
         </Text>
@@ -210,7 +212,6 @@ const CategoryPreferencesSettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -240,7 +241,6 @@ const styles = StyleSheet.create({
   selectionCount: {
     marginVertical: 16,
     fontStyle: 'italic',
-    color: '#666',
   },
   saveButton: {
     marginTop: 20,

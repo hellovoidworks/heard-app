@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Text, Button, TextInput, Divider, List } from 'react-native-paper';
+import { Text, Button, TextInput, Divider, List, useTheme } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { removePushToken } from '../services/notifications';
 import { useNavigation } from '@react-navigation/native';
@@ -15,6 +15,7 @@ const ProfileScreen = () => {
   const [username, setUsername] = useState(profile?.username || '');
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   const handleSignOut = async () => {
     if (user) {
@@ -47,7 +48,7 @@ const ProfileScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.header}>
         {editing ? (
           <View style={styles.editForm}>
@@ -56,6 +57,7 @@ const ProfileScreen = () => {
               value={username}
               onChangeText={setUsername}
               style={styles.input}
+              theme={{ colors: { text: theme.colors.onSurface } }}
             />
             <View style={styles.buttonRow}>
               <Button 
@@ -81,7 +83,9 @@ const ProfileScreen = () => {
           </View>
         ) : (
           <View style={styles.profileInfo}>
-            <Text style={styles.username}>{profile?.username}</Text>
+            <Text style={[styles.username, { color: theme.colors.onSurface }]}>
+              {profile?.username}
+            </Text>
             <Button 
               mode="outlined" 
               onPress={() => setEditing(true)}
@@ -93,42 +97,47 @@ const ProfileScreen = () => {
         )}
       </View>
 
-      <Divider style={styles.divider} />
+      <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
       <List.Section>
-        <List.Subheader>Account</List.Subheader>
+        <List.Subheader style={{ color: theme.colors.onSurfaceVariant }}>Account</List.Subheader>
         <List.Item
           title="Account Settings"
-          left={props => <List.Icon {...props} icon="account-cog" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="account-cog" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
           onPress={() => navigation.navigate('AccountSettings')}
         />
         <List.Item
           title="Notification Settings"
-          left={props => <List.Icon {...props} icon="bell" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="bell" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
           onPress={() => navigation.navigate('NotificationSettings')}
         />
         <List.Item
           title="Category Preferences"
-          left={props => <List.Icon {...props} icon="tag-multiple" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="tag-multiple" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
           onPress={() => navigation.navigate('CategoryPreferencesSettings')}
         />
         <List.Item
           title="Privacy Settings"
-          left={props => <List.Icon {...props} icon="shield" />}
-          right={props => <List.Icon {...props} icon="chevron-right" />}
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="shield" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
         />
       </List.Section>
 
-      <Divider style={styles.divider} />
+      <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
       <View style={styles.footer}>
         <Button 
           mode="outlined" 
           onPress={handleSignOut}
           style={styles.signOutButton}
+          textColor="red"
         >
           Sign Out
         </Button>
@@ -140,7 +149,6 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     padding: 20,

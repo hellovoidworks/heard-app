@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, List, Divider, ActivityIndicator, Badge } from 'react-native-paper';
+import { Text, List, Divider, ActivityIndicator, Badge, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Notification, NotificationWithDetails } from '../types/database.types';
@@ -17,6 +17,7 @@ const NotificationsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   const fetchNotifications = async () => {
     try {
@@ -104,44 +105,55 @@ const NotificationsScreen = () => {
       <List.Item
         title={title}
         description={description}
+        titleStyle={{ color: theme.colors.onSurface }}
+        descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
         left={props => (
           <View style={styles.iconContainer}>
-            <List.Icon {...props} icon={icon} />
+            <List.Icon {...props} icon={icon} color={theme.colors.primary} />
             {!item.read && <Badge size={8} style={styles.badge} />}
           </View>
         )}
         right={props => (
-          <Text style={styles.time}>
+          <Text style={[styles.time, { color: theme.colors.onSurfaceDisabled }]}>
             {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
           </Text>
         )}
         onPress={() => handleNotificationPress(item)}
-        style={[styles.item, !item.read && styles.unreadItem]}
+        style={[
+          styles.item, 
+          !item.read && [styles.unreadItem, { backgroundColor: theme.colors.primaryContainer }]
+        ]}
       />
     );
   };
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={notifications}
         renderItem={renderNotificationItem}
         keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => <Divider />}
+        ItemSeparatorComponent={() => <Divider style={{ backgroundColor: theme.colors.outline }} />}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh} 
+            tintColor={theme.colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No notifications yet</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.onSurfaceDisabled }]}>
+              No notifications yet
+            </Text>
           </View>
         }
       />
@@ -152,7 +164,6 @@ const NotificationsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -163,7 +174,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   unreadItem: {
-    backgroundColor: '#f0f0ff',
+    // Background color will be set with theme in the component
   },
   iconContainer: {
     position: 'relative',
@@ -172,11 +183,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#6200ee',
+    backgroundColor: '#6200ee', // This will be primary color
   },
   time: {
     fontSize: 12,
-    color: '#666',
     alignSelf: 'center',
   },
   emptyContainer: {
@@ -187,7 +197,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
   },
 });
 

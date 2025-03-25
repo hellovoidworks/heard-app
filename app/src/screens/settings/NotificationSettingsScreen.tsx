@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Linking, Platform } from 'react-native';
-import { Text, Switch, Divider, Button, ActivityIndicator, Banner } from 'react-native-paper';
+import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
 import { registerForPushNotificationsAsync, checkNotificationPermissions } from '../../services/notifications';
@@ -13,6 +13,7 @@ const NotificationSettingsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [systemPermissionsGranted, setSystemPermissionsGranted] = useState(true);
+  const theme = useTheme();
 
   useEffect(() => {
     fetchNotificationPreferences();
@@ -110,14 +111,14 @@ const NotificationSettingsScreen = () => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {!systemPermissionsGranted && (
         <Banner
           visible={true}
@@ -128,9 +129,9 @@ const NotificationSettingsScreen = () => {
             }
           ]}
           icon="alert"
-          style={styles.banner}
+          style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}
         >
-          <Text style={styles.bannerText}>
+          <Text style={[styles.bannerText, { color: theme.colors.onErrorContainer }]}>
             Notifications are disabled for this app in your device settings. 
             Please enable them to receive notifications.
           </Text>
@@ -139,45 +140,48 @@ const NotificationSettingsScreen = () => {
 
       <View style={styles.section}>
         <View style={styles.switchRow}>
-          <Text style={styles.settingTitle}>Enable Notifications</Text>
+          <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>Enable Notifications</Text>
           <Switch
             value={notificationsEnabled}
             onValueChange={setNotificationsEnabled}
             disabled={!systemPermissionsGranted}
+            color={theme.colors.primary}
           />
         </View>
-        <Text style={styles.settingDescription}>
+        <Text style={[styles.settingDescription, { color: theme.colors.onSurfaceVariant }]}>
           Turn on to receive push notifications from the app
         </Text>
       </View>
       
-      <Divider style={styles.divider} />
+      <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
       
       {notificationsEnabled && (
         <>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What to notify me about:</Text>
+            <Text style={[styles.sectionTitle, { color: theme.colors.primary }]}>What to notify me about:</Text>
             
             <View style={styles.switchRow}>
-              <Text style={styles.settingTitle}>Replies to my letters</Text>
+              <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>Replies to my letters</Text>
               <Switch
                 value={replyNotifications}
                 onValueChange={setReplyNotifications}
                 disabled={!systemPermissionsGranted}
+                color={theme.colors.primary}
               />
             </View>
             
             <View style={styles.switchRow}>
-              <Text style={styles.settingTitle}>New letters in categories I follow</Text>
+              <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>New letters in categories I follow</Text>
               <Switch
                 value={letterNotifications}
                 onValueChange={setLetterNotifications}
                 disabled={!systemPermissionsGranted}
+                color={theme.colors.primary}
               />
             </View>
           </View>
           
-          <Divider style={styles.divider} />
+          <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
         </>
       )}
       
@@ -209,7 +213,6 @@ const NotificationSettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   loadingContainer: {
     flex: 1,
@@ -229,7 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 16,
-    color: '#6200ee',
   },
   switchRow: {
     flexDirection: 'row',
@@ -242,12 +244,10 @@ const styles = StyleSheet.create({
   },
   settingDescription: {
     fontSize: 14,
-    color: '#666',
     marginTop: 4,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
   },
   buttonContainer: {
     padding: 16,
