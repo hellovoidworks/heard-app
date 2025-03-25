@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Banner, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -832,43 +832,68 @@ const HomeScreen = () => {
     );
   };
 
-  const renderLetterItem = ({ item }: { item: LetterWithDetails }) => (
-    <Card 
-      style={[
-        styles.card,
-        { backgroundColor: theme.colors.surface },
-        !item.is_read && [styles.unreadCard, { borderLeftColor: theme.colors.primary }]
-      ]} 
-      onPress={() => handleLetterPress(item)}
-    >
-      <Card.Content>
-        <View style={styles.headerRow}>
-          <Title style={{ color: theme.colors.onSurface }}>{item.title}</Title>
-          {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
-        </View>
-        <Paragraph style={{ color: theme.colors.onSurface }} numberOfLines={3}>{item.content}</Paragraph>
-        <View style={styles.cardFooter}>
-          <Chip 
-            icon="account" 
-            style={[styles.chip, { backgroundColor: theme.colors.surface }]}
-            textStyle={{ color: theme.colors.onSurface }}
-          >
-            {item.display_name}
-          </Chip>
-          <Chip 
-            icon="tag" 
-            style={[styles.chip, { backgroundColor: theme.colors.surface }]}
-            textStyle={{ color: theme.colors.onSurface }}
-          >
-            {item.category?.name}
-          </Chip>
-          <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
-            {format(new Date(item.created_at), 'MMM d, yyyy')}
-          </Text>
-        </View>
-      </Card.Content>
-    </Card>
-  );
+  // Create redacted blocks for a letter
+  const createRedactedBlocks = useCallback((content: string, itemId: string) => {
+    // Split content into words and limit to what would reasonably fit in 2 lines
+    const words = content.split(' ').slice(0, 15); // Approximate number of words for 2 lines
+
+    return (
+      <View style={styles.redactedContent}>
+        {words.map((word, index) => {
+          // Calculate width based on word length
+          const width = Math.min(15 + word.length * 4, 100);
+          return (
+            <View
+              key={`${itemId}-${index}`}
+              style={[
+                styles.redactedWord,
+                { width }
+              ]}
+            />
+          );
+        })}
+      </View>
+    );
+  }, []);
+
+  const renderLetterItem = ({ item }: { item: LetterWithDetails }) => {
+    const isUnread = !item.is_read;
+    const categoryColor = item.category?.color || '#FFFFFF';
+    const backgroundColor = isUnread ? categoryColor : `${categoryColor}40`; // 25% opacity for read letters
+    const defaultMoodEmoji = '😊';
+
+    return (
+      <Card
+        style={[
+          styles.letterCard,
+          { backgroundColor },
+          isUnread && styles.unreadCard
+        ]}
+        onPress={() => handleLetterPress(item)}
+      >
+        <Card.Content>
+          <View style={styles.letterHeader}>
+            <View style={styles.moodEmojiContainer}>
+              <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+            </View>
+            <View style={styles.letterTitleContainer}>
+              <Title style={styles.letterTitle}>{item.title}</Title>
+              {isUnread ? (
+                createRedactedBlocks(item.content, item.id)
+              ) : (
+                <Paragraph style={styles.letterContent}>{item.content}</Paragraph>
+              )}
+            </View>
+          </View>
+          <View style={styles.letterFooter}>
+            <Text style={styles.categoryName}>
+              {item.category?.name.toUpperCase()}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
 
   const renderHeader = () => {
     if (!user || letters.length === 0) return null;
@@ -1035,36 +1060,74 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 24,
   },
-  card: {
-    marginBottom: 16,
+  letterCard: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    elevation: 2,
   },
   unreadCard: {
-    borderLeftWidth: 4,
+    elevation: 4,
   },
-  headerRow: {
+  letterHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  moodEmojiContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  moodEmoji: {
+    fontSize: 24,
+  },
+  letterTitleContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  letterTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 8,
+    color: '#FFFFFF',
+    fontFamily: 'SourceCodePro-SemiBold',
+    lineHeight: 22,
   },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  letterContent: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
-  cardFooter: {
+  redactedContent: {
+    marginTop: 8,
     flexDirection: 'row',
-    marginTop: 12,
     flexWrap: 'wrap',
-    alignItems: 'center',
+    overflow: 'hidden',
+    maxHeight: 48, // Allow for 3 lines (10px height + 4px margin-bottom) * 3
   },
-  chip: {
-    marginRight: 8,
+  redactedWord: {
+    height: 10,
+    backgroundColor: '#000000',
+    marginRight: 4,
     marginBottom: 4,
+    borderRadius: 5,
+    opacity: 0.8,
   },
-  date: {
+  letterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  categoryName: {
     fontSize: 12,
-    marginLeft: 'auto',
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
   headerContainer: {
     marginBottom: 16,
