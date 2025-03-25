@@ -149,11 +149,10 @@ export default function App() {
               console.log('Forcing reset of auth context');
               setForceReset(prev => prev + 1);
               
-              // Show success message after a short delay
+              // Remove loading state after a short delay
               setTimeout(() => {
-                console.log('Showing success alert after auth');
+                console.log('Authentication complete');
                 setMagicLinkLoading(false);
-                Alert.alert('Success', 'You have been successfully authenticated!');
               }, 1500);
               
             } catch (sessionError: any) {
