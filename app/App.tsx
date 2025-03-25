@@ -4,6 +4,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
 import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
+import { darkTheme } from './src/utils/theme';
 
 console.log('=== App initialization started ===');
 
@@ -217,10 +218,10 @@ export default function App() {
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center', 
-        backgroundColor: '#ffffff'
+        backgroundColor: '#121212'
       }}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={{ marginTop: 15, color: '#6200ee', fontSize: 16 }}>
+        <ActivityIndicator size="large" color="#BB86FC" />
+        <Text style={{ marginTop: 15, color: '#FFFFFF', fontSize: 16 }}>
           Signing you in...
         </Text>
       </View>
@@ -228,7 +229,7 @@ export default function App() {
   }
   
   return (
-    <PaperProvider>
+    <PaperProvider theme={darkTheme}>
       <AuthProvider key={`auth-provider-${forceReset}`}>
         <AppNavigator />
       </AuthProvider>
