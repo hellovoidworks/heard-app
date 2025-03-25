@@ -156,37 +156,41 @@ const WriteLetterScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={100}
     >
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.contentContainer}>
-        <Headline style={styles.headline}>Write a Letter</Headline>
-        <Subheading style={styles.subheading}>Share your thoughts with the community</Subheading>
+      <ScrollView 
+        style={[styles.scrollView, { backgroundColor: theme.colors.background }]} 
+        contentContainerStyle={styles.contentContainer}
+      >
+        <Headline style={[styles.headline, { color: theme.colors.onBackground }]}>Write a Letter</Headline>
+        <Subheading style={[styles.subheading, { color: theme.colors.onSurfaceDisabled }]}>Share your thoughts with the community</Subheading>
         
-        <Divider style={styles.divider} />
+        <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />
 
         <View style={styles.moodContainer}>
-          <Text style={styles.label}>Your Mood</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood</Text>
           
-          {/* Display the selected emoji or placeholder */}
-          <View style={styles.selectedEmojiContainer}>
+          <View style={[styles.selectedEmojiContainer, { 
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.outline
+          }]}>
             {moodEmoji ? (
               <Text style={styles.selectedEmoji}>{moodEmoji}</Text>
             ) : (
-              <Text style={styles.placeholderEmoji}>Select an emoji</Text>
+              <Text style={[styles.placeholderEmoji, { color: theme.colors.onSurfaceDisabled }]}>Select an emoji</Text>
             )}
           </View>
           
-          {/* Always show emoji options */}
-          <Surface style={styles.emojiSuggestions}>
+          <Surface style={[styles.emojiSuggestions, { backgroundColor: theme.colors.surface }]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {SUGGESTED_MOODS.map((emoji, index) => (
                 <TouchableOpacity 
                   key={index} 
                   style={[
                     styles.emojiOption,
-                    emoji === moodEmoji && styles.selectedEmojiOption
+                    emoji === moodEmoji && [styles.selectedEmojiOption, { backgroundColor: theme.colors.primary }]
                   ]}
                   onPress={() => handleEmojiSelect(emoji)}
                 >
@@ -197,9 +201,9 @@ const WriteLetterScreen = () => {
           </Surface>
         </View>
         
-        <Text style={styles.label}>Category</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
         {loadingCategories ? (
-          <ActivityIndicator animating={true} style={styles.loading} />
+          <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
         ) : (
           <ScrollView 
             horizontal 
@@ -213,11 +217,12 @@ const WriteLetterScreen = () => {
                 onPress={() => handleCategorySelect(category)}
                 style={[
                   styles.categoryChip,
+                  { backgroundColor: theme.colors.surface },
                   selectedCategory?.id === category.id && { backgroundColor: theme.colors.primary }
                 ]}
                 textStyle={[
-                  styles.categoryChipText,
-                  selectedCategory?.id === category.id && { color: '#fff' }
+                  { color: theme.colors.onSurface },
+                  selectedCategory?.id === category.id && { color: theme.colors.onPrimary }
                 ]}
               >
                 {category.name}
@@ -226,35 +231,50 @@ const WriteLetterScreen = () => {
           </ScrollView>
         )}
         
-        <Text style={styles.label}>Title</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Title</Text>
         <TextInput
           value={title}
           onChangeText={setTitle}
           placeholder="Enter a title for your letter"
-          style={styles.titleInput}
+          placeholderTextColor={theme.colors.onSurfaceDisabled}
+          style={[styles.titleInput, { 
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.onSurface
+          }]}
           maxLength={100}
+          theme={{ colors: { text: theme.colors.onSurface } }}
         />
         
-        <Text style={styles.label}>Your Letter</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Letter</Text>
         <TextInput
           value={content}
           onChangeText={setContent}
           placeholder="Write your letter here..."
+          placeholderTextColor={theme.colors.onSurfaceDisabled}
           multiline
           numberOfLines={10}
-          style={styles.contentInput}
+          style={[styles.contentInput, { 
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.onSurface
+          }]}
           maxLength={5000}
+          theme={{ colors: { text: theme.colors.onSurface } }}
         />
         
-        <Text style={styles.label}>Display Name</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
         <TextInput
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Enter a display name for this letter"
-          style={styles.displayNameInput}
+          placeholderTextColor={theme.colors.onSurfaceDisabled}
+          style={[styles.displayNameInput, { 
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.onSurface
+          }]}
           maxLength={50}
+          theme={{ colors: { text: theme.colors.onSurface } }}
         />
-        <Text style={styles.displayNameHint}>
+        <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
           This name will be shown publicly with your letter
         </Text>
         
@@ -275,7 +295,6 @@ const WriteLetterScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   scrollView: {
     flex: 1,
@@ -290,7 +309,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subheading: {
-    color: '#666',
     marginBottom: 16,
   },
   divider: {
@@ -304,17 +322,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
   },
   selectedEmoji: {
     fontSize: 36,
   },
   placeholderEmoji: {
     fontSize: 16,
-    color: '#999',
   },
   emojiSuggestions: {
     padding: 12,
@@ -327,9 +342,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   selectedEmojiOption: {
-    backgroundColor: 'rgba(98, 0, 238, 0.1)',
     borderWidth: 1,
-    borderColor: '#6200ee',
   },
   emojiText: {
     fontSize: 28,
@@ -352,20 +365,16 @@ const styles = StyleSheet.create({
   },
   contentInput: {
     marginBottom: 16,
-    backgroundColor: '#f9f9f9',
     minHeight: 200,
   },
   titleInput: {
     marginBottom: 8,
-    backgroundColor: '#f9f9f9',
   },
   displayNameInput: {
     marginBottom: 8,
-    backgroundColor: '#f9f9f9',
   },
   displayNameHint: {
     fontSize: 12,
-    color: '#666',
     marginBottom: 24,
   },
   submitButton: {

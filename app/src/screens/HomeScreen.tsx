@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Banner } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, Banner, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Letter, LetterWithDetails } from '../types/database.types';
@@ -36,6 +36,7 @@ const HomeScreen = () => {
 
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
   
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
@@ -626,19 +627,35 @@ const HomeScreen = () => {
 
   const renderLetterItem = ({ item }: { item: LetterWithDetails }) => (
     <Card 
-      style={[styles.card, !item.is_read && styles.unreadCard]} 
+      style={[
+        styles.card,
+        { backgroundColor: theme.colors.surface },
+        !item.is_read && [styles.unreadCard, { borderLeftColor: theme.colors.primary }]
+      ]} 
       onPress={() => handleLetterPress(item)}
     >
       <Card.Content>
         <View style={styles.headerRow}>
-          <Title>{item.title}</Title>
-          {!item.is_read && <View style={styles.unreadDot} />}
+          <Title style={{ color: theme.colors.onSurface }}>{item.title}</Title>
+          {!item.is_read && <View style={[styles.unreadDot, { backgroundColor: theme.colors.primary }]} />}
         </View>
-        <Paragraph numberOfLines={3}>{item.content}</Paragraph>
+        <Paragraph style={{ color: theme.colors.onSurface }} numberOfLines={3}>{item.content}</Paragraph>
         <View style={styles.cardFooter}>
-          <Chip icon="account" style={styles.chip}>{item.display_name}</Chip>
-          <Chip icon="tag" style={styles.chip}>{item.category?.name}</Chip>
-          <Text style={styles.date}>
+          <Chip 
+            icon="account" 
+            style={[styles.chip, { backgroundColor: theme.colors.surface }]}
+            textStyle={{ color: theme.colors.onSurface }}
+          >
+            {item.display_name}
+          </Chip>
+          <Chip 
+            icon="tag" 
+            style={[styles.chip, { backgroundColor: theme.colors.surface }]}
+            textStyle={{ color: theme.colors.onSurface }}
+          >
+            {item.category?.name}
+          </Chip>
+          <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
             {format(new Date(item.created_at), 'MMM d, yyyy')}
           </Text>
         </View>
@@ -668,26 +685,28 @@ const HomeScreen = () => {
   const renderContent = () => {
     if (loading) {
       return (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#6200ee" />
-          <Text style={styles.loadingText}>Loading your letters...</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+          <Text style={[styles.loadingText, { color: theme.colors.primary }]}>Loading your letters...</Text>
         </View>
       );
     }
     
     if (!user) {
       return (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Please log in to view your letters.</Text>
+        <View style={[styles.errorContainer, { backgroundColor: theme.colors.background }]}>
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>Please log in to view your letters.</Text>
         </View>
       );
     }
     
     if (letters.length === 0) {
       return (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No letters available at the moment.</Text>
-          <Text style={styles.emptySubText}>New letters will be delivered in the next window.</Text>
+        <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+          <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>No letters available at the moment.</Text>
+          <Text style={[styles.emptySubText, { color: theme.colors.onSurfaceDisabled }]}>
+            New letters will be delivered in the next window.
+          </Text>
           {renderNextWindowInfo()}
           <Button
             mode="contained"
@@ -717,12 +736,19 @@ const HomeScreen = () => {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={renderHeader}
+        refreshControl={
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
+        }
       />
     );
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {renderContent()}
     </View>
   );
@@ -731,7 +757,6 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
@@ -742,7 +767,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#6200ee',
   },
   errorContainer: {
     flex: 1,
@@ -752,7 +776,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 18,
-    color: '#d32f2f',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -770,7 +793,6 @@ const styles = StyleSheet.create({
   },
   emptySubText: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -792,11 +814,9 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
-    elevation: 2,
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#6200ee',
   },
   headerRow: {
     flexDirection: 'row',
@@ -808,7 +828,6 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#6200ee',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -822,7 +841,6 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 12,
-    color: '#666',
     marginLeft: 'auto',
   },
   headerContainer: {

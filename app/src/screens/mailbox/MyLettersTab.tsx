@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +27,7 @@ const MyLettersTab = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   const fetchMyLetters = async () => {
     try {
@@ -95,17 +96,23 @@ const MyLettersTab = () => {
 
   const renderLetterItem = ({ item }: { item: Letter }) => (
     <Card 
-      style={styles.card} 
+      style={[styles.card, { backgroundColor: theme.colors.surface }]} 
       onPress={() => handleLetterPress(item)}
     >
       <Card.Content>
-        <Title>{item.title}</Title>
-        <Paragraph numberOfLines={2}>{item.content}</Paragraph>
+        <Title style={{ color: theme.colors.onSurface }}>{item.title}</Title>
+        <Paragraph style={{ color: theme.colors.onSurface }}>{item.content}</Paragraph>
         <View style={styles.cardFooter}>
           {item.category && (
-            <Chip icon="tag" style={styles.chip}>{item.category.name}</Chip>
+            <Chip 
+              icon="tag" 
+              style={[styles.chip, { backgroundColor: theme.colors.primary }]}
+              textStyle={{ color: theme.colors.onPrimary }}
+            >
+              {item.category.name}
+            </Chip>
           )}
-          <Text style={styles.date}>
+          <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
             {format(new Date(item.created_at), 'MMM d, yyyy')}
           </Text>
         </View>
@@ -115,25 +122,31 @@ const MyLettersTab = () => {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={letters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>You haven't written any letters yet</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>
+              You haven't written any letters yet
+            </Text>
             <Button 
               mode="contained" 
               onPress={() => navigation.navigate('WriteLetter', {})}
@@ -151,7 +164,6 @@ const MyLettersTab = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   loadingContainer: {
     flex: 1,
@@ -163,7 +175,6 @@ const styles = StyleSheet.create({
   },
   card: {
     marginBottom: 16,
-    elevation: 2,
   },
   cardFooter: {
     flexDirection: 'row',
@@ -177,7 +188,6 @@ const styles = StyleSheet.create({
   },
   date: {
     fontSize: 12,
-    color: '#666',
     marginLeft: 'auto',
   },
   emptyContainer: {
@@ -186,7 +196,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     marginBottom: 20,
   },
   writeButton: {

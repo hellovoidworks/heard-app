@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -25,6 +25,7 @@ const CorrespondenceTab = () => {
   const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
+  const theme = useTheme();
 
   const fetchCorrespondences = async () => {
     try {
@@ -196,47 +197,57 @@ const CorrespondenceTab = () => {
 
   const renderCorrespondenceItem = ({ item }: { item: Correspondence }) => (
     <Card 
-      style={[styles.card, item.unread_count > 0 && styles.unreadCard]} 
+      style={[
+        styles.card, 
+        { backgroundColor: theme.colors.surface },
+        item.unread_count > 0 && [styles.unreadCard, { backgroundColor: theme.colors.elevation.level2 }]
+      ]} 
       onPress={() => handleCorrespondencePress(item)}
     >
       <Card.Content>
-        <View style={styles.headerRow}>
-          <Title>{item.title}</Title>
+        <Title style={{ color: theme.colors.onSurface }}>{item.title}</Title>
+        <Paragraph style={{ color: theme.colors.onSurface }}>{item.last_message}</Paragraph>
+        <View style={styles.cardFooter}>
+          <Text style={{ color: theme.colors.onSurfaceDisabled }}>
+            {format(new Date(item.last_message_date), 'MMM d, yyyy')}
+          </Text>
           {item.unread_count > 0 && (
-            <Chip mode="outlined" style={styles.unreadChip}>{item.unread_count}</Chip>
+            <Chip mode="flat" style={{ backgroundColor: theme.colors.primary }}>
+              {item.unread_count} new
+            </Chip>
           )}
         </View>
-        <Paragraph numberOfLines={2}>{item.last_message}</Paragraph>
-        <Text style={styles.date}>
-          {format(new Date(item.last_message_date), 'MMM d')}
-        </Text>
       </Card.Content>
     </Card>
   );
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <FlatList
         data={correspondences}
         renderItem={renderCorrespondenceItem}
         keyExtractor={(item) => item.letter_id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
-        ListEmptyComponent={
+        ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No correspondence found</Text>
+            <Text style={{ color: theme.colors.onBackground }}>No conversations yet</Text>
           </View>
-        }
+        )}
       />
     </View>
   );
@@ -245,51 +256,28 @@ const CorrespondenceTab = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   listContent: {
     padding: 16,
   },
   card: {
-    marginBottom: 16,
-    elevation: 2,
+    marginBottom: 12,
   },
   unreadCard: {
     borderLeftWidth: 4,
-    borderLeftColor: '#6200ee',
+    borderLeftColor: '#BB86FC',
   },
-  headerRow: {
+  cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  unreadChip: {
-    backgroundColor: '#6200ee',
-    color: 'white',
-  },
-  date: {
-    fontSize: 12,
-    color: '#666',
     marginTop: 8,
-    textAlign: 'right',
   },
   emptyContainer: {
-    padding: 20,
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#666',
-    marginBottom: 20,
-  },
-  writeButton: {
-    marginTop: 10,
+    padding: 20,
   },
 });
 

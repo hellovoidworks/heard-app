@@ -10,7 +10,8 @@ import {
   Button, 
   TextInput,
   Surface,
-  Divider
+  Divider,
+  useTheme
 } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +32,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [sendingReply, setSendingReply] = useState(false);
   const { user, profile } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
+  const theme = useTheme();
 
   const fetchLetterAndReplies = async () => {
     try {
@@ -186,16 +188,16 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   if (!letter) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text>Letter not found</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={{ color: theme.colors.onBackground }}>Letter not found</Text>
         <Button mode="contained" onPress={() => navigation.goBack()}>
           Go Back
         </Button>
@@ -205,38 +207,48 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <KeyboardAvoidingView 
-      style={styles.container} 
+      style={[styles.container, { backgroundColor: theme.colors.background }]} 
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <View style={styles.header}>
-        <Title>{letter.title}</Title>
-        <Chip icon="tag" style={styles.categoryChip}>
+      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
+        <Title style={{ color: theme.colors.onSurface }}>{letter.title}</Title>
+        <Chip 
+          icon="tag" 
+          style={[styles.categoryChip, { backgroundColor: theme.colors.surface }]}
+          textStyle={{ color: theme.colors.onSurface }}
+        >
           {letter.category?.name}
         </Chip>
       </View>
       
       <ScrollView
         ref={scrollViewRef}
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
       >
         {/* Original Letter */}
-        <Surface style={styles.originalLetter}>
+        <Surface style={[styles.originalLetter, { backgroundColor: theme.colors.surface }]}>
           <View style={styles.messageHeader}>
-            <Text style={styles.authorName}>
+            <Text style={[styles.authorName, { color: theme.colors.primary }]}>
               {letter.display_name || letter.author?.username || 'Unknown User'}
             </Text>
-            <Text style={styles.messageDate}>
+            <Text style={[styles.messageDate, { color: theme.colors.onSurfaceDisabled }]}>
               {format(new Date(letter.created_at), 'MMM d')}
             </Text>
           </View>
-          <Paragraph style={styles.messageContent}>{letter.content}</Paragraph>
+          <Paragraph style={[styles.messageContent, { color: theme.colors.onSurface }]}>
+            {letter.content}
+          </Paragraph>
         </Surface>
         
-        {replies.length > 0 && <Divider style={styles.divider} />}
+        {replies.length > 0 && <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />}
         
         {/* Replies */}
         {replies.map((reply) => {
@@ -246,37 +258,55 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <Surface 
               key={reply.id} 
               style={[
-                styles.messageBubble, 
-                isFromCurrentUser ? styles.sentBubble : styles.receivedBubble
+                styles.messageBubble,
+                { backgroundColor: theme.colors.surface },
+                isFromCurrentUser ? 
+                  [styles.sentBubble, { backgroundColor: theme.colors.primary }] : 
+                  [styles.receivedBubble, { backgroundColor: theme.colors.surfaceVariant }]
               ]}
             >
               <View style={styles.messageHeader}>
-                <Text style={styles.authorName}>
-                  {reply.display_name || reply.author?.username || 'Unknown User'}
+                <Text style={[
+                  styles.authorName,
+                  { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.primary }
+                ]}>
+                  {reply.display_name}
                 </Text>
-                <Text style={styles.messageDate}>
+                <Text style={[
+                  styles.messageDate,
+                  { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.onSurfaceDisabled }
+                ]}>
                   {format(new Date(reply.created_at), 'MMM d')}
                 </Text>
               </View>
-              <Paragraph style={styles.messageContent}>{reply.content}</Paragraph>
+              <Paragraph style={[
+                styles.messageContent,
+                { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.onSurface }
+              ]}>
+                {reply.content}
+              </Paragraph>
             </Surface>
           );
         })}
-        <View style={styles.scrollPadding} />
       </ScrollView>
       
-      <Surface style={styles.replyContainer}>
+      {/* Reply Input */}
+      <Surface style={[styles.replyContainer, { backgroundColor: theme.colors.surface }]}>
         <TextInput
           value={replyText}
           onChangeText={setReplyText}
-          placeholder="Type your reply..."
+          placeholder="Write a reply..."
+          placeholderTextColor={theme.colors.onSurfaceDisabled}
           multiline
-          style={styles.replyInput}
-          disabled={sendingReply}
+          style={[styles.replyInput, { 
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.onSurface
+          }]}
+          theme={{ colors: { text: theme.colors.onSurface } }}
         />
-        <Button 
-          mode="contained" 
-          onPress={handleSendReply} 
+        <Button
+          mode="contained"
+          onPress={handleSendReply}
           disabled={!replyText.trim() || sendingReply}
           loading={sendingReply}
           style={styles.sendButton}
@@ -291,16 +321,6 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    padding: 16,
-    backgroundColor: 'white',
-    elevation: 2,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -313,69 +333,70 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
+  header: {
+    padding: 16,
+    borderBottomWidth: 1,
+  },
+  categoryChip: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  scrollView: {
+    flex: 1,
+  },
   originalLetter: {
+    margin: 16,
     padding: 16,
     borderRadius: 8,
-    backgroundColor: 'white',
-    marginBottom: 24,
     elevation: 2,
   },
+  divider: {
+    marginHorizontal: 16,
+  },
   messageBubble: {
+    margin: 8,
+    marginHorizontal: 16,
     padding: 12,
-    borderRadius: 12,
-    marginBottom: 16,
-    maxWidth: '80%',
+    borderRadius: 8,
     elevation: 1,
   },
   sentBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#e3f2fd',
+    marginLeft: 32,
   },
   receivedBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'white',
+    marginRight: 32,
   },
   messageHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    alignItems: 'center',
+    marginBottom: 8,
   },
   authorName: {
-    fontWeight: 'bold',
-    fontSize: 14,
+    fontWeight: '600',
   },
   messageDate: {
     fontSize: 12,
-    color: '#666',
   },
   messageContent: {
     fontSize: 16,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   replyContainer: {
-    padding: 12,
+    padding: 8,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#eee',
   },
   replyInput: {
     flex: 1,
-    maxHeight: 120,
-    backgroundColor: 'white',
+    marginRight: 8,
+    maxHeight: 100,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   sendButton: {
-    marginLeft: 8,
-  },
-  scrollPadding: {
-    height: 20,
-  },
-  categoryChip: {
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  divider: {
-    marginBottom: 16,
+    alignSelf: 'flex-end',
   },
 });
 
