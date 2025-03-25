@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import linking from '../utils/linking';
 import { supabase } from '../services/supabase';
 import { CommonActions } from '@react-navigation/native';
+import { View, TouchableOpacity, Text } from 'react-native';
 
 // Import screens from the index file
 import {
@@ -42,7 +43,12 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Auth navigator
 const AuthNavigator = () => (
-  <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+  <AuthStack.Navigator 
+    screenOptions={{ 
+      headerShown: false,
+      contentStyle: { backgroundColor: '#121212' }
+    }}
+  >
     <AuthStack.Screen name="Login" component={LoginScreen} />
   </AuthStack.Navigator>
 );
@@ -52,7 +58,10 @@ const OnboardingNavigator = () => {
   console.log('Rendering OnboardingNavigator');
   return (
     <OnboardingStack.Navigator 
-      screenOptions={{ headerShown: false }}
+      screenOptions={{ 
+        headerShown: false,
+        contentStyle: { backgroundColor: '#121212' }
+      }}
       screenListeners={{
         state: (e) => {
           console.log('Onboarding navigation state changed:', e.data);
@@ -88,58 +97,122 @@ const OnboardingNavigator = () => {
 };
 
 // Main tab navigator
-const MainNavigator = () => (
-  <Tab.Navigator
-    screenOptions={{
-      tabBarActiveTintColor: '#6200ee',
-      tabBarInactiveTintColor: 'gray',
-      tabBarLabelStyle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-      },
-      tabBarIconStyle: { display: 'none' },
-      tabBarStyle: {
-        height: 60,
-        paddingTop: 10,
-        paddingBottom: 10,
-      },
-    }}
-  >
-    <Tab.Screen 
-      name="Home" 
-      component={HomeScreen} 
-      options={({ navigation }) => ({
-        headerLeft: () => (
-          <Ionicons 
-            name="notifications-outline" 
-            size={24} 
-            color="#6200ee" 
-            style={{ marginLeft: 15 }}
-            onPress={() => {
-              // Navigate to the Notifications screen in the root navigator
-              navigation.getParent()?.navigate('Notifications');
+const MainNavigator = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={{
+        headerStyle: {
+          backgroundColor: '#121212',
+        },
+        headerTintColor: '#FFFFFF',
+        tabBarShowLabel: true,
+        tabBarStyle: {
+          height: 60,
+          backgroundColor: '#121212',
+          borderTopColor: '#2C2C2C',
+        },
+        tabBarActiveTintColor: '#BB86FC',
+        tabBarInactiveTintColor: '#666666',
+      }}
+      tabBar={props => (
+        <View style={{
+          flexDirection: 'row',
+          height: 60,
+          backgroundColor: '#121212',
+          borderTopColor: '#2C2C2C',
+          borderTopWidth: 1,
+          alignItems: 'center',
+          justifyContent: 'space-around',
+        }}>
+          {/* Home Tab */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
             }}
-          />
-        ),
-        headerRight: () => (
-          <Ionicons 
-            name="person-circle-outline" 
-            size={24} 
-            color="#6200ee" 
-            style={{ marginRight: 15 }}
-            onPress={() => {
-              // Navigate to the Profile screen in the root navigator
-              navigation.getParent()?.navigate('Profile');
+            onPress={() => props.navigation.navigate('Home')}
+          >
+            <Text style={{
+              color: props.state.index === 0 ? '#BB86FC' : '#666666',
+              fontSize: 16,
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+            }}>
+              HOME
+            </Text>
+          </TouchableOpacity>
+
+          {/* Write Tab (Center Button) */}
+          <TouchableOpacity
+            style={{
+              width: 50,
+              height: 50,
+              borderRadius: 25,
+              backgroundColor: '#3F51B5',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bottom: 5,
             }}
-          />
-        ),
-      })}
-    />
-    <Tab.Screen name="Write" component={WriteLetterScreen} />
-    <Tab.Screen name="Mailbox" component={MailboxScreen} />
-  </Tab.Navigator>
-);
+            onPress={() => props.navigation.navigate('Write')}
+          >
+            <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>+</Text>
+          </TouchableOpacity>
+
+          {/* Mailbox Tab */}
+          <TouchableOpacity
+            style={{
+              flex: 1,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onPress={() => props.navigation.navigate('Mailbox')}
+          >
+            <Text style={{
+              color: props.state.index === 2 ? '#BB86FC' : '#666666',
+              fontSize: 16,
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+            }}>
+              MAILBOX
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    >
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen} 
+        options={({ navigation }) => ({
+          headerLeft: () => (
+            <Ionicons 
+              name="notifications-outline" 
+              size={24} 
+              color="#BB86FC" 
+              style={{ marginLeft: 15 }}
+              onPress={() => {
+                navigation.getParent()?.navigate('Notifications');
+              }}
+            />
+          ),
+          headerRight: () => (
+            <Ionicons 
+              name="person-circle-outline" 
+              size={24} 
+              color="#BB86FC" 
+              style={{ marginRight: 15 }}
+              onPress={() => {
+                navigation.getParent()?.navigate('Profile');
+              }}
+            />
+          ),
+        })}
+      />
+      <Tab.Screen name="Write" component={WriteLetterScreen} options={{ tabBarButton: () => null }} />
+      <Tab.Screen name="Mailbox" component={MailboxScreen} />
+    </Tab.Navigator>
+  );
+};
 
 // App root navigator
 const AppNavigator = () => {
@@ -201,22 +274,94 @@ const AppNavigator = () => {
   });
 
   return (
-    <NavigationContainer linking={linking}>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <NavigationContainer theme={DarkTheme} linking={linking}>
+      <Stack.Navigator screenOptions={{ 
+        headerShown: false,
+        contentStyle: { backgroundColor: '#121212' },
+        headerStyle: { backgroundColor: '#121212' },
+        headerTintColor: '#FFFFFF'
+      }}>
         {user ? (
           isOnboardingComplete === false ? (
             <Stack.Screen name="Onboarding" component={OnboardingNavigator} />
           ) : (
             <>
               <Stack.Screen name="Main" component={MainNavigator} />
-              <Stack.Screen name="LetterDetail" component={LetterDetailScreen} options={{ headerShown: true, title: 'Letter' }} />
-              <Stack.Screen name="ThreadDetail" component={ThreadDetailScreen} options={{ headerShown: true, title: 'Conversation' }} />
-              <Stack.Screen name="WriteLetter" component={WriteLetterScreen} options={{ headerShown: true, title: 'Write Letter' }} />
-              <Stack.Screen name="Profile" component={ProfileScreen} options={{ headerShown: true, title: 'Profile' }} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: true, title: 'Notifications' }} />
-              <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: true, title: 'Notification Settings' }} />
-              <Stack.Screen name="CategoryPreferencesSettings" component={CategoryPreferencesSettingsScreen} options={{ headerShown: false }} />
-              <Stack.Screen name="AccountSettings" component={AccountSettingsScreen} options={{ headerShown: true, title: 'Account Settings' }} />
+              <Stack.Screen 
+                name="LetterDetail" 
+                component={LetterDetailScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Letter',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="ThreadDetail" 
+                component={ThreadDetailScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Conversation',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="WriteLetter" 
+                component={WriteLetterScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Write Letter',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="Profile" 
+                component={ProfileScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Profile',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="Notifications" 
+                component={NotificationsScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Notifications',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="NotificationSettings" 
+                component={NotificationSettingsScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Notification Settings',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="CategoryPreferencesSettings" 
+                component={CategoryPreferencesSettingsScreen} 
+                options={{ headerShown: false }} 
+              />
+              <Stack.Screen 
+                name="AccountSettings" 
+                component={AccountSettingsScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Account Settings',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
             </>
           )
         ) : (
