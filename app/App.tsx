@@ -1,12 +1,18 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
 import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
 import { darkTheme } from './src/utils/theme';
+import { useFonts } from 'expo-font';
+import * as SplashScreen from 'expo-splash-screen';
+import { fontsToLoad } from './src/utils/fonts';
 
 console.log('=== App initialization started ===');
+
+// Keep splash screen visible while loading fonts
+SplashScreen.preventAutoHideAsync();
 
 // Ignore specific harmless warnings
 LogBox.ignoreLogs([
@@ -21,6 +27,16 @@ export default function App() {
   const [forceReset, setForceReset] = useState(0);
   // State to show a loading screen during Magic Link auth
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
+  
+  // Load the fonts
+  const [fontsLoaded] = useFonts(fontsToLoad);
+  
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      // Hide splash screen once fonts are loaded
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
   
   useEffect(() => {
     console.log('=== App useEffect running ===');
@@ -211,8 +227,8 @@ export default function App() {
 
   console.log('=== Rendering App component with providers ===');
   
-  // Show a loading screen during Magic Link authentication
-  if (magicLinkLoading) {
+  // Show loading screen if fonts aren't loaded yet or during magic link authentication
+  if (!fontsLoaded || magicLinkLoading) {
     return (
       <View style={{ 
         flex: 1, 
@@ -220,19 +236,21 @@ export default function App() {
         alignItems: 'center', 
         backgroundColor: '#121212'
       }}>
-        <ActivityIndicator size="large" color="#BB86FC" />
+        <ActivityIndicator size="large" color="#476EF1" />
         <Text style={{ marginTop: 15, color: '#FFFFFF', fontSize: 16 }}>
-          Signing you in...
+          {magicLinkLoading ? 'Signing you in...' : 'Loading...'}
         </Text>
       </View>
     );
   }
   
   return (
-    <PaperProvider theme={darkTheme}>
-      <AuthProvider key={`auth-provider-${forceReset}`}>
-        <AppNavigator />
-      </AuthProvider>
-    </PaperProvider>
+    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <PaperProvider theme={darkTheme}>
+        <AuthProvider key={`auth-provider-${forceReset}`}>
+          <AppNavigator />
+        </AuthProvider>
+      </PaperProvider>
+    </View>
   );
 }

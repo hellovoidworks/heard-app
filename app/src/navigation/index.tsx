@@ -10,6 +10,7 @@ import { supabase } from '../services/supabase';
 import { CommonActions } from '@react-navigation/native';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { fontNames } from '../utils/fonts';
 
 // Import screens from the index file
 import {
@@ -116,6 +117,9 @@ const MainNavigator = () => {
         },
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',
+        headerTitleStyle: {
+          fontFamily: fontNames.interSemiBold,
+        },
       }}
       tabBar={props => (
         <View style={{
@@ -141,6 +145,7 @@ const MainNavigator = () => {
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
+              fontFamily: fontNames.interBold,
             }}>
               HOME
             </Text>
@@ -178,6 +183,7 @@ const MainNavigator = () => {
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
+              fontFamily: fontNames.interBold,
             }}>
               MAILBOX
             </Text>
