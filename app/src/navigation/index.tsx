@@ -258,7 +258,7 @@ const MainNavigator = () => {
           },
           headerTitleAlign: 'left',
           headerTitleContainerStyle: {
-            left: 16,
+            left: 8,
             right: 16,
             maxWidth: '70%',
           },
