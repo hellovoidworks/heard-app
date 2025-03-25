@@ -149,29 +149,17 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   const completeOnboarding = () => {
-    console.log('Completing onboarding, resetting navigation to Root...');
-    // Navigate to the root stack first
+    console.log('Completing onboarding, navigating to Root...');
     try {
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Root' as any }],
-      });
-      console.log('Navigation reset successful');
+      // @ts-ignore - This is a workaround for navigation issues
+      navigation.navigate('Root');
+      console.log('Navigation successful');
     } catch (error) {
-      console.error('Error resetting navigation:', error);
-      
-      // Fallback navigation if reset fails
-      try {
-        // @ts-ignore - This is a workaround for navigation issues
-        navigation.navigate('Root');
-        console.log('Fallback navigation successful');
-      } catch (fallbackError) {
-        console.error('Fallback navigation failed:', fallbackError);
-        Alert.alert(
-          'Navigation Error',
-          'Could not navigate to the main app. Please restart the app.'
-        );
-      }
+      console.error('Navigation failed:', error);
+      Alert.alert(
+        'Navigation Error',
+        'Could not navigate to the main app. Please restart the app.'
+      );
     }
   };
 
