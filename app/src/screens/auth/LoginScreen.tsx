@@ -315,19 +315,19 @@ const styles = StyleSheet.create({
   },
   appleButtonContainer: {
     width: '100%',
-    height: 56,
+    height: 60,
     marginBottom: 16,
-    borderRadius: 28,
+    borderRadius: 30,
     overflow: 'hidden',
   },
   appleButton: {
     width: '100%',
-    height: 56,
+    height: 60,
   },
   emailButtonContainer: {
     width: '100%',
-    height: 56,
-    borderRadius: 28,
+    height: 60,
+    borderRadius: 30,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -345,8 +345,8 @@ const styles = StyleSheet.create({
   },
   emailButtonText: {
     color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 20,
+    fontWeight: '600',
     backgroundColor: 'transparent',
   },
   input: {
