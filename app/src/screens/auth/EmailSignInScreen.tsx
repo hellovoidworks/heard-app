@@ -166,18 +166,9 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   mode="contained"
                   onPress={openMailApp}
                   style={styles.mailButton}
-                  icon="email"
                   labelStyle={styles.buttonLabelStyle}
                 >
                   Open Mail App
-                </Button>
-                
-                <Button
-                  mode="text"
-                  onPress={handleBack}
-                  textColor="#FFFFFF"
-                >
-                  Go Back
                 </Button>
               </View>
             )}
