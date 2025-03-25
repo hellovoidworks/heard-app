@@ -180,7 +180,12 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         <View style={{ width: 40 }} />
       </View>
       
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView 
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + insets.bottom }
+        ]}
+      >
         <Text style={[styles.description, { color: theme.colors.onBackground }]}>
           Choose at least 3 categories that interest you. We'll use these to personalize your experience.
         </Text>
@@ -207,7 +212,14 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         </Text>
       </ScrollView>
       
-      <View style={[styles.footer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outline }]}>
+      <View style={[
+        styles.footer, 
+        { 
+          backgroundColor: theme.colors.background, 
+          borderTopColor: theme.colors.outline,
+          paddingBottom: Math.max(insets.bottom, 20)
+        }
+      ]}>
         <Button
           mode="contained"
           onPress={handleContinue}
@@ -276,6 +288,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     padding: 20,
+    paddingTop: 20,
+    paddingBottom: 20,
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderTopColor: '#eee',
