@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity } from 'react-native';
-import { Button, Text, Title, HelperText } from 'react-native-paper';
+import { Button, Text, Title, HelperText, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'AgeVerification'>;
 
@@ -17,6 +18,16 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isOver18, setIsOver18] = useState(true); // Default to true for initial date (2000)
+  const theme = useTheme();
+
+  // Reset loading state when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('AgeVerificationScreen focused, resetting loading state');
+      setLoading(false);
+      return () => {};
+    }, [])
+  );
 
   // Log navigation state for debugging
   useEffect(() => {
@@ -152,21 +163,26 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView 
+      contentContainerStyle={[
+        styles.container, 
+        { backgroundColor: theme.colors.background }
+      ]}
+    >
       <View style={styles.content}>
-        <Title style={styles.title}>Verify Your Age</Title>
+        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Verify Your Age</Title>
         
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: theme.colors.onBackground }]}>
           To use Heard, you must be at least 18 years old. Please select your date of birth.
         </Text>
         
         {Platform.OS === 'android' && (
           <TouchableOpacity 
-            style={styles.dateButton} 
+            style={[styles.dateButton, { borderColor: theme.colors.outline }]} 
             onPress={showDatepicker}
             disabled={loading}
           >
-            <Text style={styles.dateButtonText}>
+            <Text style={[styles.dateButtonText, { color: theme.colors.onBackground }]}>
               {format(date, 'MMMM d, yyyy')}
             </Text>
           </TouchableOpacity>
@@ -182,10 +198,11 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
             maximumDate={new Date()}
             minimumDate={new Date(1900, 0, 1)}
             style={styles.datePicker}
+            textColor={Platform.OS === 'ios' ? theme.colors.onBackground : undefined}
           />
         )}
         
-        {error ? <HelperText type="error">{error}</HelperText> : null}
+        {error ? <HelperText type="error" style={{ color: theme.colors.error }}>{error}</HelperText> : null}
         
         <Button
           mode="contained"
@@ -193,6 +210,9 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
           style={[styles.button, !isOver18 && styles.disabledButton]}
           loading={loading}
           disabled={loading || !isOver18}
+          buttonColor={theme.colors.primary}
+          textColor={theme.colors.onPrimary}
+          labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
         >
           Continue
         </Button>
@@ -204,7 +224,6 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#fff',
   },
   content: {
     padding: 20,
@@ -213,7 +232,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -231,7 +249,6 @@ const styles = StyleSheet.create({
     width: '100%',
     padding: 15,
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 5,
     marginBottom: 20,
     alignItems: 'center',
@@ -243,6 +260,7 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: 20,
     paddingVertical: 6,
+    borderRadius: 28,
   },
   disabledButton: {
     opacity: 0.5,
