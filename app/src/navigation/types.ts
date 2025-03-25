@@ -6,6 +6,8 @@ export type RootStackParamList = {
   LetterDetail: { letterId: string };
   ThreadDetail: { letterId: string };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
+  WriteLetterContent: { title?: string; content?: string };
+  WriteLetterDetails: { title: string; content: string; categoryId?: string };
   Profile: undefined;
   Notifications: undefined;
   NotificationSettings: undefined;

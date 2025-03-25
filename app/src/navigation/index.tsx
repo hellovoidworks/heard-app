@@ -19,6 +19,8 @@ import {
   ProfileScreen,
   NotificationsScreen,
   WriteLetterScreen,
+  WriteLetterContentScreen,
+  WriteLetterDetailsScreen,
   LetterDetailScreen,
   ThreadDetailScreen,
   MailboxScreen,
@@ -164,7 +166,7 @@ const MainNavigator = () => {
               bottom: 15,
               marginBottom: insets.bottom > 0 ? -insets.bottom / 2 : 0,
             }}
-            onPress={() => props.navigation.getParent()?.navigate('WriteLetter')}
+            onPress={() => props.navigation.getParent()?.navigate('WriteLetterContent')}
           >
             <Ionicons name="add" size={30} color="white" />
           </TouchableOpacity>
@@ -369,7 +371,7 @@ const AppNavigator = () => {
               />
               <Stack.Screen 
                 name="WriteLetter" 
-                component={WriteLetterScreen} 
+                component={WriteLetterContentScreen} 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
                   title: 'Write Letter',
@@ -385,6 +387,37 @@ const AppNavigator = () => {
                       onPress={() => navigation.goBack()}
                     />
                   ),
+                })} 
+              />
+              <Stack.Screen 
+                name="WriteLetterContent" 
+                component={WriteLetterContentScreen} 
+                options={({ navigation }) => ({ 
+                  headerShown: true, 
+                  title: 'Write Letter',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF',
+                  presentation: 'modal',
+                  headerLeft: () => (
+                    <Ionicons 
+                      name="close-outline" 
+                      size={28} 
+                      color="#FFFFFF" 
+                      style={{ marginLeft: 5 }}
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                })} 
+              />
+              <Stack.Screen 
+                name="WriteLetterDetails" 
+                component={WriteLetterDetailsScreen} 
+                options={({ navigation }) => ({ 
+                  headerShown: true, 
+                  title: 'Letter Details',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF',
+                  presentation: 'modal',
                 })} 
               />
               <Stack.Screen 
