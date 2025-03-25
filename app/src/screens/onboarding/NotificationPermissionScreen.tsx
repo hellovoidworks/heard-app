@@ -149,10 +149,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   const completeOnboarding = () => {
-    console.log('Completing onboarding, navigating to Root...');
+    console.log('Completing onboarding, navigating to Main...');
     try {
       // @ts-ignore - This is a workaround for navigation issues
-      navigation.navigate('Root');
+      navigation.navigate('Main');
       console.log('Navigation successful');
     } catch (error) {
       console.error('Navigation failed:', error);
