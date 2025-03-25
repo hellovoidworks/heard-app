@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, SafeAreaView } from 'react-native';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,11 +12,23 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [isValidEmail, setIsValidEmail] = useState(false);
   const theme = useTheme();
 
+  // Validate email whenever it changes
+  useEffect(() => {
+    validateEmail(email);
+  }, [email]);
+
+  // Simple email validation function
+  const validateEmail = (text: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    setIsValidEmail(emailRegex.test(text));
+  };
+
   const handleSendMagicLink = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
+    if (!email.trim() || !isValidEmail) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
@@ -110,7 +122,12 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       onChangeText={setEmail}
                       placeholder="Enter your email address"
                       placeholderTextColor={theme.colors.onSurfaceDisabled}
-                      style={[styles.emailInput, { backgroundColor: 'transparent', color: theme.colors.onSurface }]}
+                      style={[styles.emailInput, { 
+                        backgroundColor: 'transparent', 
+                        color: theme.colors.onSurface,
+                        borderBottomColor: email ? (isValidEmail ? theme.colors.primary : '#FF5252') : 'transparent',
+                        borderBottomWidth: email ? 1 : 0,
+                      }]}
                       maxLength={100}
                       theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
                       underlineColor="transparent"
@@ -121,6 +138,9 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       keyboardType="email-address"
                       autoFocus
                     />
+                    {email && !isValidEmail && (
+                      <Text style={styles.errorText}>Please enter a valid email address</Text>
+                    )}
                   </View>
                 </View>
                 
@@ -131,7 +151,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                   onPress={handleSendMagicLink}
                   style={styles.button}
                   loading={loading}
-                  disabled={loading || !email.trim()}
+                  disabled={loading || !email.trim() || !isValidEmail}
                   labelStyle={styles.buttonLabelStyle}
                 >
                   Send Magic Link
@@ -231,6 +251,11 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingHorizontal: 0,
     minHeight: 40,
+  },
+  errorText: {
+    color: '#FF5252',
+    fontSize: 12,
+    marginTop: 4,
   },
   divider: {
     height: 1,
