@@ -163,16 +163,12 @@ const LoginScreen = ({ navigation }: Props) => {
           </View>
 
           <View style={styles.content}>
-            <View style={styles.mottoContainer}>
-              <View style={styles.taglineRow}>
-                <Image source={require('../../assets/main-1.png')} style={styles.heartIcon} />
-                <Text style={styles.taglineText}>Write.</Text>
-              </View>
-              <Text style={styles.taglineText}>Read.</Text>
-              <Text style={styles.taglineText}>Connect.</Text>
-              <Text style={styles.subtitleText}>
-                A safe space for{'\n'}real connections
-              </Text>
+            <View style={styles.mainImageContainer}>
+              <Image 
+                source={require('../../assets/main-1.png')} 
+                style={styles.mainImage} 
+                resizeMode="contain"
+              />
             </View>
 
             <View style={styles.decorativeChips}>
@@ -194,9 +190,6 @@ const LoginScreen = ({ navigation }: Props) => {
               <View style={[styles.chip, { backgroundColor: '#E27953', bottom: 0, left: 40 }]}>
                 <Text style={styles.chipText}>LIFE</Text>
               </View>
-              <Image source={require('../../assets/main-1.png')} style={[styles.emoji, { right: 40, top: 80 }]} />
-              <Image source={require('../../assets/main-1.png')} style={[styles.emoji, { left: 30, bottom: 40 }]} />
-              <Image source={require('../../assets/main-1.png')} style={[styles.emoji, { right: 20, bottom: 10 }]} />
             </View>
 
             {magicLinkSent ? (
@@ -328,31 +321,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  mottoContainer: {
+  mainImageContainer: {
     alignItems: 'center',
     marginBottom: 30,
   },
-  taglineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  heartIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
-  },
-  taglineText: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    lineHeight: 60,
-  },
-  subtitleText: {
-    color: '#777777',
-    fontSize: 24,
-    textAlign: 'center',
-    marginTop: 10,
+  mainImage: {
+    width: '100%',
+    height: 300,
   },
   decorativeChips: {
     position: 'absolute',
@@ -374,11 +349,6 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  emoji: {
-    position: 'absolute',
-    width: 40,
-    height: 40,
   },
   buttonsContainer: {
     width: '100%',
