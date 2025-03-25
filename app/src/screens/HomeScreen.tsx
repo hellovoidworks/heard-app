@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, StyleSheet, FlatList } from 'react-native';
+import { View, StyleSheet, FlatList, Animated, Easing } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -46,10 +46,11 @@ const HomeScreen = () => {
   });
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
+  const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
-  const MORE_LETTERS_LIMIT = 5;
+  const MORE_LETTERS_LIMIT = 1;
 
   // Update the time until next window every second
   useEffect(() => {
@@ -842,6 +843,33 @@ const HomeScreen = () => {
     return letters.filter(letter => !letter.is_read);
   }, [letters]);
 
+  const animateButton = () => {
+    // Reset the animation
+    scaleAnim.setValue(1);
+    
+    // Create the animation sequence
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const handleDeliverMore = async () => {
+    if (loadingMore) return;
+    animateButton();
+    await deliverMoreLetters();
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -920,16 +948,18 @@ const HomeScreen = () => {
     
     return (
       <View style={styles.headerContainer}>
-        <Button 
-          mode="outlined"
-          onPress={deliverMoreLetters}
-          loading={loadingMore}
-          disabled={loadingMore}
-          icon="email"
-          style={styles.deliverMoreButton}
-        >
-          Deliver More Letters
-        </Button>
+        <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
+          <Button 
+            mode="outlined"
+            onPress={handleDeliverMore}
+            loading={loadingMore}
+            disabled={loadingMore}
+            icon="email"
+            style={styles.deliverMoreButton}
+          >
+            Deliver Another Letter
+          </Button>
+        </Animated.View>
       </View>
     );
   };
