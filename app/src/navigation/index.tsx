@@ -195,27 +195,61 @@ const MainNavigator = () => {
         name="Home" 
         component={HomeScreen} 
         options={({ navigation }) => ({
-          headerLeft: () => (
-            <Ionicons 
-              name="notifications-outline" 
-              size={24} 
-              color="#476EF1"
-              style={{ marginLeft: 15 }}
-              onPress={() => {
-                navigation.getParent()?.navigate('Notifications');
-              }}
-            />
+          headerTitle: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text
+                style={{
+                  color: '#FFFFFF',
+                  fontSize: 22,
+                  fontFamily: fontNames.interSemiBold
+                }}
+              >
+                Today's Mail
+              </Text>
+              <Text
+                style={{
+                  color: '#888888',
+                  fontSize: 22,
+                  marginLeft: 8,
+                  fontFamily: fontNames.interRegular
+                }}
+              >
+                {new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).replace(',', ',')}
+              </Text>
+            </View>
           ),
+          headerLeft: () => null,
           headerRight: () => (
-            <Ionicons 
-              name="person-circle-outline" 
-              size={24} 
-              color="#476EF1"
-              style={{ marginRight: 15 }}
-              onPress={() => {
-                navigation.getParent()?.navigate('Profile');
-              }}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ 
+                backgroundColor: '#222222', 
+                borderRadius: 20, 
+                paddingHorizontal: 12, 
+                paddingVertical: 6,
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginRight: 12
+              }}>
+                <Text style={{ 
+                  color: 'white', 
+                  marginRight: 6,
+                  fontFamily: fontNames.interMedium,
+                  fontSize: 16
+                }}>
+                  10
+                </Text>
+                <Ionicons name="star" size={20} color="#FFD700" />
+              </View>
+              <Ionicons 
+                name="person-circle-outline" 
+                size={24} 
+                color="#FFFFFF"
+                style={{ marginRight: 15 }}
+                onPress={() => {
+                  navigation.getParent()?.navigate('Profile');
+                }}
+              />
+            </View>
           ),
         })}
       />
