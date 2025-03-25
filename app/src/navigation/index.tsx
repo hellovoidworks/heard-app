@@ -114,7 +114,7 @@ const MainNavigator = () => {
           backgroundColor: '#121212',
           paddingBottom: insets.bottom,
         },
-        tabBarActiveTintColor: '#BB86FC',
+        tabBarActiveTintColor: '#476EF1',
         tabBarInactiveTintColor: '#666666',
       }}
       tabBar={props => (
@@ -137,7 +137,7 @@ const MainNavigator = () => {
             onPress={() => props.navigation.navigate('Home')}
           >
             <Text style={{
-              color: props.state.index === 0 ? '#BB86FC' : '#666666',
+              color: props.state.index === 0 ? '#476EF1' : '#666666',
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
@@ -152,7 +152,7 @@ const MainNavigator = () => {
               width: 58,
               height: 58,
               borderRadius: 29,
-              backgroundColor: '#3F51B5',
+              backgroundColor: '#476EF1',
               alignItems: 'center',
               justifyContent: 'center',
               bottom: 15,
@@ -174,7 +174,7 @@ const MainNavigator = () => {
             onPress={() => props.navigation.navigate('Mailbox')}
           >
             <Text style={{
-              color: props.state.index === 1 ? '#BB86FC' : '#666666',
+              color: props.state.index === 1 ? '#476EF1' : '#666666',
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
@@ -193,7 +193,7 @@ const MainNavigator = () => {
             <Ionicons 
               name="notifications-outline" 
               size={24} 
-              color="#BB86FC" 
+              color="#476EF1"
               style={{ marginLeft: 15 }}
               onPress={() => {
                 navigation.getParent()?.navigate('Notifications');
@@ -204,7 +204,7 @@ const MainNavigator = () => {
             <Ionicons 
               name="person-circle-outline" 
               size={24} 
-              color="#BB86FC" 
+              color="#476EF1"
               style={{ marginRight: 15 }}
               onPress={() => {
                 navigation.getParent()?.navigate('Profile');
