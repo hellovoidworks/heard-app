@@ -200,7 +200,7 @@ const MainNavigator = () => {
               <Text
                 style={{
                   color: '#FFFFFF',
-                  fontSize: 22,
+                  fontSize: 18,
                   fontFamily: fontNames.interSemiBold
                 }}
               >
@@ -209,7 +209,7 @@ const MainNavigator = () => {
               <Text
                 style={{
                   color: '#888888',
-                  fontSize: 22,
+                  fontSize: 18,
                   marginLeft: 8,
                   fontFamily: fontNames.interRegular
                 }}
@@ -221,28 +221,30 @@ const MainNavigator = () => {
           headerLeft: () => null,
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {/* Star indicator with count */}
               <View style={{ 
                 backgroundColor: '#222222', 
                 borderRadius: 20, 
-                paddingHorizontal: 12, 
-                paddingVertical: 6,
+                paddingHorizontal: 10, 
+                paddingVertical: 5,
                 flexDirection: 'row',
                 alignItems: 'center',
-                marginRight: 12
+                marginRight: 10
               }}>
                 <Text style={{ 
                   color: 'white', 
-                  marginRight: 6,
+                  marginRight: 4,
                   fontFamily: fontNames.interMedium,
-                  fontSize: 16
+                  fontSize: 14
                 }}>
                   10
                 </Text>
-                <Ionicons name="star" size={20} color="#FFD700" />
+                <Ionicons name="star" size={16} color="#FFD700" />
               </View>
+              {/* Profile button */}
               <Ionicons 
                 name="person-circle-outline" 
-                size={24} 
+                size={22} 
                 color="#FFFFFF"
                 style={{ marginRight: 15 }}
                 onPress={() => {
@@ -251,6 +253,12 @@ const MainNavigator = () => {
               />
             </View>
           ),
+          headerStyle: {
+            backgroundColor: '#121212',
+          },
+          headerTitleContainerStyle: {
+            left: 16, // Set fixed left margin instead of default centered position
+          },
         })}
       />
       <Tab.Screen name="Mailbox" component={MailboxScreen} />
