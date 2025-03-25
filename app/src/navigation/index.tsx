@@ -39,6 +39,9 @@ import {
 // Import navigation types
 import { RootStackParamList, AuthStackParamList, MainTabParamList, OnboardingStackParamList } from './types';
 
+// Import new screens
+import EmailSignInScreen from '../screens/auth/EmailSignInScreen';
+
 // Create navigators
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const AuthStack = createNativeStackNavigator<AuthStackParamList>();
@@ -54,6 +57,7 @@ const AuthNavigator = () => (
     }}
   >
     <AuthStack.Screen name="Login" component={LoginScreen} />
+    <AuthStack.Screen name="EmailSignIn" component={EmailSignInScreen} />
   </AuthStack.Navigator>
 );
 

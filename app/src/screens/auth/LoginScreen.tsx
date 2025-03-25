@@ -14,10 +14,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 const LoginScreen = ({ navigation }: Props) => {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-  const [magicLinkSent, setMagicLinkSent] = useState(false);
-  const [showEmailInput, setShowEmailInput] = useState(false);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   const theme = useTheme();
 
@@ -80,69 +77,8 @@ const LoginScreen = ({ navigation }: Props) => {
     }
   };
 
-  const handleSendMagicLink = async () => {
-    if (!email.trim()) {
-      Alert.alert('Error', 'Please enter your email address');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase.auth.signInWithOtp({
-        email: email.trim(),
-        options: {
-          emailRedirectTo: 'heardapp://auth/callback',
-        },
-      });
-      
-      if (error) throw error;
-      
-      console.log('Magic link sent successfully');
-      setMagicLinkSent(true);
-    } catch (error: any) {
-      console.error('Error sending magic link:', error);
-      Alert.alert('Error', error.message || 'Failed to send magic link');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openMailApp = async () => {
-    try {
-      // Try to open the default mail app
-      let url = '';
-      
-      if (Platform.OS === 'ios') {
-        url = 'message://';
-      } else {
-        url = 'mailto:';
-      }
-      
-      const canOpen = await Linking.canOpenURL(url);
-      
-      if (canOpen) {
-        await Linking.openURL(url);
-      } else {
-        // If can't open mail app, try Gmail
-        const gmailUrl = 'googlegmail://';
-        const canOpenGmail = await Linking.canOpenURL(gmailUrl);
-        
-        if (canOpenGmail) {
-          await Linking.openURL(gmailUrl);
-        } else {
-          Alert.alert('Error', 'Could not open mail app');
-        }
-      }
-    } catch (error) {
-      console.error('Error opening mail app:', error);
-      Alert.alert('Error', 'Could not open mail app');
-    }
-  };
-
-  const handleBackToSignIn = () => {
-    setMagicLinkSent(false);
-    setEmail('');
+  const handleEmailSignIn = () => {
+    navigation.navigate('EmailSignIn');
   };
 
   return (
@@ -171,103 +107,38 @@ const LoginScreen = ({ navigation }: Props) => {
               />
             </View>
 
-            {magicLinkSent ? (
-              <View style={styles.magicLinkSentContainer}>
-                <Text style={styles.magicLinkText}>
-                  Magic link sent! Check your email at {email} and click the link to sign in.
-                </Text>
-                
-                <Button
-                  mode="contained"
-                  onPress={openMailApp}
-                  style={styles.mailButton}
-                  icon="email"
+            <View style={styles.buttonsContainer}>
+              {appleAuthAvailable && (
+                <TouchableOpacity 
+                  style={styles.appleButtonContainer}
+                  onPress={handleSignInWithApple}
+                  disabled={loading}
                 >
-                  Open Mail App
-                </Button>
-                
-                <Button
-                  mode="text"
-                  onPress={handleBackToSignIn}
-                  style={styles.backButton}
-                  textColor="#FFFFFF"
+                  <AppleAuthentication.AppleAuthenticationButton
+                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                    cornerRadius={30}
+                    style={styles.appleButton}
+                    onPress={handleSignInWithApple}
+                  />
+                </TouchableOpacity>
+              )}
+              
+              <TouchableOpacity
+                style={styles.emailButtonContainer}
+                onPress={handleEmailSignIn}
+                disabled={loading}
+              >
+                <LinearGradient
+                  colors={['#62DDD2', '#9292FF']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.gradientButton}
                 >
-                  Back to Sign In
-                </Button>
-              </View>
-            ) : (
-              <>
-                {!showEmailInput ? (
-                  <View style={styles.buttonsContainer}>
-                    {appleAuthAvailable && (
-                      <TouchableOpacity 
-                        style={styles.appleButtonContainer}
-                        onPress={handleSignInWithApple}
-                        disabled={loading}
-                      >
-                        <AppleAuthentication.AppleAuthenticationButton
-                          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                          cornerRadius={28}
-                          style={styles.appleButton}
-                          onPress={handleSignInWithApple}
-                        />
-                      </TouchableOpacity>
-                    )}
-                    
-                    <TouchableOpacity
-                      style={styles.emailButtonContainer}
-                      onPress={() => setShowEmailInput(true)}
-                      disabled={loading}
-                    >
-                      <LinearGradient
-                        colors={['#62DDD2', '#9292FF']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.gradientButton}
-                      >
-                        <Text style={styles.emailButtonText}>Sign in with Email</Text>
-                      </LinearGradient>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <>
-                    <Text style={styles.emailInstructions}>
-                      Enter your email address and we'll send you a magic link to sign in.
-                    </Text>
-                    
-                    <TextInput
-                      label="Email"
-                      value={email}
-                      onChangeText={setEmail}
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      style={styles.input}
-                      disabled={loading}
-                    />
-                    
-                    <Button
-                      mode="contained"
-                      onPress={handleSendMagicLink}
-                      style={styles.button}
-                      loading={loading}
-                      disabled={loading || !email.trim()}
-                    >
-                      Send Magic Link
-                    </Button>
-                    
-                    <Button
-                      mode="text"
-                      onPress={() => setShowEmailInput(false)}
-                      style={styles.backButton}
-                      textColor="#FFFFFF"
-                    >
-                      Back
-                    </Button>
-                  </>
-                )}
-              </>
-            )}
+                  <Text style={styles.emailButtonText}>Sign in with Email</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -340,54 +211,14 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 28,
+    borderRadius: 30,
     padding: 15,
   },
   emailButtonText: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
     backgroundColor: 'transparent',
-  },
-  input: {
-    width: '100%',
-    marginBottom: 16,
-    backgroundColor: '#333333',
-    color: '#FFFFFF',
-    borderRadius: 8,
-  },
-  button: {
-    width: '100%',
-    marginTop: 8,
-    paddingVertical: 6,
-    borderRadius: 28,
-  },
-  magicLinkSentContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  magicLinkText: {
-    textAlign: 'center',
-    marginBottom: 24,
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#FFFFFF',
-  },
-  mailButton: {
-    width: '100%',
-    marginBottom: 16,
-    paddingVertical: 6,
-    borderRadius: 28,
-  },
-  backButton: {
-    marginTop: 8,
-  },
-  emailInstructions: {
-    textAlign: 'center',
-    marginBottom: 24,
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#FFFFFF',
   },
 });
 
