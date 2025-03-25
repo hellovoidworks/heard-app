@@ -895,24 +895,10 @@ const HomeScreen = () => {
     );
   };
 
-  const renderHeader = () => {
-    if (!user || letters.length === 0) return null;
-    
-    return (
-      <View style={styles.headerContainer}>
-        <Button 
-          mode="outlined"
-          onPress={deliverMoreLetters}
-          loading={loadingMore}
-          disabled={loadingMore}
-          icon="email"
-          style={styles.deliverMoreButton}
-        >
-          Deliver More Letters
-        </Button>
-      </View>
-    );
-  };
+  // Filter letters to show only unread ones
+  const unreadLetters = useMemo(() => {
+    return letters.filter(letter => !letter.is_read);
+  }, [letters]);
 
   const renderContent = () => {
     if (loading) {
@@ -948,12 +934,12 @@ const HomeScreen = () => {
       );
     }
     
-    if (letters.length === 0) {
+    if (unreadLetters.length === 0) {
       return (
         <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>No letters available at the moment.</Text>
+          <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>No unread letters available.</Text>
           <Text style={[styles.emptySubText, { color: theme.colors.onSurfaceDisabled }]}>
-            New letters will be delivered in the next window.
+            Check back later for new letters.
           </Text>
           {renderNextWindowInfo()}
           <Button
@@ -979,19 +965,37 @@ const HomeScreen = () => {
     
     return (
       <FlatList
-        data={letters}
+        data={unreadLetters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
-        ListHeaderComponent={renderHeader}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={handleRefresh}
             tintColor={theme.colors.primary}
           />
         }
+        ListHeaderComponent={renderHeader}
       />
+    );
+  };
+
+  const renderHeader = () => {
+    if (!user || unreadLetters.length === 0) return null;
+    
+    return (
+      <View style={styles.headerContainer}>
+        <Button 
+          mode="outlined"
+          onPress={deliverMoreLetters}
+          loading={loadingMore}
+          disabled={loadingMore}
+          icon="email"
+          style={styles.deliverMoreButton}
+        >
+          Deliver More Letters
+        </Button>
+      </View>
     );
   };
 
