@@ -297,13 +297,12 @@ const styles = StyleSheet.create({
   },
   moodRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
+    justifyContent: 'space-between',
     marginBottom: 12,
-    gap: 8,
   },
   moodOptionContainer: {
     alignItems: 'center',
-    width: 48,
+    width: '20%', // 5 items per row = 20% each
   },
   moodOption: {
     width: 44,
