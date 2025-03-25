@@ -150,10 +150,13 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
     <Chip
       selected={selectedCategories.includes(item.id)}
       onPress={() => toggleCategory(item.id)}
-      style={styles.chip}
-      selectedColor={item.color || theme.colors.primary}
+      selectedColor="#FFFFFF"
       textStyle={{ color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface }}
       mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
+      style={[
+        styles.chip,
+        selectedCategories.includes(item.id) && { backgroundColor: item.color || theme.colors.primary }
+      ]}
     >
       {item.name}
     </Chip>
@@ -197,10 +200,13 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
               key={category.id}
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
-              style={styles.chip}
-              selectedColor={category.color || theme.colors.primary}
+              selectedColor="#FFFFFF"
               textStyle={{ color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface }}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
+              style={[
+                styles.chip,
+                selectedCategories.includes(category.id) && { backgroundColor: category.color || theme.colors.primary }
+              ]}
             >
               {category.name}
             </Chip>
