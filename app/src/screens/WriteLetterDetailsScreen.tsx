@@ -305,9 +305,9 @@ const styles = StyleSheet.create({
     width: '20%', // 5 items per row = 20% each
   },
   moodOption: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: '#333333',
     justifyContent: 'center',
     alignItems: 'center',
@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   emojiText: {
-    fontSize: 20,
+    fontSize: 24,
   },
   moodLabel: {
     fontSize: 10,
