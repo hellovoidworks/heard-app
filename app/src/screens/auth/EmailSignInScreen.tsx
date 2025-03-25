@@ -149,7 +149,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                 <Button
                   mode="contained"
                   onPress={handleSendMagicLink}
-                  style={styles.button}
+                  style={[styles.button, { marginTop: 24 }]}
                   loading={loading}
                   disabled={loading || !email.trim() || !isValidEmail}
                   labelStyle={styles.buttonLabelStyle}
