@@ -143,7 +143,7 @@ const MainNavigator = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Write Tab (Center Button) */}
+          {/* Write Button (Center) - Opens Write Screen as Modal */}
           <TouchableOpacity
             style={{
               width: 50,
@@ -154,7 +154,7 @@ const MainNavigator = () => {
               justifyContent: 'center',
               bottom: 5,
             }}
-            onPress={() => props.navigation.navigate('Write')}
+            onPress={() => props.navigation.getParent()?.navigate('WriteLetter')}
           >
             <Text style={{ color: 'white', fontSize: 24, fontWeight: 'bold' }}>+</Text>
           </TouchableOpacity>
@@ -169,7 +169,7 @@ const MainNavigator = () => {
             onPress={() => props.navigation.navigate('Mailbox')}
           >
             <Text style={{
-              color: props.state.index === 2 ? '#BB86FC' : '#666666',
+              color: props.state.index === 1 ? '#BB86FC' : '#666666',
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
@@ -208,7 +208,6 @@ const MainNavigator = () => {
           ),
         })}
       />
-      <Tab.Screen name="Write" component={WriteLetterScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Mailbox" component={MailboxScreen} />
     </Tab.Navigator>
   );
@@ -310,12 +309,22 @@ const AppNavigator = () => {
               <Stack.Screen 
                 name="WriteLetter" 
                 component={WriteLetterScreen} 
-                options={{ 
+                options={({ navigation }) => ({ 
                   headerShown: true, 
                   title: 'Write Letter',
                   headerStyle: { backgroundColor: '#121212' },
-                  headerTintColor: '#FFFFFF'
-                }} 
+                  headerTintColor: '#FFFFFF',
+                  presentation: 'modal',
+                  headerLeft: () => (
+                    <Ionicons 
+                      name="close-outline" 
+                      size={28} 
+                      color="#FFFFFF" 
+                      style={{ marginLeft: 5 }}
+                      onPress={() => navigation.goBack()}
+                    />
+                  ),
+                })} 
               />
               <Stack.Screen 
                 name="Profile" 

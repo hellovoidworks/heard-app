@@ -25,7 +25,6 @@ export type OnboardingStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Write: undefined;
   Mailbox: undefined;
-  // Notifications tab removed
+  // Write removed as it's now accessed as a modal
 }; 
