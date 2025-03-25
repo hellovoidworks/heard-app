@@ -184,25 +184,26 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <Text style={[styles.sectionTitle, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
           
           <View style={styles.moodGrid}>
             {moodRows.map((row, rowIndex) => (
               <View key={`row-${rowIndex}`} style={styles.moodRow}>
                 {row.map((option) => (
-                  <TouchableOpacity
-                    key={option.label}
-                    style={[
-                      styles.moodOption,
-                      moodEmoji === option.emoji && [styles.selectedMoodOption, { borderColor: 'white' }]
-                    ]}
-                    onPress={() => handleEmojiSelect(option.emoji)}
-                  >
-                    <Text style={styles.emojiText}>{option.emoji}</Text>
+                  <View key={option.label} style={styles.moodOptionContainer}>
+                    <TouchableOpacity
+                      style={[
+                        styles.moodOption,
+                        moodEmoji === option.emoji && [styles.selectedMoodOption, { borderColor: 'white' }]
+                      ]}
+                      onPress={() => handleEmojiSelect(option.emoji)}
+                    >
+                      <Text style={styles.emojiText}>{option.emoji}</Text>
+                    </TouchableOpacity>
                     <RNText style={[styles.moodLabel, { color: theme.colors.onSurface }]}>
                       {option.label}
                     </RNText>
-                  </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             ))}
@@ -292,37 +293,40 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   moodGrid: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   moodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 16,
+    marginBottom: 20,
+  },
+  moodOptionContainer: {
+    alignItems: 'center',
+    width: 58,
   },
   moodOption: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#333333',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 2,
   },
   selectedMoodOption: {
     borderWidth: 2,
   },
   emojiText: {
-    fontSize: 24,
+    fontSize: 22,
   },
   moodLabel: {
     fontSize: 10,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
   label: {
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 8,
+    marginBottom: 12,
     marginTop: 16,
   },
   categoriesContainer: {
