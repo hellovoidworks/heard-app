@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
-import { TextInput, Button, Text, Headline, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView } from 'react-native';
+import { TextInput, Button, Text, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -146,106 +146,106 @@ const WriteLetterDetailsScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={100}
-    >
-      <ScrollView 
-        style={[styles.scrollView, { backgroundColor: theme.colors.background }]} 
-        contentContainerStyle={styles.contentContainer}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <KeyboardAvoidingView
+        style={styles.keyboardAvoidingView}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={100}
       >
-        <Headline style={[styles.headline, { color: theme.colors.onBackground }]}>Letter Details</Headline>
-        
-        <View style={styles.titlePreview}>
-          <Text style={[styles.previewLabel, { color: theme.colors.onSurfaceDisabled }]}>Title:</Text>
-          <Text style={[styles.previewContent, { color: theme.colors.onSurface }]} numberOfLines={1}>
-            {title}
-          </Text>
-        </View>
-        
-        <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />
-
-        <View style={styles.moodContainer}>
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood</Text>
-          
-          <View style={[styles.selectedEmojiContainer, { 
-            backgroundColor: theme.colors.surface,
-            borderColor: theme.colors.outline
-          }]}>
-            {moodEmoji ? (
-              <Text style={styles.selectedEmoji}>{moodEmoji}</Text>
-            ) : (
-              <Text style={[styles.placeholderEmoji, { color: theme.colors.onSurfaceDisabled }]}>Select an emoji</Text>
-            )}
+        <ScrollView 
+          style={styles.scrollView} 
+          contentContainerStyle={styles.contentContainer}
+        >
+          <View style={styles.titlePreview}>
+            <Text style={[styles.previewLabel, { color: theme.colors.onSurfaceDisabled }]}>Title:</Text>
+            <Text style={[styles.previewContent, { color: theme.colors.onSurface }]} numberOfLines={1}>
+              {title}
+            </Text>
           </View>
           
-          <Surface style={[styles.emojiSuggestions, { backgroundColor: theme.colors.surface }]}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              {SUGGESTED_MOODS.map((emoji, index) => (
-                <TouchableOpacity 
-                  key={index} 
+          <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />
+
+          <View style={styles.moodContainer}>
+            <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood</Text>
+            
+            <View style={[styles.selectedEmojiContainer, { 
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.outline
+            }]}>
+              {moodEmoji ? (
+                <Text style={styles.selectedEmoji}>{moodEmoji}</Text>
+              ) : (
+                <Text style={[styles.placeholderEmoji, { color: theme.colors.onSurfaceDisabled }]}>Select an emoji</Text>
+              )}
+            </View>
+            
+            <Surface style={[styles.emojiSuggestions, { backgroundColor: theme.colors.surface }]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {SUGGESTED_MOODS.map((emoji, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[
+                      styles.emojiOption,
+                      emoji === moodEmoji && [styles.selectedEmojiOption, { backgroundColor: theme.colors.primary }]
+                    ]}
+                    onPress={() => handleEmojiSelect(emoji)}
+                  >
+                    <Text style={styles.emojiText}>{emoji}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </Surface>
+          </View>
+          
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
+          {loadingCategories ? (
+            <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
+          ) : (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesContainer}
+            >
+              {categories.map((category) => (
+                <Chip
+                  key={category.id}
+                  selected={selectedCategory?.id === category.id}
+                  onPress={() => handleCategorySelect(category)}
                   style={[
-                    styles.emojiOption,
-                    emoji === moodEmoji && [styles.selectedEmojiOption, { backgroundColor: theme.colors.primary }]
+                    styles.categoryChip,
+                    { backgroundColor: theme.colors.surface },
+                    selectedCategory?.id === category.id && { backgroundColor: theme.colors.primary }
                   ]}
-                  onPress={() => handleEmojiSelect(emoji)}
+                  textStyle={[
+                    { color: theme.colors.onSurface },
+                    selectedCategory?.id === category.id && { color: theme.colors.onPrimary }
+                  ]}
                 >
-                  <Text style={styles.emojiText}>{emoji}</Text>
-                </TouchableOpacity>
+                  {category.name}
+                </Chip>
               ))}
             </ScrollView>
-          </Surface>
-        </View>
+          )}
+          
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
+          <TextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Enter a display name for this letter"
+            placeholderTextColor={theme.colors.onSurfaceDisabled}
+            style={[styles.displayNameInput, { 
+              backgroundColor: theme.colors.surface,
+              color: theme.colors.onSurface
+            }]}
+            maxLength={50}
+            theme={{ colors: { text: theme.colors.onSurface } }}
+          />
+          <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
+            This name will be shown publicly with your letter
+          </Text>
+        </ScrollView>
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
-        {loadingCategories ? (
-          <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
-        ) : (
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            style={styles.categoriesContainer}
-          >
-            {categories.map((category) => (
-              <Chip
-                key={category.id}
-                selected={selectedCategory?.id === category.id}
-                onPress={() => handleCategorySelect(category)}
-                style={[
-                  styles.categoryChip,
-                  { backgroundColor: theme.colors.surface },
-                  selectedCategory?.id === category.id && { backgroundColor: theme.colors.primary }
-                ]}
-                textStyle={[
-                  { color: theme.colors.onSurface },
-                  selectedCategory?.id === category.id && { color: theme.colors.onPrimary }
-                ]}
-              >
-                {category.name}
-              </Chip>
-            ))}
-          </ScrollView>
-        )}
-        
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
-        <TextInput
-          value={displayName}
-          onChangeText={setDisplayName}
-          placeholder="Enter a display name for this letter"
-          placeholderTextColor={theme.colors.onSurfaceDisabled}
-          style={[styles.displayNameInput, { 
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface
-          }]}
-          maxLength={50}
-          theme={{ colors: { text: theme.colors.onSurface } }}
-        />
-        <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
-          This name will be shown publicly with your letter
-        </Text>
-        
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { backgroundColor: theme.colors.background }]}>
           <Button
             mode="contained"
             onPress={handleSubmit}
@@ -253,11 +253,11 @@ const WriteLetterDetailsScreen = () => {
             disabled={isSubmitting || !selectedCategory || !displayName.trim()}
             loading={isSubmitting}
           >
-            Submit Letter
+            Send Mail
           </Button>
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
@@ -265,20 +265,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
   contentContainer: {
     padding: 16,
-    paddingBottom: 40,
-  },
-  headline: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  divider: {
-    marginVertical: 16,
   },
   titlePreview: {
     marginTop: 8,
@@ -291,6 +285,9 @@ const styles = StyleSheet.create({
   previewContent: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  divider: {
+    marginVertical: 16,
   },
   moodContainer: {
     marginBottom: 24,
@@ -356,8 +353,6 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     padding: 8,
-    // Make the button take full width since we removed the back button
-    width: '100%'
   },
   loading: {
     marginVertical: 16,

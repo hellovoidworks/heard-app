@@ -414,7 +414,7 @@ const AppNavigator = () => {
                 component={WriteLetterDetailsScreen} 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
-                  title: 'Letter Details',
+                  title: '',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',
