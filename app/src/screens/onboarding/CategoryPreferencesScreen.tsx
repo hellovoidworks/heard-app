@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, FlatList } from 'react-native';
-import { Button, Text, Title, Chip, ActivityIndicator, IconButton } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, FlatList, SafeAreaView } from 'react-native';
+import { Button, Text, Title, Chip, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'CategoryPreferences'>;
 
@@ -20,6 +21,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Add logging for debugging
   useEffect(() => {
@@ -147,7 +150,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
       selected={selectedCategories.includes(item.id)}
       onPress={() => toggleCategory(item.id)}
       style={styles.chip}
-      selectedColor="#6200ee"
+      selectedColor={theme.colors.primary}
+      textStyle={{ color: selectedCategories.includes(item.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
       mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
     >
       {item.name}
@@ -156,27 +160,28 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6200ee" />
-        <Text style={styles.loadingText}>Loading categories...</Text>
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background, paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={[styles.loadingText, { color: theme.colors.onBackground }]}>Loading categories...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={[styles.header, { marginTop: insets.top > 0 ? 0 : 16 }]}>
         <IconButton
           icon="arrow-left"
           size={24}
           onPress={handleGoBack}
+          iconColor={theme.colors.onBackground}
         />
-        <Title style={styles.title}>Select Your Interests</Title>
+        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Select Your Interests</Title>
         <View style={{ width: 40 }} />
       </View>
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.description}>
+        <Text style={[styles.description, { color: theme.colors.onBackground }]}>
           Choose at least 3 categories that interest you. We'll use these to personalize your experience.
         </Text>
         
@@ -187,7 +192,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
               selected={selectedCategories.includes(category.id)}
               onPress={() => toggleCategory(category.id)}
               style={styles.chip}
-              selectedColor="#6200ee"
+              selectedColor={theme.colors.primary}
+              textStyle={{ color: selectedCategories.includes(category.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
               mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
             >
               {category.name}
@@ -195,38 +201,39 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
           ))}
         </View>
         
-        <Text style={styles.selectionCount}>
+        <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
           {selectedCategories.length} of {categories.length} selected
           {selectedCategories.length < 3 && ' (minimum 3)'}
         </Text>
       </ScrollView>
       
-      <View style={styles.footer}>
+      <View style={[styles.footer, { backgroundColor: theme.colors.background, borderTopColor: theme.colors.outline }]}>
         <Button
           mode="contained"
           onPress={handleContinue}
           style={styles.button}
           loading={saving}
           disabled={saving || selectedCategories.length < 3}
+          buttonColor={theme.colors.primary}
+          textColor={theme.colors.onPrimary}
+          labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
         >
           Continue
         </Button>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingTop: 20,
+    padding: 16,
   },
   scrollContent: {
     padding: 20,
@@ -241,7 +248,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   title: {
-    fontSize: 24,
     textAlign: 'center',
   },
   description: {
@@ -277,6 +283,7 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     paddingVertical: 6,
+    borderRadius: 28,
   },
 });
 
