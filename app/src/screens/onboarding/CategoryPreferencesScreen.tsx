@@ -147,27 +147,35 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
     navigation.goBack();
   };
 
-  const renderCategoryItem = ({ item }: { item: Category }) => (
-    <Chip
-      selected={selectedCategories.includes(item.id)}
-      onPress={() => toggleCategory(item.id)}
-      selectedColor="#FFFFFF"
-      showSelectedCheck={false}
-      textStyle={{ 
-        color: selectedCategories.includes(item.id) ? '#FFFFFF' : theme.colors.onSurface,
-        fontFamily: fontNames.sourceCodeProSemiBold,
-        textTransform: 'uppercase',
-        fontSize: 14
-      }}
-      mode={selectedCategories.includes(item.id) ? 'flat' : 'outlined'}
-      style={[
-        styles.chip,
-        selectedCategories.includes(item.id) && { backgroundColor: item.color || theme.colors.primary }
-      ]}
-    >
-      {item.name.toUpperCase()}
-    </Chip>
-  );
+  const renderCategoryItem = ({ item }: { item: Category }) => {
+    // Create a lighter version of the category color for the border
+    const color = item.color || theme.colors.primary;
+    const isSelected = selectedCategories.includes(item.id);
+    
+    return (
+      <Chip
+        selected={isSelected}
+        onPress={() => toggleCategory(item.id)}
+        selectedColor="#FFFFFF"
+        showSelectedCheck={false}
+        textStyle={{ 
+          color: isSelected ? '#FFFFFF' : theme.colors.onSurface,
+          fontFamily: fontNames.sourceCodeProSemiBold,
+          textTransform: 'uppercase',
+          fontSize: 14
+        }}
+        mode={isSelected ? 'flat' : 'outlined'}
+        style={[
+          styles.chip,
+          isSelected 
+            ? { backgroundColor: color } 
+            : { borderColor: color + '80' } // Add 50% transparency to the color
+        ]}
+      >
+        {item.name.toUpperCase()}
+      </Chip>
+    );
+  };
 
   if (loading) {
     return (
@@ -202,28 +210,36 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         </Text>
         
         <View style={styles.categoriesContainer}>
-          {categories.map(category => (
-            <Chip
-              key={category.id}
-              selected={selectedCategories.includes(category.id)}
-              onPress={() => toggleCategory(category.id)}
-              selectedColor="#FFFFFF"
-              showSelectedCheck={false}
-              textStyle={{ 
-                color: selectedCategories.includes(category.id) ? '#FFFFFF' : theme.colors.onSurface,
-                fontFamily: fontNames.sourceCodeProSemiBold,
-                textTransform: 'uppercase',
-                fontSize: 14
-              }}
-              mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
-              style={[
-                styles.chip,
-                selectedCategories.includes(category.id) && { backgroundColor: category.color || theme.colors.primary }
-              ]}
-            >
-              {category.name.toUpperCase()}
-            </Chip>
-          ))}
+          {categories.map(category => {
+            // Create a lighter version of the category color for the border
+            const color = category.color || theme.colors.primary;
+            const isSelected = selectedCategories.includes(category.id);
+            
+            return (
+              <Chip
+                key={category.id}
+                selected={isSelected}
+                onPress={() => toggleCategory(category.id)}
+                selectedColor="#FFFFFF"
+                showSelectedCheck={false}
+                textStyle={{ 
+                  color: isSelected ? '#FFFFFF' : theme.colors.onSurface,
+                  fontFamily: fontNames.sourceCodeProSemiBold,
+                  textTransform: 'uppercase',
+                  fontSize: 14
+                }}
+                mode={isSelected ? 'flat' : 'outlined'}
+                style={[
+                  styles.chip,
+                  isSelected 
+                    ? { backgroundColor: color } 
+                    : { borderColor: color + '80' } // Add 50% transparency to the color
+                ]}
+              >
+                {category.name.toUpperCase()}
+              </Chip>
+            );
+          })}
         </View>
         
         <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
