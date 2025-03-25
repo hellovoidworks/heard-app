@@ -171,27 +171,6 @@ const LoginScreen = ({ navigation }: Props) => {
               />
             </View>
 
-            <View style={styles.decorativeChips}>
-              <View style={[styles.chip, { backgroundColor: '#FF7EB0', transform: [{ rotate: '-8deg' }] }]}>
-                <Text style={styles.chipText}>LOVE</Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: '#FFB546', right: 30, top: -40 }]}>
-                <Text style={styles.chipText}>HEALTH</Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: '#5B9DFF', top: -30, right: -50 }]}>
-                <Text style={styles.chipText}>WORK</Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: '#FF6B5B', left: 50 }]}>
-                <Text style={styles.chipText}>VENT</Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: '#E2CB53', bottom: 30, right: -80 }]}>
-                <Text style={styles.chipText}>GOOD VIBES</Text>
-              </View>
-              <View style={[styles.chip, { backgroundColor: '#E27953', bottom: 0, left: 40 }]}>
-                <Text style={styles.chipText}>LIFE</Text>
-              </View>
-            </View>
-
             {magicLinkSent ? (
               <View style={styles.magicLinkSentContainer}>
                 <Text style={styles.magicLinkText}>
@@ -241,14 +220,9 @@ const LoginScreen = ({ navigation }: Props) => {
                       onPress={() => setShowEmailInput(true)}
                       disabled={loading}
                     >
-                      <LinearGradient
-                        colors={['#62DDD2', '#9292FF']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 0 }}
-                        style={styles.gradientButton}
-                      >
+                      <View style={styles.gradientButton}>
                         <Text style={styles.emailButtonText}>Sign in with Email</Text>
-                      </LinearGradient>
+                      </View>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -329,27 +303,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 300,
   },
-  decorativeChips: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: -1,
-  },
-  chip: {
-    position: 'absolute',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  chipText: {
-    color: '#000000',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
   buttonsContainer: {
     width: '100%',
     marginTop: 60,
@@ -378,6 +331,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 28,
+    backgroundColor: '#62DDD2',
   },
   emailButtonText: {
     color: 'white',
