@@ -293,21 +293,21 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   moodGrid: {
-    marginBottom: 32,
+    marginBottom: 24,
   },
   moodRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   moodOptionContainer: {
     alignItems: 'center',
-    width: 58,
+    width: 52,
   },
   moodOption: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: '#333333',
     justifyContent: 'center',
     alignItems: 'center',
@@ -316,12 +316,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   emojiText: {
-    fontSize: 22,
+    fontSize: 20,
   },
   moodLabel: {
     fontSize: 10,
     textAlign: 'center',
-    marginTop: 6,
+    marginTop: 4,
   },
   label: {
     fontSize: 16,
