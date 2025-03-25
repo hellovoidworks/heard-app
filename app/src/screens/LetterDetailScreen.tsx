@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList } from 'react-native';
-import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { LetterWithDetails } from '../types/database.types';
@@ -35,6 +35,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [userReactions, setUserReactions] = useState<{[key: string]: boolean}>({});
   const [letterReactions, setLetterReactions] = useState<{emoji: string, count: number}[]>([]);
   const { user, profile } = useAuth();
+  const theme = useTheme();
 
   const fetchLetter = async () => {
     try {
@@ -235,9 +236,9 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         visible={reactionModalVisible}
         onRequestClose={() => setReactionModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <Surface style={styles.modalContent}>
-            <Text style={styles.modalTitle}>React to this letter</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <Surface style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>React to this letter</Text>
             
             <View style={styles.emojiGrid}>
               {REACTION_EMOJIS.map((item) => (
@@ -245,12 +246,13 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   key={item.name}
                   style={[
                     styles.emojiButton,
-                    userReactions[item.emoji] ? styles.selectedEmojiButton : null
+                    { backgroundColor: theme.colors.surfaceVariant },
+                    userReactions[item.emoji] && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }]
                   ]}
                   onPress={() => handleReaction(item.emoji)}
                   disabled={sendingReaction}
                 >
-                  <Text style={styles.emoji}>{item.emoji}</Text>
+                  <Text style={styles.emojiText}>{item.emoji}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -258,7 +260,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <Button 
               mode="outlined" 
               onPress={() => setReactionModalVisible(false)}
-              style={styles.closeButton}
+              style={styles.modalButton}
             >
               Close
             </Button>
@@ -276,32 +278,38 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         visible={responseModalVisible}
         onRequestClose={() => setResponseModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <Surface style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Respond to this letter</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+          <Surface style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Write a response</Text>
             
             <TextInput
-              label="Your message"
               value={responseText}
               onChangeText={setResponseText}
+              placeholder="Write your response..."
+              placeholderTextColor={theme.colors.onSurfaceDisabled}
               multiline
-              numberOfLines={6}
-              style={styles.responseInput}
+              numberOfLines={4}
+              style={[styles.responseInput, { 
+                backgroundColor: theme.colors.surface,
+                color: theme.colors.onSurface,
+                borderColor: theme.colors.outline
+              }]}
+              theme={{ colors: { text: theme.colors.onSurface } }}
             />
             
             <View style={styles.modalButtons}>
               <Button 
                 mode="outlined" 
                 onPress={() => setResponseModalVisible(false)}
-                style={[styles.modalButton, styles.cancelButton]}
+                style={styles.modalButton}
               >
                 Cancel
               </Button>
-              <Button 
-                mode="contained" 
+              <Button
+                mode="contained"
                 onPress={handleSendResponse}
+                disabled={!responseText.trim() || sendingResponse}
                 loading={sendingResponse}
-                disabled={sendingResponse || !responseText.trim()}
                 style={styles.modalButton}
               >
                 Send
@@ -315,16 +323,19 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   if (loading && !refreshing) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   if (!letter) {
     return (
-      <View style={styles.errorContainer}>
-        <Text>Letter not found</Text>
+      <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
+        <Text style={{ color: theme.colors.onBackground }}>Letter not found</Text>
+        <Button mode="contained" onPress={() => navigation.goBack()}>
+          Go Back
+        </Button>
       </View>
     );
   }
@@ -332,68 +343,86 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const isAuthoredByUser = user && letter.author_id === user.id;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={handleRefresh}
+            tintColor={theme.colors.primary}
+          />
         }
       >
-        <Card style={styles.letterCard}>
-          <Card.Content>
-            <Title style={styles.title}>{letter.title}</Title>
-            
-            <View style={styles.metaContainer}>
-              <Chip icon="account" style={styles.chip}>{letter.display_name}</Chip>
-              <Chip icon="tag" style={styles.chip}>{letter.category?.name}</Chip>
-              <Text style={styles.date}>
-                {format(new Date(letter.created_at), 'MMM d, yyyy')}
-              </Text>
+        <Surface style={[styles.letterContainer, { backgroundColor: theme.colors.surface }]}>
+          <View style={styles.letterHeader}>
+            <Title style={{ color: theme.colors.onSurface }}>{letter.title}</Title>
+            <Chip 
+              icon="tag" 
+              style={[styles.categoryChip, { backgroundColor: theme.colors.surfaceVariant }]}
+              textStyle={{ color: theme.colors.onSurfaceVariant }}
+            >
+              {letter.category?.name}
+            </Chip>
+          </View>
+
+          <View style={styles.authorInfo}>
+            <Text style={[styles.authorName, { color: theme.colors.primary }]}>
+              {letter.display_name || letter.author?.username || 'Unknown User'}
+            </Text>
+            <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
+              {format(new Date(letter.created_at), 'MMM d, yyyy')}
+            </Text>
+          </View>
+
+          {(letter as any).mood_emoji && (
+            <View style={[styles.moodContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
+              <Text style={styles.moodEmoji}>{(letter as any).mood_emoji}</Text>
             </View>
-            
-            <Paragraph style={styles.content}>{letter.content}</Paragraph>
-            
-            {letterReactions.length > 0 && (
-              <View style={styles.reactionsContainer}>
-                {letterReactions.map((reaction, index) => (
-                  <Chip 
-                    key={index} 
-                    style={[
-                      styles.reactionChip,
-                      userReactions[reaction.emoji] ? styles.userReactionChip : null
-                    ]}
-                    onPress={() => handleReaction(reaction.emoji)}
-                  >
-                    {reaction.emoji} {reaction.count}
-                  </Chip>
-                ))}
-              </View>
-            )}
-          </Card.Content>
-        </Card>
+          )}
+
+          <Paragraph style={[styles.content, { color: theme.colors.onSurface }]}>
+            {letter.content}
+          </Paragraph>
+
+          <View style={styles.reactionsContainer}>
+            {letterReactions.map((reaction) => (
+              <Chip
+                key={reaction.emoji}
+                style={[
+                  styles.reactionChip,
+                  { backgroundColor: userReactions[reaction.emoji] ? theme.colors.primary : theme.colors.surfaceVariant }
+                ]}
+                textStyle={{ 
+                  color: userReactions[reaction.emoji] ? theme.colors.onPrimary : theme.colors.onSurfaceVariant 
+                }}
+              >
+                {reaction.emoji} {reaction.count}
+              </Chip>
+            ))}
+          </View>
+
+          <View style={styles.actionButtons}>
+            <Button
+              mode="outlined"
+              onPress={() => setReactionModalVisible(true)}
+              icon="emoticon-happy-outline"
+              style={styles.actionButton}
+            >
+              React
+            </Button>
+            <Button
+              mode="contained"
+              onPress={() => navigation.navigate('ThreadDetail', { letterId: letter.id })}
+              icon="chat-outline"
+              style={styles.actionButton}
+            >
+              View Conversation
+            </Button>
+          </View>
+        </Surface>
       </ScrollView>
-      
-      {!isAuthoredByUser && user && (
-        <View style={styles.buttonsContainer}>
-          <Button 
-            mode="outlined" 
-            icon="emoticon-outline"
-            onPress={() => setReactionModalVisible(true)} 
-            style={styles.actionButton}
-          >
-            React
-          </Button>
-          <Button 
-            mode="contained" 
-            icon="reply"
-            onPress={() => setResponseModalVisible(true)} 
-            style={styles.actionButton}
-          >
-            Respond
-          </Button>
-        </View>
-      )}
-      
+
       {renderReactionModal()}
       {renderResponseModal()}
     </View>
@@ -403,73 +432,87 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollView: {
-    flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  errorContainer: {
+  emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
-  letterCard: {
+  scrollView: {
+    flex: 1,
+  },
+  letterContainer: {
     margin: 16,
+    padding: 16,
+    borderRadius: 8,
     elevation: 2,
   },
-  title: {
-    fontSize: 24,
-    marginBottom: 12,
-  },
-  metaContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  letterHeader: {
     marginBottom: 16,
-    alignItems: 'center',
   },
-  chip: {
-    marginRight: 8,
-    marginBottom: 4,
+  categoryChip: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  authorInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authorName: {
+    fontWeight: '600',
   },
   date: {
     fontSize: 12,
-    color: '#666',
-    marginLeft: 'auto',
+  },
+  moodContainer: {
+    alignSelf: 'flex-start',
+    padding: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  moodEmoji: {
+    fontSize: 24,
   },
   content: {
     fontSize: 16,
     lineHeight: 24,
+    marginBottom: 24,
   },
-  buttonsContainer: {
+  reactionsContainer: {
     flexDirection: 'row',
-    padding: 16,
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  reactionChip: {
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: 'white',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
   },
   actionButton: {
     flex: 1,
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    width: '80%',
     padding: 20,
     borderRadius: 8,
+    width: '80%',
+    elevation: 5,
   },
   modalTitle: {
     fontSize: 18,
@@ -484,27 +527,18 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emojiButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 60,
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 8,
-    backgroundColor: '#f0f0f0',
+    margin: 4,
+    borderRadius: 30,
   },
   selectedEmojiButton: {
-    backgroundColor: '#e0f0ff',
     borderWidth: 2,
-    borderColor: '#6200ee',
   },
-  emoji: {
+  emojiText: {
     fontSize: 24,
-  },
-  closeButton: {
-    marginTop: 16,
-  },
-  responseInput: {
-    marginBottom: 16,
   },
   modalButtons: {
     flexDirection: 'row',
@@ -512,23 +546,13 @@ const styles = StyleSheet.create({
   },
   modalButton: {
     flex: 1,
-    marginHorizontal: 8,
+    marginHorizontal: 4,
   },
-  cancelButton: {
-    borderColor: '#999',
-  },
-  reactionsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 16,
-  },
-  reactionChip: {
-    marginRight: 8,
-    marginBottom: 8,
-    backgroundColor: '#f0f0f0',
-  },
-  userReactionChip: {
-    backgroundColor: '#e0f0ff',
+  responseInput: {
+    marginBottom: 16,
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 8,
   },
 });
 
