@@ -7,6 +7,7 @@ import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { registerForPushNotificationsAsync, savePushToken } from '../../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'NotificationPermission'>;
 
@@ -14,6 +15,7 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const handleEnableNotifications = async () => {
     setLoading(true);
@@ -165,7 +167,7 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top }]}>
         <IconButton
           icon="arrow-left"
           size={24}
@@ -222,7 +224,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
   content: {
     padding: 20,
