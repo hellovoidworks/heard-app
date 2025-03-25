@@ -46,11 +46,28 @@ const HomeScreen = () => {
   });
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
-  const scaleAnim = React.useRef(new Animated.Value(1)).current;
 
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 1;
+
+  // Create a map to store animation values for each letter
+  const fadeAnims = useMemo(() => new Map<string, Animated.Value>(), []);
+
+  const getLetterAnimation = useCallback((letterId: string) => {
+    if (!fadeAnims.has(letterId)) {
+      const fadeAnim = new Animated.Value(0);
+      fadeAnims.set(letterId, fadeAnim);
+      // Start the animation
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    }
+    return fadeAnims.get(letterId)!;
+  }, []);
 
   // Update the time until next window every second
   useEffect(() => {
@@ -805,36 +822,48 @@ const HomeScreen = () => {
     const backgroundColor = isUnread ? categoryColor : `${categoryColor}40`; // 25% opacity for read letters
     const defaultMoodEmoji = '😊';
 
+    const fadeAnim = getLetterAnimation(item.id);
+
     return (
-      <Card
-        style={[
-          styles.letterCard,
-          { backgroundColor },
-          isUnread && styles.unreadCard
-        ]}
-        onPress={() => handleLetterPress(item)}
-      >
-        <Card.Content>
-          <View style={styles.letterHeader}>
-            <View style={styles.moodEmojiContainer}>
-              <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+      <Animated.View style={{
+        opacity: fadeAnim,
+        transform: [{
+          translateY: fadeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [50, 0],
+          }),
+        }],
+      }}>
+        <Card
+          style={[
+            styles.letterCard,
+            { backgroundColor },
+            isUnread && styles.unreadCard
+          ]}
+          onPress={() => handleLetterPress(item)}
+        >
+          <Card.Content>
+            <View style={styles.letterHeader}>
+              <View style={styles.moodEmojiContainer}>
+                <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+              </View>
+              <View style={styles.letterTitleContainer}>
+                <Title style={styles.letterTitle}>{item.title}</Title>
+                {isUnread ? (
+                  createRedactedBlocks(item.content, item.id)
+                ) : (
+                  <Paragraph style={styles.letterContent}>{item.content}</Paragraph>
+                )}
+              </View>
             </View>
-            <View style={styles.letterTitleContainer}>
-              <Title style={styles.letterTitle}>{item.title}</Title>
-              {isUnread ? (
-                createRedactedBlocks(item.content, item.id)
-              ) : (
-                <Paragraph style={styles.letterContent}>{item.content}</Paragraph>
-              )}
+            <View style={styles.letterFooter}>
+              <Text style={styles.categoryName}>
+                {item.category?.name.toUpperCase()}
+              </Text>
             </View>
-          </View>
-          <View style={styles.letterFooter}>
-            <Text style={styles.categoryName}>
-              {item.category?.name.toUpperCase()}
-            </Text>
-          </View>
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+      </Animated.View>
     );
   };
 
@@ -842,33 +871,6 @@ const HomeScreen = () => {
   const unreadLetters = useMemo(() => {
     return letters.filter(letter => !letter.is_read);
   }, [letters]);
-
-  const animateButton = () => {
-    // Reset the animation
-    scaleAnim.setValue(1);
-    
-    // Create the animation sequence
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-      Animated.timing(scaleAnim, {
-        toValue: 1,
-        duration: 100,
-        easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  };
-
-  const handleDeliverMore = async () => {
-    if (loadingMore) return;
-    animateButton();
-    await deliverMoreLetters();
-  };
 
   const renderContent = () => {
     if (loading) {
@@ -948,18 +950,16 @@ const HomeScreen = () => {
     
     return (
       <View style={styles.headerContainer}>
-        <Animated.View style={[{ transform: [{ scale: scaleAnim }] }]}>
-          <Button 
-            mode="outlined"
-            onPress={handleDeliverMore}
-            loading={loadingMore}
-            disabled={loadingMore}
-            icon="email"
-            style={styles.deliverMoreButton}
-          >
-            Deliver Another Letter
-          </Button>
-        </Animated.View>
+        <Button 
+          mode="outlined"
+          onPress={deliverMoreLetters}
+          loading={loadingMore}
+          disabled={loadingMore}
+          icon="email"
+          style={styles.deliverMoreButton}
+        >
+          Deliver Another Letter
+        </Button>
       </View>
     );
   };
