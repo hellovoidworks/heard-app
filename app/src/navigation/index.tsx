@@ -108,6 +108,7 @@ const MainNavigator = () => {
         headerStyle: {
           backgroundColor: '#121212',
         },
+        headerShadowVisible: false,
         headerTintColor: '#FFFFFF',
         tabBarShowLabel: true,
         tabBarStyle: {
@@ -256,6 +257,7 @@ const MainNavigator = () => {
           headerStyle: {
             backgroundColor: '#121212',
           },
+          headerShadowVisible: false,
           headerTitleAlign: 'left',
           headerTitleContainerStyle: {
             left: 8,
@@ -333,7 +335,10 @@ const AppNavigator = () => {
       <Stack.Navigator screenOptions={{ 
         headerShown: false,
         contentStyle: { backgroundColor: '#121212' },
-        headerStyle: { backgroundColor: '#121212' },
+        headerStyle: { 
+          backgroundColor: '#121212',
+        },
+        headerShadowVisible: false,
         headerTintColor: '#FFFFFF'
       }}>
         {user ? (
