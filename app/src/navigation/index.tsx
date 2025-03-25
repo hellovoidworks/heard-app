@@ -118,7 +118,7 @@ const MainNavigator = () => {
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: '#666666',
         headerTitleStyle: {
-          fontFamily: fontNames.interSemiBold,
+          fontFamily: fontNames.sourceCodeProSemiBold,
         },
       }}
       tabBar={props => (
@@ -145,7 +145,7 @@ const MainNavigator = () => {
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
-              fontFamily: fontNames.interBold,
+              fontFamily: fontNames.sourceCodeProBold,
             }}>
               HOME
             </Text>
@@ -183,7 +183,7 @@ const MainNavigator = () => {
               fontSize: 16,
               fontWeight: 'bold',
               textTransform: 'uppercase',
-              fontFamily: fontNames.interBold,
+              fontFamily: fontNames.sourceCodeProBold,
             }}>
               MAILBOX
             </Text>
