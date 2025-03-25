@@ -256,8 +256,11 @@ const MainNavigator = () => {
           headerStyle: {
             backgroundColor: '#121212',
           },
+          headerTitleAlign: 'left',
           headerTitleContainerStyle: {
-            left: 16, // Set fixed left margin instead of default centered position
+            left: 16,
+            right: 16,
+            maxWidth: '70%',
           },
         })}
       />
