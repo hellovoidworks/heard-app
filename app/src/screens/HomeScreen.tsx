@@ -1046,23 +1046,18 @@ const HomeScreen = () => {
             Check back later for new letters.
           </Text>
           {renderNextWindowInfo()}
-          <Button
-            mode="contained"
-            onPress={forceDeliverLetters}
-            style={styles.deliverButton}
-            icon="email"
-          >
-            Deliver Letters Now
-          </Button>
-          <Button
-            mode="outlined"
-            onPress={() => navigation.navigate('WriteLetter', {})}
-            style={styles.writeButton}
-            icon="pencil"
-            labelStyle={styles.buttonLabel}
-          >
-            Write a Letter
-          </Button>
+          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+            <Button
+              mode="contained"
+              onPress={handleDeliverAnotherLetter}
+              style={styles.deliverButton}
+              loading={loadingMore}
+              disabled={loadingMore}
+              icon="email"
+            >
+              Deliver Another Letter
+            </Button>
+          </Animated.View>
         </View>
       );
     }
