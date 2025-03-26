@@ -113,16 +113,8 @@ const WriteLetterDetailsScreen = () => {
         throw error;
       }
 
-      Alert.alert(
-        'Success',
-        'Your letter has been submitted successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('Home'),
-          },
-        ]
-      );
+      // On success, navigate directly to Home without showing an alert
+      navigation.navigate('Home');
     } catch (error: any) {
       console.error('Error submitting letter:', error.message);
       Alert.alert('Error', 'Failed to submit your letter. Please try again.');
