@@ -111,8 +111,8 @@ const WriteLetterScreen = () => {
         throw error;
       }
 
-      // On success, close the modal instead of navigating
-      navigation.goBack();
+      // On success, navigate directly to Home screen
+      navigation.navigate('Home');
     } catch (error: any) {
       console.error('Error submitting letter:', error.message);
       Alert.alert('Error', 'Failed to submit your letter. Please try again.');
