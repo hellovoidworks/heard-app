@@ -357,10 +357,9 @@ const AppNavigator = () => {
                 name="LetterDetail" 
                 component={LetterDetailScreen} 
                 options={{ 
-                  headerShown: true, 
-                  title: 'Letter',
-                  headerStyle: { backgroundColor: '#121212' },
-                  headerTintColor: '#FFFFFF'
+                  headerShown: false,
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom'
                 }} 
               />
               <Stack.Screen 

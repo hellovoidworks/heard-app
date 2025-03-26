@@ -3,7 +3,10 @@ export type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Onboarding: undefined;
-  LetterDetail: { letterId: string };
+  LetterDetail: { 
+    letterId: string;
+    onClose?: () => void;
+  };
   ThreadDetail: { letterId: string };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   WriteLetterContent: { title?: string; content?: string };

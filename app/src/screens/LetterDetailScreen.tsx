@@ -23,7 +23,7 @@ const REACTION_EMOJIS = [
 ];
 
 const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId } = route.params;
+  const { letterId, onClose } = route.params;
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -228,6 +228,14 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const handleDiscard = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.goBack();
+    }
+  };
+
   const renderReactionModal = () => {
     return (
       <Modal
@@ -413,7 +421,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <View style={styles.actionButtons}>
           <Button
             mode="outlined"
-            onPress={() => navigation.goBack()}
+            onPress={handleDiscard}
             icon="close"
             style={[styles.actionButton, { borderColor: theme.colors.error }]}
             textColor={theme.colors.error}

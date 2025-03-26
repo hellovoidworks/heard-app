@@ -852,8 +852,11 @@ const HomeScreen = () => {
   }, [user]);
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
-    // Navigate to letter detail
-    navigation.navigate('LetterDetail', { letterId: letter.id });
+    // Navigate to letter detail as modal
+    navigation.navigate('LetterDetail', { 
+      letterId: letter.id,
+      onClose: () => navigation.goBack()
+    });
 
     // Mark letter as read if user is logged in and not the author
     if (user && !letter.is_read && letter.author_id !== user.id) {
