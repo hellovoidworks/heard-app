@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -7,6 +7,8 @@ import { LetterWithDetails } from '../types/database.types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 
@@ -36,6 +38,10 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [letterReactions, setLetterReactions] = useState<{emoji: string, count: number}[]>([]);
   const { user, profile } = useAuth();
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [selectedEmoji, setSelectedEmoji] = useState('');
+  const [hideBottomNav, setHideBottomNav] = useState(false);
 
   const fetchLetter = async () => {
     try {
@@ -149,6 +155,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     
     try {
       setSendingReaction(true);
+      setSelectedEmoji(emoji);
       
       // If user already reacted with this emoji, remove the reaction
       if (userReactions[emoji]) {
@@ -161,32 +168,60 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           
         if (error) {
           console.error('Error removing reaction:', error);
+          setSendingReaction(false);
           return;
         }
-      } else {
-        // Add a new reaction
-        const { error } = await supabase
-          .from('reactions')
-          .insert([
-            {
-              user_id: user.id,
-              letter_id: letter.id,
-              reaction_type: emoji
-            }
-          ]);
-          
-        if (error) {
-          console.error('Error adding reaction:', error);
-          return;
-        }
+        
+        // Successfully removed reaction, don't show emoji
+        fetchReactions();
+        setSendingReaction(false);
+        return;
+      } 
+      
+      // Hide bottom nav and close reaction modal
+      setHideBottomNav(true);
+      setReactionModalVisible(false);
+      
+      // Show emoji immediately when adding a reaction
+      setShowEmoji(true);
+      
+      // Add a new reaction
+      const { error } = await supabase
+        .from('reactions')
+        .insert([
+          {
+            user_id: user.id,
+            letter_id: letter.id,
+            reaction_type: emoji
+          }
+        ]);
+        
+      if (error) {
+        console.error('Error adding reaction:', error);
+        // Hide emoji if there was an error
+        setShowEmoji(false);
+        setHideBottomNav(false);
+        setSendingReaction(false);
+        return;
       }
       
-      // Refresh reactions
-      fetchReactions();
-      setReactionModalVisible(false);
+      // Refresh reactions to update UI
+      await fetchReactions();
+      
+      // Close the letter after a delay (approx 1.5 seconds)
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        } else {
+          navigation.goBack();
+        }
+      }, 1500);
+      
     } catch (error) {
       console.error('Error handling reaction:', error);
-    } finally {
+      // Hide emoji if there was an error
+      setShowEmoji(false);
+      setHideBottomNav(false);
       setSendingReaction(false);
     }
   };
@@ -244,26 +279,27 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         visible={reactionModalVisible}
         onRequestClose={() => setReactionModalVisible(false)}
       >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <Surface style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
+        <View style={styles.modalOverlay}>
+          <Surface style={[styles.bottomModalContent, { backgroundColor: theme.colors.surface }]}>
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>React to this letter</Text>
               <IconButton
                 icon="close"
-                size={24}
+                size={20}
                 onPress={() => setReactionModalVisible(false)}
                 style={styles.closeButton}
+                disabled={sendingReaction}
               />
             </View>
             
-            <View style={styles.emojiGrid}>
+            <View style={[styles.emojiGrid, { marginBottom: Math.max(insets.bottom, 16) }]}>
               {REACTION_EMOJIS.map((item) => (
                 <TouchableOpacity
                   key={item.name}
                   style={[
                     styles.emojiButton,
                     { backgroundColor: theme.colors.surfaceVariant },
-                    userReactions[item.emoji] && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }]
+                    userReactions[item.emoji] && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }],
+                    sendingReaction && selectedEmoji === item.emoji && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }]
                   ]}
                   onPress={() => handleReaction(item.emoji)}
                   disabled={sendingReaction}
@@ -286,41 +322,53 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         visible={responseModalVisible}
         onRequestClose={() => setResponseModalVisible(false)}
       >
-        <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
-          <Surface style={[styles.modalContent, { backgroundColor: theme.colors.surface }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.onSurface }]}>Write a response</Text>
+        <View style={styles.modalOverlay}>
+          <Surface style={[styles.bottomModalContent, { backgroundColor: theme.colors.surface }]}>
+            <View style={styles.modalHeader}>
+              <IconButton
+                icon="close"
+                size={20}
+                onPress={() => setResponseModalVisible(false)}
+                style={styles.closeButton}
+              />
+            </View>
             
             <TextInput
               value={responseText}
               onChangeText={setResponseText}
-              placeholder="Write your response..."
+              placeholder="Write your reply..."
               placeholderTextColor={theme.colors.onSurfaceDisabled}
               multiline
-              numberOfLines={4}
+              numberOfLines={6}
               style={[styles.responseInput, { 
-                backgroundColor: theme.colors.surface,
+                backgroundColor: 'transparent', 
                 color: theme.colors.onSurface,
-                borderColor: theme.colors.outline
+                textAlignVertical: 'top',
+                minHeight: 150,
+                fontSize: 16,
+                paddingHorizontal: 0
               }]}
-              theme={{ colors: { text: theme.colors.onSurface } }}
+              theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+              underlineColor="transparent"
+              activeUnderlineColor="transparent"
+              mode="flat"
             />
             
-            <View style={styles.modalButtons}>
-              <Button 
-                mode="outlined" 
-                onPress={() => setResponseModalVisible(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
+            <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
               <Button
                 mode="contained"
                 onPress={handleSendResponse}
                 disabled={!responseText.trim() || sendingResponse}
                 loading={sendingResponse}
-                style={styles.modalButton}
+                style={{ flex: 1 }}
               >
-                Send
+                <Text>
+                  Send + 1{' '}
+                  <Text style={{ 
+                    color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
+                    fontSize: 18
+                  }}>★</Text>
+                </Text>
               </Button>
             </View>
           </Surface>
@@ -397,55 +445,47 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Paragraph style={[styles.content, { color: theme.colors.onSurface }]}>
             {letter.content}
           </Paragraph>
-
-          <View style={styles.reactionsContainer}>
-            {letterReactions.map((reaction) => (
-              <Chip
-                key={reaction.emoji}
-                style={[
-                  styles.reactionChip,
-                  { backgroundColor: userReactions[reaction.emoji] ? theme.colors.primary : theme.colors.surfaceVariant }
-                ]}
-                textStyle={{ 
-                  color: userReactions[reaction.emoji] ? theme.colors.onPrimary : theme.colors.onSurfaceVariant 
-                }}
-              >
-                {reaction.emoji} {reaction.count}
-              </Chip>
-            ))}
-          </View>
         </View>
       </ScrollView>
 
-      <View style={[styles.actionButtonsContainer, { backgroundColor: theme.colors.background }]}>
-        <View style={styles.actionButtons}>
-          <Button
-            mode="outlined"
-            onPress={handleDiscard}
-            icon="close"
-            style={[styles.actionButton, { borderColor: theme.colors.error }]}
-            textColor={theme.colors.error}
-          >
-            Discard
-          </Button>
-          <Button
-            mode="outlined"
-            onPress={() => setReactionModalVisible(true)}
-            icon="emoticon-happy-outline"
-            style={styles.actionButton}
-          >
-            React
-          </Button>
-          <Button
-            mode="contained"
-            onPress={() => setResponseModalVisible(true)}
-            icon="reply"
-            style={styles.actionButton}
-          >
-            Reply
-          </Button>
+      {!hideBottomNav && (
+        <View style={[styles.actionButtonsContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={styles.actionButtons}>
+            <Button
+              mode="outlined"
+              onPress={handleDiscard}
+              icon="close"
+              style={[styles.actionButton, { borderColor: theme.colors.error }]}
+              textColor={theme.colors.error}
+            >
+              Discard
+            </Button>
+            <Button
+              mode="outlined"
+              onPress={() => setReactionModalVisible(true)}
+              icon="emoticon-happy-outline"
+              style={styles.actionButton}
+            >
+              React
+            </Button>
+            <Button
+              mode="contained"
+              onPress={() => setResponseModalVisible(true)}
+              icon="reply"
+              style={styles.actionButton}
+            >
+              Reply
+            </Button>
+          </View>
         </View>
-      </View>
+      )}
+
+      {showEmoji && (
+        <View style={styles.emojiDisplayContainer}>
+          <View style={styles.emojiOverlay} />
+          <Text style={styles.largeEmoji}>{selectedEmoji}</Text>
+        </View>
+      )}
 
       {renderReactionModal()}
       {renderResponseModal()}
@@ -562,24 +602,21 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  modalContent: {
+  bottomModalContent: {
     padding: 20,
-    borderRadius: 8,
-    width: '80%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    width: '100%',
     elevation: 5,
   },
   modalHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    marginBottom: 8,
   },
   closeButton: {
     margin: -8,
@@ -608,15 +645,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
   responseInput: {
     marginBottom: 16,
-    borderWidth: 1,
-    borderRadius: 4,
-    padding: 8,
+    borderWidth: 0,
+    borderRadius: 0,
+  },
+  emojiDisplayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+  emojiOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  largeEmoji: {
+    fontSize: 100,
+    marginBottom: 20,
+    zIndex: 1000,
   },
 });
 
