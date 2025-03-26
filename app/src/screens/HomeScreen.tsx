@@ -970,29 +970,24 @@ const HomeScreen = () => {
     
     return (
       <View style={styles.headerContainer}>
-        {letters.length > 0 && (
-          <View style={styles.deliverySection}>
-            <View style={styles.countdownContainer}>
-              <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
-                Next delivery window: {formattedWindow}
-              </Text>
-              <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
-                Time until next: {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
-              </Text>
-            </View>
-            <Animated.View style={[styles.buttonContainer, { transform: [{ scale: buttonScale }] }]}>
-              <Button
-                mode="contained"
-                onPress={handleDeliverAnotherLetter}
-                loading={loadingMore}
-                disabled={loadingMore}
-                style={styles.deliverButton}
-              >
-                Deliver Another Letter
-              </Button>
-            </Animated.View>
-          </View>
-        )}
+        <View style={styles.countdownContainer}>
+          <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
+            Next delivery window: {formattedWindow}
+          </Text>
+          <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
+            Time until next: {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
+          </Text>
+        </View>
+        <Button 
+          mode="outlined"
+          onPress={deliverMoreLetters}
+          loading={loadingMore}
+          disabled={loadingMore}
+          icon="email"
+          style={styles.deliverMoreButton}
+        >
+          Deliver Another Letter
+        </Button>
       </View>
     );
   };
@@ -1135,10 +1130,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
   },
-  deliverySection: {
-    padding: 16,
-    backgroundColor: 'transparent',
-  },
   countdownContainer: {
     marginBottom: 12,
     alignItems: 'center',
@@ -1148,8 +1139,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 4,
   },
-  buttonContainer: {
-    alignItems: 'center',
+  deliverMoreButton: {
+    width: '80%',
   },
   banner: {
     marginBottom: 8,
