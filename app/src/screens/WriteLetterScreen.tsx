@@ -67,6 +67,11 @@ const WriteLetterScreen = () => {
       return;
     }
 
+    if (!moodEmoji) {
+      Alert.alert('Error', 'Please select a mood for your letter.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -140,7 +145,7 @@ const WriteLetterScreen = () => {
         <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />
 
         <View style={styles.moodContainer}>
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Mood (Required)</Text>
           
           <View style={[styles.selectedEmojiContainer, { 
             backgroundColor: theme.colors.surface,
@@ -252,7 +257,7 @@ const WriteLetterScreen = () => {
           mode="contained"
           onPress={handleSubmit}
           style={styles.submitButton}
-          disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim()}
+          disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji}
           loading={isSubmitting}
         >
           Submit Letter

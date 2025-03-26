@@ -90,6 +90,11 @@ const WriteLetterDetailsScreen = () => {
       return;
     }
 
+    if (!moodEmoji) {
+      Alert.alert('Error', 'Please select a mood for your letter.');
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -154,7 +159,7 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood (Required)</Text>
           
           <View style={styles.moodGrid}>
             {moodRows.map((row, rowIndex) => (
@@ -236,7 +241,7 @@ const WriteLetterDetailsScreen = () => {
             onPress={handleSubmit}
             style={styles.submitButton}
             loading={isSubmitting}
-            disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim()}
+            disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji}
           >
             Submit Letter
           </Button>
