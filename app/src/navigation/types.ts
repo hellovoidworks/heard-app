@@ -7,6 +7,7 @@ export type RootStackParamList = {
     letterId: string;
     onClose?: () => void;
   };
+  MyLetterDetail: { letterId: string; };
   ThreadDetail: { letterId: string };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   WriteLetterContent: { title?: string; content?: string };

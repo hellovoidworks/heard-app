@@ -19,6 +19,8 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
 import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import LetterTitleCard from '../components/LetterTitleCard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
@@ -33,6 +35,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { user, profile } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   const fetchLetterAndReplies = async () => {
     try {
@@ -211,20 +214,12 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
-        <Title style={{ color: theme.colors.onSurface }}>{letter.title}</Title>
-        <Chip 
-          icon="tag" 
-          style={[styles.categoryChip, { backgroundColor: theme.colors.surface }]}
-          textStyle={{ color: theme.colors.onSurface }}
-        >
-          {letter.category?.name}
-        </Chip>
-      </View>
+      {letter && <LetterTitleCard letter={letter} />}
       
       <ScrollView
         ref={scrollViewRef}
         style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
+        contentContainerStyle={{ paddingBottom: 8 }}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -291,7 +286,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </ScrollView>
       
       {/* Reply Input */}
-      <Surface style={[styles.replyContainer, { backgroundColor: theme.colors.surface }]}>
+      <Surface style={[
+        styles.replyContainer, 
+        { 
+          backgroundColor: theme.colors.surface,
+          paddingBottom: Math.max(insets.bottom, 8)
+        }
+      ]}>
         <TextInput
           value={replyText}
           onChangeText={setReplyText}
@@ -332,14 +333,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-  },
-  header: {
-    padding: 16,
-    borderBottomWidth: 1,
-  },
-  categoryChip: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
   },
   scrollView: {
     flex: 1,

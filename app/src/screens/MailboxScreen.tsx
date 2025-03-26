@@ -5,27 +5,12 @@ import CorrespondenceTab from './mailbox/CorrespondenceTab';
 import MyLettersTab from './mailbox/MyLettersTab';
 
 const MailboxScreen = () => {
-  const [activeTab, setActiveTab] = useState('correspondence');
+  const [activeTab, setActiveTab] = useState('myLetters');
   const theme = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={[styles.tabBar, { backgroundColor: theme.colors.surface }]}>
-        <TouchableOpacity 
-          style={[
-            styles.tab, 
-            activeTab === 'correspondence' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]
-          ]} 
-          onPress={() => setActiveTab('correspondence')}
-        >
-          <Text style={[
-            styles.tabText, 
-            { color: theme.colors.onSurface },
-            activeTab === 'correspondence' && { color: theme.colors.primary }
-          ]}>
-            Correspondence
-          </Text>
-        </TouchableOpacity>
         <TouchableOpacity 
           style={[
             styles.tab, 
@@ -39,6 +24,21 @@ const MailboxScreen = () => {
             activeTab === 'myLetters' && { color: theme.colors.primary }
           ]}>
             My Letters
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[
+            styles.tab, 
+            activeTab === 'correspondence' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]
+          ]} 
+          onPress={() => setActiveTab('correspondence')}
+        >
+          <Text style={[
+            styles.tabText, 
+            { color: theme.colors.onSurface },
+            activeTab === 'correspondence' && { color: theme.colors.primary }
+          ]}>
+            My Responses
           </Text>
         </TouchableOpacity>
       </View>

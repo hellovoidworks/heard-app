@@ -22,6 +22,7 @@ import {
   WriteLetterContentScreen,
   WriteLetterDetailsScreen,
   LetterDetailScreen,
+  MyLetterDetailScreen,
   ThreadDetailScreen,
   MailboxScreen,
   NotificationSettingsScreen,
@@ -362,6 +363,15 @@ const AppNavigator = () => {
                   headerShown: false,
                   presentation: 'modal',
                   animation: 'slide_from_bottom'
+                }} 
+              />
+              <Stack.Screen 
+                name="MyLetterDetail" 
+                component={MyLetterDetailScreen} 
+                options={{ 
+                  headerShown: false,
+                  presentation: 'card',
+                  animation: 'slide_from_right'
                 }} 
               />
               <Stack.Screen 

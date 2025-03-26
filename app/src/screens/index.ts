@@ -16,6 +16,7 @@ export { default as WriteLetterScreen } from './WriteLetterScreen';
 export { default as WriteLetterContentScreen } from './WriteLetterContentScreen';
 export { default as WriteLetterDetailsScreen } from './WriteLetterDetailsScreen';
 export { default as LetterDetailScreen } from './LetterDetailScreen';
+export { default as MyLetterDetailScreen } from './MyLetterDetailScreen';
 export { default as ThreadDetailScreen } from './ThreadDetailScreen';
 export { default as MailboxScreen } from './MailboxScreen';
 

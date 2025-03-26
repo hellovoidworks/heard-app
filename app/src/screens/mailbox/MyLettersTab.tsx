@@ -91,7 +91,7 @@ const MyLettersTab = () => {
   };
 
   const handleLetterPress = (letter: Letter) => {
-    navigation.navigate('LetterDetail', { letterId: letter.id });
+    navigation.navigate('MyLetterDetail', { letterId: letter.id });
   };
 
   const renderLetterItem = ({ item }: { item: Letter }) => (
