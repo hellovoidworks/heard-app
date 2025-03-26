@@ -22,6 +22,7 @@ export type Category = {
   id: string;
   name: string;
   description: string | null;
+  color: string;
   created_at: string;
 };
 
@@ -32,6 +33,7 @@ export type Letter = {
   title: string;
   content: string;
   category_id: string;
+  mood_emoji: string;
   created_at: string;
   updated_at: string;
 };
