@@ -3,6 +3,7 @@ import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaV
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
+import { useCategories } from '../contexts/CategoryContext';
 
 type WriteLetterContentParams = {
   title?: string;
@@ -14,6 +15,7 @@ const WriteLetterContentScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriteLetterContentParams>, string>>();
   const theme = useTheme();
+  const { loading: loadingCategories } = useCategories();
 
   // Get initial values from route params if available (for when returning from details screen)
   const initialTitle = route.params?.title || '';

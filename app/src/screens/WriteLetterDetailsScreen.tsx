@@ -4,6 +4,7 @@ import { TextInput, Button, Text, Divider, ActivityIndicator, Chip, useTheme, Su
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCategories } from '../contexts/CategoryContext';
 
 type WriteLetterDetailsParams = {
   title: string;
@@ -41,6 +42,7 @@ const WriteLetterDetailsScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriteLetterDetailsParams>, string>>();
   const theme = useTheme();
+  const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory } = useCategories();
   
   // Required params from previous screen
   const title = route.params?.title || '';
@@ -49,11 +51,8 @@ const WriteLetterDetailsScreen = () => {
   // Get the category from route params if available
   const initialCategory = route.params?.category || null;
   
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [categories, setCategories] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState(profile?.username || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
   const [moodEmoji, setMoodEmoji] = useState('');
 
   // Update display name when profile changes
@@ -63,33 +62,12 @@ const WriteLetterDetailsScreen = () => {
     }
   }, [profile]);
 
-  // Fetch categories on component mount
+  // Set the selected category if provided in route params
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      setLoadingCategories(true);
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setCategories(data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching categories:', error.message);
-      Alert.alert('Error', 'Failed to load categories. Please try again.');
-    } finally {
-      setLoadingCategories(false);
+    if (initialCategory && initialCategory.id) {
+      setSelectedCategory(initialCategory);
     }
-  };
+  }, [initialCategory, setSelectedCategory]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -257,15 +235,18 @@ const WriteLetterDetailsScreen = () => {
           </Text>
         </ScrollView>
         
-        <View style={[styles.buttonContainer, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.buttonContainer, { 
+          backgroundColor: theme.colors.background,
+          borderTopColor: theme.colors.outline 
+        }]}>
           <Button
             mode="contained"
             onPress={handleSubmit}
             style={styles.submitButton}
-            disabled={isSubmitting || !selectedCategory || !displayName.trim()}
             loading={isSubmitting}
+            disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim()}
           >
-            Send Mail
+            Submit Letter
           </Button>
         </View>
       </KeyboardAvoidingView>
@@ -350,7 +331,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 0 : 16,
     borderTopWidth: 1,
-    borderTopColor: '#333',
   },
   submitButton: {
     padding: 8,

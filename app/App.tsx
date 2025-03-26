@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
+import { CategoryProvider } from './src/contexts/CategoryContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
 import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
@@ -247,7 +248,9 @@ export default function App() {
     <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <PaperProvider theme={darkTheme}>
         <AuthProvider key={`auth-provider-${forceReset}`}>
-          <AppNavigator />
+          <CategoryProvider>
+            <AppNavigator />
+          </CategoryProvider>
         </AuthProvider>
       </PaperProvider>
     </View>

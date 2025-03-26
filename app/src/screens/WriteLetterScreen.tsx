@@ -4,6 +4,7 @@ import { TextInput, Button, Text, Headline, Subheading, Divider, ActivityIndicat
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useCategories } from '../contexts/CategoryContext';
 
 type WriterLetterParams = {
   categoryId?: string;
@@ -20,17 +21,15 @@ const WriteLetterScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriterLetterParams>, string>>();
   const theme = useTheme();
+  const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory } = useCategories();
   
   // Get the category from route params if available
   const initialCategory = route.params?.category || null;
   
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [categories, setCategories] = useState<any[]>([]);
   const [displayName, setDisplayName] = useState(profile?.username || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loadingCategories, setLoadingCategories] = useState(true);
   const [moodEmoji, setMoodEmoji] = useState('');
 
   // Update display name when profile changes
@@ -40,33 +39,12 @@ const WriteLetterScreen = () => {
     }
   }, [profile]);
 
-  // Fetch categories on component mount
+  // Set the selected category if provided in route params
   useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      setLoadingCategories(true);
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        throw error;
-      }
-
-      if (data) {
-        setCategories(data);
-      }
-    } catch (error: any) {
-      console.error('Error fetching categories:', error.message);
-      Alert.alert('Error', 'Failed to load categories. Please try again.');
-    } finally {
-      setLoadingCategories(false);
+    if (initialCategory && initialCategory.id) {
+      setSelectedCategory(initialCategory);
     }
-  };
+  }, [initialCategory, setSelectedCategory]);
 
   const handleSubmit = async () => {
     if (!user) {

@@ -1,57 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button } from 'react-native-paper';
-import { supabase } from '../services/supabase';
 import { Category } from '../types/database.types';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import { useCategories } from '../contexts/CategoryContext';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const CategoriesScreen = () => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { categories, loading, refreshCategories } = useCategories();
   const [refreshing, setRefreshing] = useState(false);
   const navigation = useNavigation<NavigationProp>();
 
-  const fetchCategories = async () => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-
-      if (error) {
-        console.error('Error fetching categories:', error);
-        return;
-      }
-
-      if (data) {
-        setCategories(data as Category[]);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
   const handleRefresh = () => {
     setRefreshing(true);
-    fetchCategories();
+    refreshCategories().finally(() => setRefreshing(false));
   };
 
   const handleCategoryPress = (category: Category) => {
     // Navigate to write letter screen with the selected category
-    navigation.navigate('WriteLetter', { categoryId: category.id });
+    navigation.navigate('WriteLetter', { 
+      categoryId: category.id 
+      // We can't pass the category object directly due to type restrictions
+    });
   };
 
   const renderCategoryItem = ({ item }: { item: Category }) => (
@@ -77,7 +50,7 @@ const CategoriesScreen = () => {
   return (
     <View style={styles.container}>
       <FlatList
-        data={categories}
+        data={categories as Category[]}
         renderItem={renderCategoryItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
