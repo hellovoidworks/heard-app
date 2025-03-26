@@ -157,7 +157,7 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood (Required)</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
           
           <View style={styles.moodGrid}>
             {moodRows.map((row, rowIndex) => (
@@ -182,7 +182,7 @@ const WriteLetterDetailsScreen = () => {
             ))}
           </View>
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category (Required)</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
           {loadingCategories ? (
             <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
           ) : (
@@ -212,7 +212,7 @@ const WriteLetterDetailsScreen = () => {
             </ScrollView>
           )}
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name (Required)</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
           <TextInput
             value={displayName}
             onChangeText={setDisplayName}
