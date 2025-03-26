@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { 
   Text, 
@@ -189,6 +189,20 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   }, [loading, replies.length]);
 
+  // Determine if the user can reply (if the latest message is not from the current user)
+  const canReply = useMemo(() => {
+    if (!user) return false;
+    
+    // If there are no replies yet, the user can reply if they didn't author the letter
+    if (replies.length === 0) {
+      return letter?.author_id !== user.id;
+    }
+    
+    // Otherwise, check if the latest reply is from another user
+    const latestReply = replies[replies.length - 1];
+    return latestReply.author_id !== user.id;
+  }, [user, letter, replies]);
+
   if (loading && !refreshing) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
@@ -285,41 +299,43 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         })}
       </ScrollView>
       
-      {/* Reply Input */}
-      <Surface style={[
-        styles.replyContainer, 
-        { 
-          backgroundColor: theme.colors.surface,
-          paddingBottom: Math.max(insets.bottom, 6)
-        }
-      ]}>
-        <TextInput
-          value={replyText}
-          onChangeText={setReplyText}
-          placeholder="Write a reply..."
-          placeholderTextColor={theme.colors.onSurfaceDisabled}
-          multiline
-          style={[styles.replyInput, { 
+      {/* Reply Input - Only show if the user can reply */}
+      {canReply && (
+        <Surface style={[
+          styles.replyContainer, 
+          { 
             backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface,
-            borderBottomWidth: 0
-          }]}
-          underlineColor="transparent"
-          activeUnderlineColor="transparent"
-          theme={{ colors: { text: theme.colors.onSurface } }}
-        />
-        <Button
-          mode="contained"
-          onPress={handleSendReply}
-          disabled={!replyText.trim() || sendingReply}
-          loading={sendingReply}
-          style={styles.sendButton}
-          labelStyle={styles.sendButtonLabel}
-          contentStyle={styles.sendButtonContent}
-        >
-          Send
-        </Button>
-      </Surface>
+            paddingBottom: Math.max(insets.bottom, 6)
+          }
+        ]}>
+          <TextInput
+            value={replyText}
+            onChangeText={setReplyText}
+            placeholder="Write a reply..."
+            placeholderTextColor={theme.colors.onSurfaceDisabled}
+            multiline
+            style={[styles.replyInput, { 
+              backgroundColor: theme.colors.surface,
+              color: theme.colors.onSurface,
+              borderBottomWidth: 0
+            }]}
+            underlineColor="transparent"
+            activeUnderlineColor="transparent"
+            theme={{ colors: { text: theme.colors.onSurface } }}
+          />
+          <Button
+            mode="contained"
+            onPress={handleSendReply}
+            disabled={!replyText.trim() || sendingReply}
+            loading={sendingReply}
+            style={styles.sendButton}
+            labelStyle={styles.sendButtonLabel}
+            contentStyle={styles.sendButtonContent}
+          >
+            Send
+          </Button>
+        </Surface>
+      )}
     </KeyboardAvoidingView>
   );
 };
