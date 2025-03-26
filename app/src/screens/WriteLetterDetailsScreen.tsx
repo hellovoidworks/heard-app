@@ -241,7 +241,15 @@ const WriteLetterDetailsScreen = () => {
             loading={isSubmitting}
             disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji}
           >
-            Submit Letter
+            <Text>
+              Submit Letter + 5{' '}
+              <Text style={{ 
+                color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
+                  ? theme.colors.onSurfaceDisabled 
+                  : '#FFD700',
+                fontSize: 18
+              }}>★</Text>
+            </Text>
           </Button>
         </View>
       </KeyboardAvoidingView>
