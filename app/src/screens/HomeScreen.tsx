@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, StyleSheet, FlatList, Animated, Easing } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -46,6 +46,7 @@ const HomeScreen = () => {
   });
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
+  const buttonScale = useRef(new Animated.Value(1)).current;
 
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
@@ -872,6 +873,25 @@ const HomeScreen = () => {
     return letters.filter(letter => !letter.is_read);
   }, [letters]);
 
+  const handleDeliverAnotherLetter = () => {
+    // Trigger button animation
+    Animated.sequence([
+      Animated.timing(buttonScale, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScale, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    // Call the existing deliver function
+    deliverMoreLetters();
+  };
+
   const renderContent = () => {
     if (loading) {
       return (
@@ -950,16 +970,29 @@ const HomeScreen = () => {
     
     return (
       <View style={styles.headerContainer}>
-        <Button 
-          mode="outlined"
-          onPress={deliverMoreLetters}
-          loading={loadingMore}
-          disabled={loadingMore}
-          icon="email"
-          style={styles.deliverMoreButton}
-        >
-          Deliver Another Letter
-        </Button>
+        {letters.length > 0 && (
+          <View style={styles.deliverySection}>
+            <View style={styles.countdownContainer}>
+              <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
+                Next delivery window: {formattedWindow}
+              </Text>
+              <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
+                Time until next: {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
+              </Text>
+            </View>
+            <Animated.View style={[styles.buttonContainer, { transform: [{ scale: buttonScale }] }]}>
+              <Button
+                mode="contained"
+                onPress={handleDeliverAnotherLetter}
+                loading={loadingMore}
+                disabled={loadingMore}
+                style={styles.deliverButton}
+              >
+                Deliver Another Letter
+              </Button>
+            </Animated.View>
+          </View>
+        )}
       </View>
     );
   };
@@ -1102,8 +1135,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
   },
-  deliverMoreButton: {
-    width: '80%',
+  deliverySection: {
+    padding: 16,
+    backgroundColor: 'transparent',
+  },
+  countdownContainer: {
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  countdownText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  buttonContainer: {
+    alignItems: 'center',
   },
   banner: {
     marginBottom: 8,
