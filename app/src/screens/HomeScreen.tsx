@@ -566,39 +566,6 @@ const HomeScreen = () => {
       setLoading(true);
       setLoadError(null);
       
-      // Add debug code - test a simple query first
-      console.log('DEBUG: Testing simple database query...');
-      const { data: testData, error: testError } = await supabase
-        .from('categories')
-        .select('*')
-        .limit(1);
-        
-      if (testError) {
-        console.error('DEBUG: Error with simple query:', testError);
-        setLoading(false);
-        setLoadError('Database connection error. Please check your internet connection and try again.');
-        return;
-      }
-      
-      console.log('DEBUG: Simple query succeeded:', testData);
-      
-      // Check if the user profile exists before proceeding
-      console.log('DEBUG: Fetching user profile...');
-      const { data: profileData, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-        
-      if (profileError) {
-        console.error('Error fetching user profile during letter loading:', profileError);
-        setLoading(false);
-        setLetters([]);
-        setLoadError('Could not load your profile data. Please try again later.');
-        return;
-      }
-      
-      console.log('DEBUG: User profile fetch succeeded', profileData);
       console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');
       
       try {
@@ -616,6 +583,14 @@ const HomeScreen = () => {
           const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
           if (newLetters && newLetters.length > 0) {
             console.log(`Delivered ${newLetters.length} new letters automatically`);
+            
+            // Add new letters to animating set for animation
+            setAnimatingLetterIds(prev => {
+              const next = new Set(prev);
+              newLetters.forEach(letter => next.add(letter.id));
+              return next;
+            });
+            
             setLetters(newLetters.map(letter => ({
               ...letter,
               is_read: false
@@ -650,7 +625,7 @@ const HomeScreen = () => {
   };
   
   /**
-   * Delivers more random letters when the user presses the "Deliver More Letters" button
+   * Delivers more random letters when the user presses the "Deliver Another Letter" button
    */
   const deliverMoreLetters = async () => {
     if (loadingMore || !user) return;
@@ -702,6 +677,13 @@ const HomeScreen = () => {
         is_read: false,
         display_order: maxDisplayOrder + index
       }));
+      
+      // Add new letters to animating set for animation
+      setAnimatingLetterIds(prev => {
+        const next = new Set(prev);
+        moreWithReadStatus.forEach(letter => next.add(letter.id));
+        return next;
+      });
       
       // Prepend to the existing letters
       setLetters(prevLetters => [...moreWithReadStatus, ...prevLetters] as LetterWithDetails[]);
