@@ -167,9 +167,9 @@ const MainNavigator = () => {
               backgroundColor: '#476EF1',
               alignItems: 'center',
               justifyContent: 'center',
-              bottom: 15,
+              bottom: 20,
               marginBottom: insets.bottom > 0 ? -insets.bottom / 2 : 0,
-              borderWidth: 4,
+              borderWidth: 8,
               borderColor: '#121212',
             }}
             onPress={() => props.navigation.getParent()?.navigate('WriteLetterContent')}
