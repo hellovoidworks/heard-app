@@ -28,19 +28,17 @@ const WriteLetterScreen = () => {
   
   const [content, setContent] = useState('');
   const [title, setTitle] = useState('');
-  const [displayName, setDisplayName] = useState(profile?.username || '');
+  // Always start with blank display name to force user to enter it each time
+  const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [moodEmoji, setMoodEmoji] = useState('');
 
-  // Update display name when profile changes
+  // Clear selected category when screen loads
   useEffect(() => {
-    if (profile?.username) {
-      setDisplayName(profile.username);
-    }
-  }, [profile]);
-
-  // Set the selected category if provided in route params
-  useEffect(() => {
+    // Clear any previously selected category
+    setSelectedCategory(null);
+    
+    // Only set from route params if explicitly provided
     if (initialCategory && initialCategory.id) {
       setSelectedCategory(initialCategory);
     }
@@ -176,7 +174,7 @@ const WriteLetterScreen = () => {
           </Surface>
         </View>
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category (Required)</Text>
         {loadingCategories ? (
           <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
         ) : (
@@ -236,7 +234,7 @@ const WriteLetterScreen = () => {
           theme={{ colors: { text: theme.colors.onSurface } }}
         />
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
+        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name (Required)</Text>
         <TextInput
           value={displayName}
           onChangeText={setDisplayName}
