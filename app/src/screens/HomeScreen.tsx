@@ -14,15 +14,9 @@ import {
   formatDeliveryWindow, 
   getTimeUntilNextWindow 
 } from '../utils/deliveryWindow';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StorageService, STORAGE_KEYS } from '../services/storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-// Define storage keys
-const STORAGE_KEYS = {
-  HOME_LETTERS: 'heard_home_letters',
-  LETTER_RECEIVED_TIME: 'heard_letter_received_time'
-};
 
 // Add timeout utility
 const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
@@ -128,59 +122,85 @@ const HomeScreen = () => {
   }, [user]);
 
   /**
-   * Saves letters to local storage with their delivery window timestamp
+   * Saves letters to storage with their delivery window timestamp
    */
   const saveLettersToStorage = async (lettersToSave: LetterWithDetails[]) => {
+    if (!user) return;
+    
     try {
-      await AsyncStorage.setItem(STORAGE_KEYS.HOME_LETTERS, JSON.stringify(lettersToSave));
-      await AsyncStorage.setItem(STORAGE_KEYS.LETTER_RECEIVED_TIME, currentWindow.start.toISOString());
-      console.log('Saved', lettersToSave.length, 'letters to local storage');
+      const receivedTime = new Date().toISOString();
+      StorageService.setItem(STORAGE_KEYS.HOME_LETTERS, lettersToSave, user.id);
+      StorageService.setItem(STORAGE_KEYS.LETTER_RECEIVED_TIME, receivedTime, user.id);
+      
+      // Get fresh delivery window to ensure we have the latest values
+      const deliveryWindow = getCurrentDeliveryWindow();
+      
+      console.log('Saving letters to storage:', {
+        userId: user.id,
+        letterCount: lettersToSave.length,
+        receivedTime,
+        currentWindowStart: deliveryWindow.start.toISOString(),
+        currentWindowEnd: deliveryWindow.end.toISOString()
+      });
     } catch (error) {
-      console.error('Error saving letters to local storage:', error);
+      console.error('Error saving letters to storage:', error);
     }
   };
 
   /**
-   * Loads letters from local storage and validates if they are still valid for the current window
+   * Loads letters from storage and validates if they are still valid for the current window
    */
   const loadLettersFromStorage = async (): Promise<{letters: LetterWithDetails[] | null, isCurrentWindow: boolean}> => {
+    if (!user) {
+      return { letters: null, isCurrentWindow: false };
+    }
+
     try {
-      const storedLettersJson = await AsyncStorage.getItem(STORAGE_KEYS.HOME_LETTERS);
-      const receivedTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.LETTER_RECEIVED_TIME);
+      const storedLetters = StorageService.getItem(STORAGE_KEYS.HOME_LETTERS, user.id);
+      const receivedTimeStr = StorageService.getItem(STORAGE_KEYS.LETTER_RECEIVED_TIME, user.id);
       
-      if (!storedLettersJson || !receivedTimeStr) {
-        console.log('No letters found in local storage');
+      if (!storedLetters || !receivedTimeStr) {
+        console.log('No letters found in storage for user', user.id);
         return { letters: null, isCurrentWindow: false };
       }
       
       const receivedTime = new Date(receivedTimeStr);
-      const storedLetters = JSON.parse(storedLettersJson) as LetterWithDetails[];
       
-      // Check if the stored letters were delivered in the current window
-      const isCurrentWindow = receivedTime >= currentWindow.start && receivedTime < currentWindow.end;
+      // Get fresh delivery window to ensure we have the latest values
+      const deliveryWindow = getCurrentDeliveryWindow();
+      const isCurrentWindow = receivedTime >= deliveryWindow.start && receivedTime < deliveryWindow.end;
       
-      console.log(`Loaded ${storedLetters.length} letters from storage, from ${isCurrentWindow ? 'current' : 'previous'} window`);
+      console.log('Loading letters from storage:', {
+        userId: user.id,
+        letterCount: storedLetters.length,
+        storedReceivedTime: receivedTime.toISOString(),
+        currentWindowStart: deliveryWindow.start.toISOString(),
+        currentWindowEnd: deliveryWindow.end.toISOString(),
+        isCurrentWindow
+      });
       
       return { 
         letters: storedLetters, 
         isCurrentWindow 
       };
     } catch (error) {
-      console.error('Error loading letters from local storage:', error);
+      console.error('Error loading letters from storage:', error);
       return { letters: null, isCurrentWindow: false };
     }
   };
 
   /**
-   * Clears letters from local storage
+   * Clears letters from storage
    */
   const clearStoredLetters = async () => {
+    if (!user) return;
+
     try {
-      await AsyncStorage.removeItem(STORAGE_KEYS.HOME_LETTERS);
-      await AsyncStorage.removeItem(STORAGE_KEYS.LETTER_RECEIVED_TIME);
-      console.log('Cleared stored letters from local storage');
+      StorageService.removeItem(STORAGE_KEYS.HOME_LETTERS, user.id);
+      StorageService.removeItem(STORAGE_KEYS.LETTER_RECEIVED_TIME, user.id);
+      console.log('Cleared stored letters from storage for user', user.id);
     } catch (error) {
-      console.error('Error clearing letters from local storage:', error);
+      console.error('Error clearing letters from storage:', error);
     }
   };
 
@@ -188,17 +208,18 @@ const HomeScreen = () => {
    * Updates read status for a letter in storage
    */
   const updateLetterReadStatusInStorage = async (letterId: string, isRead: boolean) => {
+    if (!user) return;
+
     try {
-      const storedLettersJson = await AsyncStorage.getItem(STORAGE_KEYS.HOME_LETTERS);
-      if (!storedLettersJson) return;
+      const storedLetters = StorageService.getItem(STORAGE_KEYS.HOME_LETTERS, user.id) as LetterWithDetails[];
+      if (!storedLetters) return;
       
-      const storedLetters = JSON.parse(storedLettersJson) as LetterWithDetails[];
-      const updatedLetters = storedLetters.map(letter => 
+      const updatedLetters = storedLetters.map((letter: LetterWithDetails) => 
         letter.id === letterId ? { ...letter, is_read: isRead } : letter
       );
       
-      await AsyncStorage.setItem(STORAGE_KEYS.HOME_LETTERS, JSON.stringify(updatedLetters));
-      console.log(`Updated read status for letter ${letterId} in storage`);
+      StorageService.setItem(STORAGE_KEYS.HOME_LETTERS, updatedLetters, user.id);
+      console.log(`Updated read status for letter ${letterId} in storage for user ${user.id}`);
     } catch (error) {
       console.error('Error updating letter read status in storage:', error);
     }
