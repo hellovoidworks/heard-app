@@ -208,14 +208,14 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Refresh reactions to update UI
       await fetchReactions();
       
-      // Close the letter after a delay (approx 1.5 seconds)
+      // Close the letter after a delay (approx 0.75 seconds)
       setTimeout(() => {
         if (onClose) {
           onClose();
         } else {
           navigation.goBack();
         }
-      }, 1500);
+      }, 750);
       
     } catch (error) {
       console.error('Error handling reaction:', error);
