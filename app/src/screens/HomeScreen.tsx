@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { LetterWithDetails } from '../types/database.types';
 import { RootStackParamList } from '../navigation/types';
+import { Ionicons } from '@expo/vector-icons';
 import { 
   getCurrentDeliveryWindow, 
   formatDeliveryWindow, 
@@ -895,9 +896,8 @@ const HomeScreen = () => {
         icon="clock-outline"
         style={styles.banner}
       >
-        <Text style={styles.bannerTitle}>Letters for {formattedWindow}</Text>
-        <Text style={styles.bannerText}>
-          Next batch in {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
+        <Text style={[styles.bannerText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
+          New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
         </Text>
       </Banner>
     );
@@ -1050,12 +1050,12 @@ const HomeScreen = () => {
             <Button
               mode="contained"
               onPress={handleDeliverAnotherLetter}
-              style={styles.deliverButton}
+              style={[styles.deliverButton, { paddingHorizontal: 12 }]}
               loading={loadingMore}
               disabled={loadingMore}
-              icon="email"
+              textColor="#FFFFFF"
             >
-              Deliver Another Letter
+              GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" />
             </Button>
           </Animated.View>
         </View>
@@ -1078,11 +1078,8 @@ const HomeScreen = () => {
     return (
       <View style={styles.headerContainer}>
         <View style={styles.countdownContainer}>
-          <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
-            Next delivery window: {formattedWindow}
-          </Text>
-          <Text style={[styles.countdownText, { color: theme.colors.onSurfaceVariant }]}>
-            Time until next: {timeUntilNext.hours}h {timeUntilNext.minutes}m {timeUntilNext.seconds}s
+          <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
+            New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
           </Text>
         </View>
         <Button 
@@ -1090,10 +1087,10 @@ const HomeScreen = () => {
           onPress={deliverMoreLetters}
           loading={loadingMore}
           disabled={loadingMore}
-          icon="email"
-          style={styles.deliverMoreButton}
+          style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12 }]}
+          textColor="#FFFFFF"
         >
-          Deliver Another Letter
+          GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" />
         </Button>
       </View>
     );
@@ -1207,6 +1204,18 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
   },
+  letterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  categoryName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
   redactedContent: {
     marginTop: 8,
     flexDirection: 'row',
@@ -1220,18 +1229,6 @@ const styles = StyleSheet.create({
     marginRight: 4,
     marginBottom: 4,
     opacity: 0.8,
-  },
-  letterFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  categoryName: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.9,
   },
   headerContainer: {
     marginBottom: 16,
@@ -1251,11 +1248,6 @@ const styles = StyleSheet.create({
   },
   banner: {
     marginBottom: 8,
-  },
-  bannerTitle: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    marginBottom: 4,
   },
   bannerText: {
     fontSize: 14,
