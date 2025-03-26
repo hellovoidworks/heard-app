@@ -961,7 +961,7 @@ const HomeScreen = () => {
                 <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
               </View>
               <View style={styles.letterTitleContainer}>
-                <Title style={styles.letterTitle}>{item.title}</Title>
+                <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
                 {isUnread ? (
                   createRedactedBlocks(item.content, item.id)
                 ) : (
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 22,
+    lineHeight: 18,
     letterSpacing: -1,
   },
   letterContent: {
@@ -1233,6 +1233,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     marginBottom: 16,
     alignItems: 'center',
+    paddingTop: 16,
   },
   countdownContainer: {
     marginBottom: 12,
@@ -1248,6 +1249,7 @@ const styles = StyleSheet.create({
   },
   banner: {
     marginBottom: 8,
+    paddingTop: 8,
   },
   bannerText: {
     fontSize: 14,
