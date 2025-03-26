@@ -47,6 +47,7 @@ const HomeScreen = () => {
   const [formattedWindow, setFormattedWindow] = useState('');
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
   const buttonScale = useRef(new Animated.Value(1)).current;
+  const [animatingLetterIds, setAnimatingLetterIds] = useState<Set<string>>(new Set());
 
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
@@ -56,7 +57,7 @@ const HomeScreen = () => {
   const fadeAnims = useMemo(() => new Map<string, Animated.Value>(), []);
 
   const getLetterAnimation = useCallback((letterId: string) => {
-    if (!fadeAnims.has(letterId)) {
+    if (!fadeAnims.has(letterId) && animatingLetterIds.has(letterId)) {
       const fadeAnim = new Animated.Value(0);
       fadeAnims.set(letterId, fadeAnim);
       // Start the animation
@@ -65,10 +66,17 @@ const HomeScreen = () => {
         duration: 500,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        // Remove the letter from animating set when animation is done
+        setAnimatingLetterIds(prev => {
+          const next = new Set(prev);
+          next.delete(letterId);
+          return next;
+        });
+      });
     }
-    return fadeAnims.get(letterId)!;
-  }, []);
+    return fadeAnims.get(letterId) || new Animated.Value(1);
+  }, [animatingLetterIds]);
 
   // Update the time until next window every second
   useEffect(() => {
@@ -823,10 +831,12 @@ const HomeScreen = () => {
     const backgroundColor = isUnread ? categoryColor : `${categoryColor}40`; // 25% opacity for read letters
     const defaultMoodEmoji = '😊';
 
-    const fadeAnim = getLetterAnimation(item.id);
+    // Only animate if the letter ID is in the animating set
+    const isAnimating = animatingLetterIds.has(item.id);
+    const fadeAnim = isAnimating ? getLetterAnimation(item.id) : new Animated.Value(1);
 
     return (
-      <Animated.View style={{
+      <Animated.View style={isAnimating ? {
         opacity: fadeAnim,
         transform: [{
           translateY: fadeAnim.interpolate({
@@ -834,7 +844,7 @@ const HomeScreen = () => {
             outputRange: [50, 0],
           }),
         }],
-      }}>
+      } : {}}>
         <Card
           style={[
             styles.letterCard,
