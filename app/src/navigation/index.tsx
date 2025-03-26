@@ -161,9 +161,9 @@ const MainNavigator = () => {
           {/* Write Button (Center) - Opens Write Screen as Modal */}
           <TouchableOpacity
             style={{
-              width: 58,
-              height: 58,
-              borderRadius: 29,
+              width: 64,
+              height: 64,
+              borderRadius: 32,
               backgroundColor: '#476EF1',
               alignItems: 'center',
               justifyContent: 'center',
