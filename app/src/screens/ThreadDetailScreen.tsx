@@ -311,6 +311,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           disabled={!replyText.trim() || sendingReply}
           loading={sendingReply}
           style={styles.sendButton}
+          labelStyle={styles.sendButtonLabel}
+          contentStyle={styles.sendButtonContent}
         >
           Send
         </Button>
@@ -377,6 +379,7 @@ const styles = StyleSheet.create({
   },
   replyContainer: {
     padding: 8,
+    paddingVertical: 4,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
@@ -389,7 +392,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   sendButton: {
-    alignSelf: 'flex-end',
+    alignSelf: 'center',
+  },
+  sendButtonLabel: {
+    marginVertical: 1,
+  },
+  sendButtonContent: {
+    paddingVertical: 4,
   },
 });
 

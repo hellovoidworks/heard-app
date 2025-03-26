@@ -377,12 +377,13 @@ const AppNavigator = () => {
               <Stack.Screen 
                 name="ThreadDetail" 
                 component={ThreadDetailScreen} 
-                options={{ 
-                  headerShown: true, 
-                  title: 'Conversation',
+                options={({ navigation }) => ({ 
+                  headerShown: true,
+                  title: '',
                   headerStyle: { backgroundColor: '#121212' },
-                  headerTintColor: '#FFFFFF'
-                }} 
+                  headerTintColor: '#FFFFFF',
+                  headerBackTitle: 'My Responses'
+                })} 
               />
               <Stack.Screen 
                 name="WriteLetter" 
