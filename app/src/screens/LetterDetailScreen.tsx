@@ -253,8 +253,17 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setResponseText('');
       setResponseModalVisible(false);
       
-      // Show confirmation
-      // You could add a toast notification here
+      // Hide bottom navigation buttons
+      setHideBottomNav(true);
+      
+      // Close the letter after a short delay
+      setTimeout(() => {
+        if (onClose) {
+          onClose();
+        } else {
+          navigation.goBack();
+        }
+      }, 750);
       
     } catch (error) {
       console.error('Error sending response:', error);
