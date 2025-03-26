@@ -911,16 +911,11 @@ const HomeScreen = () => {
     if (!user) return null;
 
     return (
-      <Banner
-        visible={true}
-        actions={[]}
-        icon="clock-outline"
-        style={styles.banner}
-      >
-        <Text style={[styles.bannerText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
+      <View style={styles.countdownContainer}>
+        <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
           New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
         </Text>
-      </Banner>
+      </View>
     );
   };
 
@@ -1062,10 +1057,6 @@ const HomeScreen = () => {
     if (unreadLetters.length === 0) {
       return (
         <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-          <Text style={[styles.emptyText, { color: theme.colors.onBackground }]}>No unread letters available.</Text>
-          <Text style={[styles.emptySubText, { color: theme.colors.onSurfaceDisabled }]}>
-            Check back later for new letters.
-          </Text>
           {renderNextWindowInfo()}
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <Button
@@ -1267,13 +1258,6 @@ const styles = StyleSheet.create({
   },
   deliverMoreButton: {
     width: '80%',
-  },
-  banner: {
-    marginBottom: 8,
-    paddingTop: 8,
-  },
-  bannerText: {
-    fontSize: 14,
   },
   retryButton: {
     marginTop: 20,
