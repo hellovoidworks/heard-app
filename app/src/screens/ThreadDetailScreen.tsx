@@ -290,7 +290,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         styles.replyContainer, 
         { 
           backgroundColor: theme.colors.surface,
-          paddingBottom: Math.max(insets.bottom, 8)
+          paddingBottom: Math.max(insets.bottom, 6)
         }
       ]}>
         <TextInput
@@ -301,7 +301,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           multiline
           style={[styles.replyInput, { 
             backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface
+            color: theme.colors.onSurface,
+            borderBottomWidth: 0
           }]}
           theme={{ colors: { text: theme.colors.onSurface } }}
         />
@@ -379,7 +380,7 @@ const styles = StyleSheet.create({
   },
   replyContainer: {
     padding: 8,
-    paddingVertical: 4,
+    paddingVertical: 2,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
@@ -389,7 +390,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     maxHeight: 100,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   sendButton: {
     alignSelf: 'center',
