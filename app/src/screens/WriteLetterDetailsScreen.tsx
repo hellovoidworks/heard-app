@@ -118,8 +118,8 @@ const WriteLetterDetailsScreen = () => {
         throw error;
       }
 
-      // On success, navigate directly to Home screen
-      navigation.navigate('Home');
+      // On success, navigate to the Main stack with Home tab
+      navigation.navigate('Main');
     } catch (error: any) {
       console.error('Error submitting letter:', error.message);
       Alert.alert('Error', 'Failed to submit your letter. Please try again.');
