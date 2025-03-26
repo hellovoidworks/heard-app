@@ -13,8 +13,15 @@ import {
   formatDeliveryWindow, 
   getTimeUntilNextWindow 
 } from '../utils/deliveryWindow';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+
+// Define storage keys
+const STORAGE_KEYS = {
+  HOME_LETTERS: 'heard_home_letters',
+  LETTER_RECEIVED_TIME: 'heard_letter_received_time'
+};
 
 // Add timeout utility
 const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
@@ -118,6 +125,83 @@ const HomeScreen = () => {
     
     updateWindowAndFetch();
   }, [user]);
+
+  /**
+   * Saves letters to local storage with their delivery window timestamp
+   */
+  const saveLettersToStorage = async (lettersToSave: LetterWithDetails[]) => {
+    try {
+      await AsyncStorage.setItem(STORAGE_KEYS.HOME_LETTERS, JSON.stringify(lettersToSave));
+      await AsyncStorage.setItem(STORAGE_KEYS.LETTER_RECEIVED_TIME, currentWindow.start.toISOString());
+      console.log('Saved', lettersToSave.length, 'letters to local storage');
+    } catch (error) {
+      console.error('Error saving letters to local storage:', error);
+    }
+  };
+
+  /**
+   * Loads letters from local storage and validates if they are still valid for the current window
+   */
+  const loadLettersFromStorage = async (): Promise<{letters: LetterWithDetails[] | null, isCurrentWindow: boolean}> => {
+    try {
+      const storedLettersJson = await AsyncStorage.getItem(STORAGE_KEYS.HOME_LETTERS);
+      const receivedTimeStr = await AsyncStorage.getItem(STORAGE_KEYS.LETTER_RECEIVED_TIME);
+      
+      if (!storedLettersJson || !receivedTimeStr) {
+        console.log('No letters found in local storage');
+        return { letters: null, isCurrentWindow: false };
+      }
+      
+      const receivedTime = new Date(receivedTimeStr);
+      const storedLetters = JSON.parse(storedLettersJson) as LetterWithDetails[];
+      
+      // Check if the stored letters were delivered in the current window
+      const isCurrentWindow = receivedTime >= currentWindow.start && receivedTime < currentWindow.end;
+      
+      console.log(`Loaded ${storedLetters.length} letters from storage, from ${isCurrentWindow ? 'current' : 'previous'} window`);
+      
+      return { 
+        letters: storedLetters, 
+        isCurrentWindow 
+      };
+    } catch (error) {
+      console.error('Error loading letters from local storage:', error);
+      return { letters: null, isCurrentWindow: false };
+    }
+  };
+
+  /**
+   * Clears letters from local storage
+   */
+  const clearStoredLetters = async () => {
+    try {
+      await AsyncStorage.removeItem(STORAGE_KEYS.HOME_LETTERS);
+      await AsyncStorage.removeItem(STORAGE_KEYS.LETTER_RECEIVED_TIME);
+      console.log('Cleared stored letters from local storage');
+    } catch (error) {
+      console.error('Error clearing letters from local storage:', error);
+    }
+  };
+
+  /**
+   * Updates read status for a letter in storage
+   */
+  const updateLetterReadStatusInStorage = async (letterId: string, isRead: boolean) => {
+    try {
+      const storedLettersJson = await AsyncStorage.getItem(STORAGE_KEYS.HOME_LETTERS);
+      if (!storedLettersJson) return;
+      
+      const storedLetters = JSON.parse(storedLettersJson) as LetterWithDetails[];
+      const updatedLetters = storedLetters.map(letter => 
+        letter.id === letterId ? { ...letter, is_read: isRead } : letter
+      );
+      
+      await AsyncStorage.setItem(STORAGE_KEYS.HOME_LETTERS, JSON.stringify(updatedLetters));
+      console.log(`Updated read status for letter ${letterId} in storage`);
+    } catch (error) {
+      console.error('Error updating letter read status in storage:', error);
+    }
+  };
 
   /**
    * Gets letters delivered in the current window
@@ -566,6 +650,21 @@ const HomeScreen = () => {
       setLoading(true);
       setLoadError(null);
       
+      // First check local storage for cached letters
+      const { letters: storedLetters, isCurrentWindow } = await loadLettersFromStorage();
+      
+      // If we have valid letters from the current window, use them
+      if (storedLetters && storedLetters.length > 0 && isCurrentWindow) {
+        console.log('Using stored letters from current delivery window');
+        setLetters(storedLetters);
+        setLoading(false);
+        return;
+      } else if (storedLetters && !isCurrentWindow) {
+        // If letters exist but from a previous window, clear them
+        console.log('Clearing stored letters from previous delivery window');
+        await clearStoredLetters();
+      }
+      
       console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');
       
       try {
@@ -577,6 +676,8 @@ const HomeScreen = () => {
         if (fetchedLetters && fetchedLetters.length > 0) {
           console.log(`Loaded ${fetchedLetters.length} letters successfully`);
           setLetters(fetchedLetters);
+          // Save fetched letters to local storage
+          await saveLettersToStorage(fetchedLetters);
         } else {
           console.log('No letters available to display, delivering new letters automatically');
           // Automatically deliver new letters if none exist
@@ -591,11 +692,16 @@ const HomeScreen = () => {
               return next;
             });
             
-            setLetters(newLetters.map(letter => ({
+            const newLettersWithReadStatus = newLetters.map(letter => ({
               ...letter,
               is_read: false
-            })));
+            }));
+            
+            setLetters(newLettersWithReadStatus);
             setAnyLettersInWindow(true);
+            
+            // Save the new letters to local storage
+            await saveLettersToStorage(newLettersWithReadStatus);
           } else {
             console.log('No new letters available to deliver');
             setLetters([]);
@@ -609,6 +715,8 @@ const HomeScreen = () => {
         if (simpleLetters && simpleLetters.length > 0) {
           console.log(`Loaded ${simpleLetters.length} letters using simplified method`);
           setLetters(simpleLetters);
+          // Save the simplified letters to local storage
+          await saveLettersToStorage(simpleLetters);
         } else {
           // Show empty state if all methods fail
           setLetters([]);
@@ -686,7 +794,11 @@ const HomeScreen = () => {
       });
       
       // Prepend to the existing letters
-      setLetters(prevLetters => [...moreWithReadStatus, ...prevLetters] as LetterWithDetails[]);
+      const updatedLetters = [...moreWithReadStatus, ...letters] as LetterWithDetails[];
+      setLetters(updatedLetters);
+      
+      // Save the updated letters to local storage
+      await saveLettersToStorage(updatedLetters);
       
       console.log(`Delivered ${moreLetters.length} more letters at the top`);
     } catch (error) {
@@ -754,11 +866,16 @@ const HomeScreen = () => {
         ]);
         
         // Update the letters list to mark this letter as read
-        setLetters(prevLetters => 
-          prevLetters.map(l => 
+        setLetters(prevLetters => {
+          const updatedLetters = prevLetters.map(l => 
             l.id === letter.id ? { ...l, is_read: true } : l
-          )
-        );
+          );
+          
+          // Update local storage with the read status
+          updateLetterReadStatusInStorage(letter.id, true);
+          
+          return updatedLetters;
+        });
       } catch (error) {
         console.error('Error marking letter as read:', error);
       }
