@@ -304,6 +304,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             color: theme.colors.onSurface,
             borderBottomWidth: 0
           }]}
+          underlineColor="transparent"
+          activeUnderlineColor="transparent"
           theme={{ colors: { text: theme.colors.onSurface } }}
         />
         <Button
