@@ -233,7 +233,9 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       <ScrollView
         ref={scrollViewRef}
         style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
-        contentContainerStyle={{ paddingBottom: 8 }}
+        contentContainerStyle={{ 
+          paddingBottom: canReply ? 8 : Math.max(insets.bottom, 16) 
+        }}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
