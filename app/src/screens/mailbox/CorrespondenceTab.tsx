@@ -335,18 +335,25 @@ const CorrespondenceTab = () => {
       onPress={() => handleCorrespondencePress(item)}
     >
       <Card.Content>
-        <Title 
-          style={{ 
-            color: theme.colors.onSurface,
-            fontSize: 16,
-            lineHeight: 20,
-            fontWeight: '600'
-          }}
-          numberOfLines={2}
-          ellipsizeMode="tail"
-        >
-          {item.title}
-        </Title>
+        <View style={styles.titleRow}>
+          <Title 
+            style={{ 
+              color: theme.colors.onSurface,
+              fontSize: 16,
+              lineHeight: 20,
+              fontWeight: '600',
+              flex: 1,
+              marginRight: 8
+            }}
+            numberOfLines={2}
+            ellipsizeMode="tail"
+          >
+            {item.title}
+          </Title>
+          <Text style={{ color: theme.colors.onSurfaceDisabled, fontSize: 12 }}>
+            {format(new Date(item.mostRecentActivityDate), 'MMM d')}
+          </Text>
+        </View>
         <Paragraph 
           style={{ color: theme.colors.onSurface }}
           numberOfLines={2}
@@ -355,9 +362,7 @@ const CorrespondenceTab = () => {
           {item.content_preview}
         </Paragraph>
         <View style={styles.cardFooter}>
-          <Text style={{ color: theme.colors.onSurfaceDisabled }}>
-            {format(new Date(item.mostRecentActivityDate), 'MMM d, yyyy')}
-          </Text>
+          <View />
           {item.unread_count > 0 && (
             <Chip mode="flat" style={{ backgroundColor: theme.colors.primary }}>
               {item.unread_count} new
@@ -418,6 +423,11 @@ const styles = StyleSheet.create({
   unreadCard: {
     borderLeftWidth: 4,
     borderLeftColor: '#BB86FC',
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
   },
   cardFooter: {
     flexDirection: 'row',
