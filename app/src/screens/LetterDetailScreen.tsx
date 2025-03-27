@@ -37,7 +37,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [sendingReaction, setSendingReaction] = useState(false);
   const [userReactions, setUserReactions] = useState<{[key: string]: boolean}>({});
   const [letterReactions, setLetterReactions] = useState<{emoji: string, count: number}[]>([]);
-  const { user, profile } = useAuth();
+  const { user, profile, updateStars } = useAuth();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const [showEmoji, setShowEmoji] = useState(false);
@@ -249,6 +249,13 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         console.error('Error sending response:', error);
         return;
       }
+
+      // Award 2 stars for replying
+      const { error: starError } = await updateStars(2);
+      if (starError) {
+        console.error('Error updating stars:', starError);
+        // Don't block navigation if star update fails
+      }
       
       // Clear response text and close modal
       setResponseText('');
@@ -372,13 +379,11 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 loading={sendingResponse}
                 style={{ flex: 1 }}
               >
-                <Text>
-                  Send + 1{' '}
-                  <Text style={{ 
-                    color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
-                    fontSize: 18
-                  }}>★</Text>
-                </Text>
+                Send Reply +2{' '}
+                <Text style={{ 
+                  color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
+                  fontSize: 16
+                }}>★</Text>
               </Button>
             </View>
           </Surface>
