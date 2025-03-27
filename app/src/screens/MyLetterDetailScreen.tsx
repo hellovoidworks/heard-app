@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView } from 'react-native';
-import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
+import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, useTheme, Divider } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { LetterWithDetails } from '../types/database.types';
+import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
@@ -13,6 +13,14 @@ import LetterTitleCard from '../components/LetterTitleCard';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
+type Thread = {
+  id: string;
+  latestReplyDate: string;
+  latestReplyContent: string;
+  replyCount: number;
+  replierName: string;
+};
+
 const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { letterId } = route.params;
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
@@ -21,6 +29,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [reactionStats, setReactionStats] = useState<{emoji: string, count: number}[]>([]);
   const [replyCount, setReplyCount] = useState(0);
   const [readCount, setReadCount] = useState(0);
+  const [threads, setThreads] = useState<Thread[]>([]);
   const { user } = useAuth();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -50,6 +59,9 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         
         // Fetch stats about this letter
         fetchLetterStats();
+        
+        // Fetch threads with at least one reply
+        fetchThreads();
       }
     } catch (error) {
       console.error('Error:', error);
@@ -118,6 +130,49 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const fetchThreads = async () => {
+    if (!letterId) return;
+    
+    try {
+      // Fetch all replies for this letter
+      const { data: repliesData, error: repliesError } = await supabase
+        .from('replies')
+        .select(`
+          id,
+          letter_id,
+          author_id,
+          display_name,
+          content,
+          created_at,
+          updated_at
+        `)
+        .eq('letter_id', letterId)
+        .order('created_at', { ascending: false });
+        
+      if (repliesError) {
+        console.error('Error fetching replies:', repliesError);
+        return;
+      }
+      
+      if (repliesData && repliesData.length > 0) {
+        // Create a thread object with the latest reply data
+        const thread: Thread = {
+          id: letterId,
+          latestReplyDate: repliesData[0].created_at,
+          latestReplyContent: repliesData[0].content,
+          replyCount: repliesData.length,
+          replierName: repliesData[0].display_name
+        };
+        
+        setThreads([thread]);
+      } else {
+        setThreads([]);
+      }
+    } catch (error) {
+      console.error('Error fetching threads:', error);
+    }
+  };
+
   useEffect(() => {
     fetchLetter();
   }, [letterId]);
@@ -136,6 +191,10 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleViewThreads = () => {
     // Navigate to see threads/conversations around this letter
     navigation.navigate('ThreadDetail', { letterId: letterId });
+  };
+
+  const navigateToThread = (threadId: string) => {
+    navigation.navigate('ThreadDetail', { letterId: threadId });
   };
 
   if (loading && !refreshing) {
@@ -208,6 +267,41 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </Text>
             </View>
           </View>
+          
+          {threads.length > 0 && (
+            <View style={styles.threadsContainer}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+                Conversations
+              </Text>
+              {threads.map((thread, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={[styles.threadItem, { backgroundColor: theme.colors.surfaceVariant }]}
+                  onPress={() => navigateToThread(thread.id)}
+                >
+                  <View style={styles.threadHeader}>
+                    <Text style={[styles.threadReplier, { color: theme.colors.primary }]}>
+                      {thread.replierName}
+                    </Text>
+                    <Text style={[styles.threadDate, { color: theme.colors.onSurfaceDisabled }]}>
+                      {format(new Date(thread.latestReplyDate), 'MMM d, yyyy')}
+                    </Text>
+                  </View>
+                  <Text 
+                    style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
+                    numberOfLines={2}
+                  >
+                    {thread.latestReplyContent}
+                  </Text>
+                  <View style={styles.threadFooter}>
+                    <Text style={[styles.replyCount, { color: theme.colors.onSurfaceDisabled }]}>
+                      {thread.replyCount} {thread.replyCount === 1 ? 'reply' : 'replies'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
           
           {reactionStats.length > 0 && (
             <View style={styles.reactionsContainer}>
@@ -355,6 +449,40 @@ const styles = StyleSheet.create({
   },
   viewThreadsButton: {
     width: '100%',
+  },
+  threadsContainer: {
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  threadItem: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  threadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  threadReplier: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  threadDate: {
+    fontSize: 12,
+  },
+  threadPreview: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  threadFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  replyCount: {
+    fontSize: 12,
   },
 });
 
