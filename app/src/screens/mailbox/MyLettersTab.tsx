@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
@@ -18,7 +18,9 @@ type Letter = {
   category: {
     id: string;
     name: string;
+    color: string;
   } | null;
+  mood_emoji?: string;
 };
 
 const MyLettersTab = () => {
@@ -43,7 +45,8 @@ const MyLettersTab = () => {
           title,
           content,
           created_at,
-          category:categories(id, name)
+          category:categories(id, name, color),
+          mood_emoji
         `)
         .eq('author_id', user.id)
         // No longer filtering by parent_id as we've moved to using the replies table
@@ -69,7 +72,8 @@ const MyLettersTab = () => {
         created_at: letter.created_at,
         category: Array.isArray(letter.category) 
           ? (letter.category.length > 0 ? letter.category[0] : null) 
-          : letter.category
+          : letter.category,
+        mood_emoji: letter.mood_emoji
       }));
 
       setLetters(processedLetters as Letter[]);
@@ -94,31 +98,37 @@ const MyLettersTab = () => {
     navigation.navigate('MyLetterDetail', { letterId: letter.id });
   };
 
-  const renderLetterItem = ({ item }: { item: Letter }) => (
-    <Card 
-      style={[styles.card, { backgroundColor: theme.colors.surface }]} 
-      onPress={() => handleLetterPress(item)}
-    >
-      <Card.Content>
-        <Title style={{ color: theme.colors.onSurface }}>{item.title}</Title>
-        <Paragraph style={{ color: theme.colors.onSurface }}>{item.content}</Paragraph>
-        <View style={styles.cardFooter}>
-          {item.category && (
-            <Chip 
-              icon="tag" 
-              style={[styles.chip, { backgroundColor: theme.colors.primary }]}
-              textStyle={{ color: theme.colors.onPrimary }}
-            >
-              {item.category.name}
-            </Chip>
-          )}
-          <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
-            {format(new Date(item.created_at), 'MMM d, yyyy')}
-          </Text>
-        </View>
-      </Card.Content>
-    </Card>
-  );
+  const renderLetterItem = ({ item }: { item: Letter }) => {
+    const categoryColor = item.category?.color || '#333333';
+    const defaultMoodEmoji = '😊';
+
+    return (
+      <Card
+        style={[
+          styles.letterCard,
+          { backgroundColor: categoryColor }
+        ]}
+        onPress={() => handleLetterPress(item)}
+      >
+        <Card.Content>
+          <View style={styles.letterHeader}>
+            <View style={styles.moodEmojiContainer}>
+              <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+            </View>
+            <View style={styles.letterTitleContainer}>
+              <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
+              <Paragraph style={styles.letterContent} numberOfLines={2}>{item.content}</Paragraph>
+            </View>
+          </View>
+          <View style={styles.letterFooter}>
+            <Text style={styles.categoryName}>
+              {item.category?.name.toUpperCase()}
+            </Text>
+          </View>
+        </Card.Content>
+      </Card>
+    );
+  };
 
   if (loading && !refreshing) {
     return (
@@ -172,23 +182,59 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    paddingBottom: 24,
   },
-  card: {
-    marginBottom: 16,
+  letterCard: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    elevation: 2,
   },
-  cardFooter: {
+  letterHeader: {
     flexDirection: 'row',
-    marginTop: 12,
-    flexWrap: 'wrap',
     alignItems: 'center',
   },
-  chip: {
-    marginRight: 8,
-    marginBottom: 4,
+  moodEmojiContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
-  date: {
+  moodEmoji: {
+    fontSize: 24,
+  },
+  letterTitleContainer: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  letterTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+    color: '#FFFFFF',
+    fontFamily: 'SourceCodePro-SemiBold',
+    lineHeight: 18,
+    letterSpacing: -1,
+  },
+  letterContent: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  letterFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  categoryName: {
     fontSize: 12,
-    marginLeft: 'auto',
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
   },
   emptyContainer: {
     padding: 20,
