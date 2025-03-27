@@ -38,7 +38,7 @@ const MOOD_OPTIONS = [
 ];
 
 const WriteLetterDetailsScreen = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, updateStars } = useAuth();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriteLetterDetailsParams>, string>>();
   const theme = useTheme();
@@ -114,6 +114,13 @@ const WriteLetterDetailsScreen = () => {
 
       if (error) {
         throw error;
+      }
+
+      // Award 5 stars for submitting a letter
+      const { error: starError } = await updateStars(5);
+      if (starError) {
+        console.error('Error updating stars:', starError);
+        // Don't block navigation if star update fails
       }
 
       // On success, navigate to the Main stack with Home tab
@@ -246,7 +253,7 @@ const WriteLetterDetailsScreen = () => {
                 ? theme.colors.onSurfaceDisabled 
                 : 'white'
             }}>
-              Submit Letter + 5{' '}
+              Send Mail + 5{' '}
               <Text style={{ 
                 color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
                   ? theme.colors.onSurfaceDisabled 
