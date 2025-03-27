@@ -28,6 +28,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { letterId } = route.params; // Now using letterId instead of threadId
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
+  const [userReaction, setUserReaction] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [replyText, setReplyText] = useState('');
@@ -62,6 +63,22 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       if (letterData) {
         setLetter(letterData as LetterWithDetails);
         
+        // Fetch user's reaction for this letter
+        const { data: reactionData, error: reactionError } = await supabase
+          .from('reactions')
+          .select('reaction_type')
+          .eq('letter_id', letterId)
+          .eq('user_id', user.id)
+          .single();
+          
+        if (reactionError && reactionError.code !== 'PGRST116') { // Ignore not found error
+          console.error('Error fetching user reaction:', reactionError);
+        }
+        
+        if (reactionData) {
+          setUserReaction(reactionData.reaction_type);
+        }
+
         // Get all replies to this letter
         const { data: repliesData, error: repliesError } = await supabase
           .from('replies')
@@ -228,7 +245,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      {letter && <LetterTitleCard letter={letter} />}
+      {letter && <LetterTitleCard letter={letter} userReaction={userReaction} />}
       
       <ScrollView
         ref={scrollViewRef}
@@ -420,6 +437,20 @@ const styles = StyleSheet.create({
   },
   sendButtonContent: {
     paddingVertical: 4,
+  },
+  reactionContainer: {
+    marginHorizontal: 16,
+    marginTop: -8,
+    marginBottom: 8,
+    padding: 8,
+    borderRadius: 8,
+    elevation: 1,
+    alignSelf: 'flex-end',
+    maxWidth: '70%',
+  },
+  reactionText: {
+    fontSize: 14,
+    textAlign: 'right',
   },
 });
 

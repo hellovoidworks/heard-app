@@ -5,9 +5,10 @@ import { LetterWithDetails } from '../types/database.types';
 
 interface LetterTitleCardProps {
   letter: LetterWithDetails;
+  userReaction?: string | null;
 }
 
-const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter }) => {
+const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction }) => {
   return (
     <Card
       style={[
@@ -22,9 +23,16 @@ const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter }) => {
           </View>
           <View style={styles.letterTitleContainer}>
             <Title style={styles.letterTitle}>{letter.title}</Title>
-            <Text style={styles.categoryName}>
-              {letter.category?.name?.toUpperCase() || ''}
-            </Text>
+            <View style={styles.metadataContainer}>
+              <Text style={styles.categoryName}>
+                {letter.category?.name?.toUpperCase() || ''}
+              </Text>
+              {userReaction && (
+                <Text style={styles.reactionText}>
+                  You reacted with {userReaction}
+                </Text>
+              )}
+            </View>
           </View>
         </View>
       </Card.Content>
@@ -69,7 +77,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     letterSpacing: -1,
   },
+  metadataContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   categoryName: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  reactionText: {
     fontSize: 12,
     color: '#FFFFFF',
     opacity: 0.9,
