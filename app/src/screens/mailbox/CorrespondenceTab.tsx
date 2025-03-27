@@ -336,7 +336,12 @@ const CorrespondenceTab = () => {
     >
       <Card.Content>
         <Title 
-          style={{ color: theme.colors.onSurface }}
+          style={{ 
+            color: theme.colors.onSurface,
+            fontSize: 16,
+            lineHeight: 20,
+            fontWeight: '600'
+          }}
           numberOfLines={2}
           ellipsizeMode="tail"
         >
