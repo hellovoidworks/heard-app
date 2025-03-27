@@ -108,6 +108,7 @@ const OnboardingNavigator = () => {
 // Main tab navigator
 const MainNavigator = () => {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   
   return (
     <Tab.Navigator
@@ -229,40 +230,42 @@ const MainNavigator = () => {
             </View>
           ),
           headerLeft: () => null,
-          headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              {/* Star indicator with count */}
-              <View style={{ 
-                backgroundColor: '#222222', 
-                borderRadius: 20, 
-                paddingHorizontal: 10, 
-                paddingVertical: 5,
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginRight: 10
-              }}>
-                <Text style={{ 
-                  color: 'white', 
-                  marginRight: 4,
-                  fontFamily: fontNames.interMedium,
-                  fontSize: 14
+          headerRight: () => {
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {/* Star indicator with count */}
+                <View style={{ 
+                  backgroundColor: '#222222', 
+                  borderRadius: 20, 
+                  paddingHorizontal: 10, 
+                  paddingVertical: 5,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginRight: 10
                 }}>
-                  10
-                </Text>
-                <Ionicons name="star" size={16} color="#FFD700" />
+                  <Text style={{ 
+                    color: 'white', 
+                    marginRight: 4,
+                    fontFamily: fontNames.interMedium,
+                    fontSize: 14
+                  }}>
+                    {profile?.stars ?? 0}
+                  </Text>
+                  <Ionicons name="star" size={16} color="#FFD700" />
+                </View>
+                {/* Profile button */}
+                <Ionicons 
+                  name="person-circle-outline" 
+                  size={22} 
+                  color="#FFFFFF"
+                  style={{ marginRight: 15 }}
+                  onPress={() => {
+                    navigation.getParent()?.navigate('Profile');
+                  }}
+                />
               </View>
-              {/* Profile button */}
-              <Ionicons 
-                name="person-circle-outline" 
-                size={22} 
-                color="#FFFFFF"
-                style={{ marginRight: 15 }}
-                onPress={() => {
-                  navigation.getParent()?.navigate('Profile');
-                }}
-              />
-            </View>
-          ),
+            );
+          },
           headerStyle: {
             backgroundColor: '#121212',
           },

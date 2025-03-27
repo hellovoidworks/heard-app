@@ -11,6 +11,7 @@ interface Profile {
   birthdate?: string;
   onboarding_step?: string;
   onboarding_completed?: boolean;
+  stars: number;
   notification_preferences?: {
     enabled: boolean;
     new_replies?: boolean;
@@ -36,6 +37,7 @@ interface AuthContextData {
   isOnboardingComplete: boolean | null;
   checkOnboardingStatus: () => Promise<boolean>;
   updateProfile: (params: UpdateProfileParams) => Promise<{ error: Error | null }>;
+  updateStars: (amount: number) => Promise<{ error: Error | null }>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -466,6 +468,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateStars = async (amount: number): Promise<{ error: Error | null }> => {
+    if (!user || !profile) {
+      console.log('AuthContext: Cannot update stars - user not authenticated or no profile');
+      return { error: new Error('User not authenticated or no profile') };
+    }
+
+    try {
+      console.log('AuthContext: Updating stars for user:', user.id, 'by amount:', amount);
+      
+      // Update the stars in the database
+      const { error } = await supabase
+        .from('user_profiles')
+        .update({
+          stars: profile.stars + amount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+      
+      if (error) {
+        console.error('AuthContext: Error updating stars:', error);
+        return { error: new Error(error.message) };
+      }
+      
+      // Fetch updated profile to get the new star count
+      const { data: updatedProfile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (fetchError) {
+        console.error('AuthContext: Error fetching updated profile:', fetchError);
+        return { error: new Error(fetchError.message) };
+      }
+      
+      setProfile(updatedProfile);
+      console.log('AuthContext: Updated profile with new star count:', updatedProfile.stars);
+      
+      return { error: null };
+    } catch (error: any) {
+      console.error('AuthContext: Exception updating stars:', error);
+      return { error };
+    }
+  };
+
   console.log('AuthContext: Current state:', { 
     hasUser: !!user, 
     hasProfile: !!profile, 
@@ -482,7 +529,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       signOut, 
       isOnboardingComplete,
       checkOnboardingStatus,
-      updateProfile
+      updateProfile,
+      updateStars
     }}>
       {children}
     </AuthContext.Provider>

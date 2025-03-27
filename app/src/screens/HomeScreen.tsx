@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, StyleSheet, FlatList, Animated, Easing } from 'react-native';
+import { View, StyleSheet, FlatList, Animated, Easing, Alert } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -33,7 +33,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const { user } = useAuth();
+  const { user, profile, updateStars } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
   const [timeUntilNext, setTimeUntilNext] = useState<{ hours: number; minutes: number; seconds: number }>({ 
@@ -758,7 +758,13 @@ const HomeScreen = () => {
    * Delivers more random letters when the user presses the "Deliver Another Letter" button
    */
   const deliverMoreLetters = async () => {
-    if (loadingMore || !user) return;
+    if (loadingMore || !user || !profile) return;
+    
+    // Check if user has enough stars
+    if (profile.stars < 1) {
+      Alert.alert('Not enough stars', 'You need 1 star to get new mail.');
+      return;
+    }
     
     try {
       setLoadingMore(true);
@@ -777,6 +783,15 @@ const HomeScreen = () => {
       
       if (moreLetters.length === 0) {
         console.log('No more unread letters available');
+        Alert.alert('No Letters Available', 'There are no new letters available at the moment.');
+        return;
+      }
+      
+      // Spend 1 star only after we know we have letters to deliver
+      const { error: starError } = await updateStars(-1);
+      if (starError) {
+        console.error('Error updating stars:', starError);
+        Alert.alert('Error', 'Failed to spend star');
         return;
       }
       
@@ -799,6 +814,10 @@ const HomeScreen = () => {
       
       if (insertError) {
         console.error('Error tracking received letters:', insertError);
+        // If we fail to track the letters, refund the star
+        await updateStars(1);
+        Alert.alert('Error', 'Failed to deliver new mail. Your star has been refunded.');
+        return;
       }
       
       // Mark all as unread and add display_order
@@ -825,6 +844,11 @@ const HomeScreen = () => {
       console.log(`Delivered ${moreLetters.length} more letters at the top`);
     } catch (error) {
       console.error('Error delivering more letters:', error);
+      // Only try to refund if we actually spent the star (check if letters were added)
+      if (letters.length > 0) {
+        await updateStars(1);
+        Alert.alert('Error', 'An error occurred. Your star has been refunded.');
+      }
     } finally {
       setLoadingMore(false);
     }
@@ -1064,7 +1088,7 @@ const HomeScreen = () => {
               onPress={handleDeliverAnotherLetter}
               style={[styles.deliverButton, { paddingHorizontal: 12 }]}
               loading={loadingMore}
-              disabled={loadingMore}
+              disabled={loadingMore || (profile?.stars ?? 0) < 1}
               textColor="#FFFFFF"
             >
               GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" />
@@ -1098,7 +1122,7 @@ const HomeScreen = () => {
           mode="outlined"
           onPress={deliverMoreLetters}
           loading={loadingMore}
-          disabled={loadingMore}
+          disabled={loadingMore || (profile?.stars ?? 0) < 1}
           style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12 }]}
           textColor="#FFFFFF"
         >
