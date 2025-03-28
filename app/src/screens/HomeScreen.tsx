@@ -1015,13 +1015,11 @@ const HomeScreen = () => {
                 )}
               </View>
               
-              {/* Right column: Category display at bottom */}
+              {/* Right column: Category display */}
               <View style={styles.rightColumn}>
-                <View style={styles.rightColumnContent}>
-                  <Text style={styles.categoryName}>
-                    {item.category?.name.toUpperCase()}
-                  </Text>
-                </View>
+                <Text style={styles.categoryName}>
+                  {item.category?.name.toUpperCase()}
+                </Text>
               </View>
             </View>
           </Card.Content>
@@ -1218,7 +1216,7 @@ const styles = StyleSheet.create({
   },
   threeColumnLayout: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   leftColumn: {
     marginRight: 8,
@@ -1229,12 +1227,9 @@ const styles = StyleSheet.create({
   },
   rightColumn: {
     marginLeft: 8,
-    height: '100%',
+    alignSelf: 'flex-end',
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
-  },
-  rightColumnContent: {
-    marginTop: 'auto',
   },
   moodEmojiContainer: {
     width: 48,
