@@ -80,10 +80,63 @@ const HomeScreen = () => {
     return fadeAnims.get(letterId) || new Animated.Value(1);
   }, [animatingLetterIds]);
 
-  // Update the time until next window every second
+  // Update the time until next window every second and check for window transitions
   useEffect(() => {
-    const updateTimeUntilNext = () => {
-      setTimeUntilNext(getTimeUntilNextWindow());
+    let previousTimeUntilNext = { hours: 0, minutes: 0, seconds: 0 };
+    
+    const updateTimeUntilNext = async () => {
+      const newTimeUntilNext = getTimeUntilNextWindow();
+      setTimeUntilNext(newTimeUntilNext);
+      
+      // Check if timer just reached zero (all values were > 0 before and now they're all 0)
+      const wasPositive = previousTimeUntilNext.hours > 0 || previousTimeUntilNext.minutes > 0 || previousTimeUntilNext.seconds > 0;
+      const isZero = newTimeUntilNext.hours === 0 && newTimeUntilNext.minutes === 0 && newTimeUntilNext.seconds === 0;
+      
+      if (wasPositive && isZero) {
+        console.log('Countdown timer reached zero, new delivery window starting');
+        // Update the current window
+        const window = getCurrentDeliveryWindow();
+        setCurrentWindow(window);
+        setFormattedWindow(formatDeliveryWindow(window.start, window.end));
+        
+        // Auto-refresh letters for the new window
+        try {
+          setLoading(true);
+          setLoadError(null);
+          
+          console.log('Auto-fetching letters for new delivery window');
+          // Force the current window to be treated as a new window to get INITIAL_LETTERS_LIMIT letters
+          const updatedWindow = { ...currentWindow, isNewWindow: true };
+          setCurrentWindow(updatedWindow);
+          const fetchedLetters = await getLettersForCurrentWindow();
+          
+          if (fetchedLetters && fetchedLetters.length > 0) {
+            console.log(`Auto-loaded ${fetchedLetters.length} letters for new window`);
+            
+            // Add new letters to animating set for animation
+            setAnimatingLetterIds(prev => {
+              const next = new Set(prev);
+              fetchedLetters.forEach(letter => next.add(letter.id));
+              return next;
+            });
+            
+            setLetters(fetchedLetters);
+            // Save fetched letters to local storage
+            await saveLettersToStorage(fetchedLetters);
+          } else {
+            console.log('No letters available in new window');
+            setLetters([]);
+          }
+        } catch (error) {
+          console.error('Error auto-loading letters for new window:', error);
+          setLoadError('Failed to load new letters. Pull down to refresh.');
+        } finally {
+          setLoading(false);
+        }
+      }
+      
+      // Update previous time for next comparison
+      previousTimeUntilNext = newTimeUntilNext;
     };
 
     // Update now and set up interval
