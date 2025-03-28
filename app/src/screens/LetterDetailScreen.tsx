@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
+import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,6 +44,9 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showEmoji, setShowEmoji] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState('');
   const [hideBottomNav, setHideBottomNav] = useState(false);
+  const [textRevealed, setTextRevealed] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(true); // Start animating immediately
+  const [showFullText, setShowFullText] = useState(false);
 
   const fetchLetter = async () => {
     try {
@@ -172,8 +176,19 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  const revealText = () => {
+    // When tapped, always show full text immediately
+    setShowFullText(true);
+    setTextRevealed(true);
+    setIsAnimating(false);
+  };
+
   useEffect(() => {
     fetchLetter();
+    // Reset animation state when letter changes
+    setTextRevealed(false);
+    setIsAnimating(true); // Start animating immediately
+    setShowFullText(false);
   }, [letterId, user]);
 
   const handleRefresh = () => {
@@ -469,9 +484,32 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </Text>
           </View>
 
-          <Paragraph style={[styles.content, { color: theme.colors.onSurface }]}>
-            {letter.content}
-          </Paragraph>
+          <TouchableOpacity 
+            activeOpacity={0.9} 
+            onPress={revealText}
+            style={styles.contentContainer}
+          >
+            <View style={styles.contentWrapper}>
+              <View style={styles.textContainer}>
+                {showFullText ? (
+                  <Text style={[styles.content, { color: theme.colors.onSurface }]}>
+                    {letter.content}
+                  </Text>
+                ) : (
+                  <WordByWordText
+                    text={letter.content}
+                    speed={50} // Adjust speed (milliseconds per word)
+                    style={[styles.content, { color: theme.colors.onSurface }]}
+                    onComplete={() => {
+                      setTextRevealed(true);
+                      setIsAnimating(false);
+                    }}
+                    isActive={isAnimating}
+                  />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -557,11 +595,22 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 12,
   },
+  contentContainer: {
+    marginBottom: 24,
+  },
+  contentWrapper: {
+    position: 'relative',
+  },
+  textContainer: {
+    minHeight: 100, // Provide minimum height to prevent layout shifts
+  },
   content: {
     fontSize: 16,
     lineHeight: 24,
-    marginBottom: 24,
+    fontFamily: 'System', // Ensure consistent font
   },
+
+
   reactionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
