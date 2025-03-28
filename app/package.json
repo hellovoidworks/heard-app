@@ -42,6 +42,7 @@
     "react-native-safe-area-context": "^5.3.0",
     "react-native-screens": "^4.9.2",
     "react-native-tab-view": "^4.0.5",
+    "react-native-typewriter": "^0.7.0",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.2.0"
   },
