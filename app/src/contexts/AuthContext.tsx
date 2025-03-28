@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 
@@ -505,6 +506,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setProfile(updatedProfile);
       console.log('AuthContext: Updated profile with new star count:', updatedProfile.stars);
+      
+      // Emit event for star count change
+      eventEmitter.emit(EVENTS.STARS_UPDATED, updatedProfile.stars);
       
       return { error: null };
     } catch (error: any) {

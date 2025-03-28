@@ -3,6 +3,7 @@ import { Animated, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fontNames } from '../utils/fonts';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
 /**
  * StarIndicator component that displays the user's star count with a shaking animation
@@ -16,33 +17,9 @@ const StarIndicator = memo(({ starCount }: { starCount: number }) => {
   const prevStarsRef = useRef(starCount);
   const [initialized, setInitialized] = useState(false);
   
-  // Load the last star count from storage on mount
-  useEffect(() => {
-    const loadLastStarCount = async () => {
-      try {
-        const lastStarCountStr = await AsyncStorage.getItem(LAST_STAR_COUNT_KEY);
-        const lastStarCount = lastStarCountStr ? parseInt(lastStarCountStr, 10) : null;
-        
-        // If we have a stored value and it's different from current, trigger animation
-        if (lastStarCount !== null && lastStarCount !== starCount) {
-          triggerShakeAnimation();
-        }
-        
-        // Save the current star count
-        await AsyncStorage.setItem(LAST_STAR_COUNT_KEY, starCount.toString());
-        prevStarsRef.current = starCount;
-        setInitialized(true);
-      } catch (error: unknown) {
-        console.error('Error loading last star count:', error);
-        setInitialized(true);
-      }
-    };
-    
-    loadLastStarCount();
-  }, []);
-  
   // Function to trigger the shake animation
   const triggerShakeAnimation = () => {
+    console.log('StarIndicator: Triggering shake animation');
     Animated.sequence([
       Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
       Animated.timing(shakeAnimation, { toValue: -10, duration: 50, useNativeDriver: true }),
@@ -54,16 +31,54 @@ const StarIndicator = memo(({ starCount }: { starCount: number }) => {
     ]).start();
   };
   
-  // Trigger shake animation when stars count changes during regular updates
+  // Initialize and listen for star update events
+  useEffect(() => {
+    const loadLastStarCount = async () => {
+      try {
+        const lastStarCountStr = await AsyncStorage.getItem(LAST_STAR_COUNT_KEY);
+        const lastStarCount = lastStarCountStr ? parseInt(lastStarCountStr, 10) : null;
+        
+        // Save current star value as our reference
+        await AsyncStorage.setItem(LAST_STAR_COUNT_KEY, starCount.toString());
+        prevStarsRef.current = starCount;
+        setInitialized(true);
+      } catch (error: unknown) {
+        console.error('Error loading last star count:', error);
+        setInitialized(true);
+      }
+    };
+    
+    loadLastStarCount();
+    
+    // Listen for star update events
+    const handleStarsUpdated = (newStarCount: number) => {
+      console.log('StarIndicator: Stars updated event received', newStarCount, prevStarsRef.current);
+      if (prevStarsRef.current !== newStarCount) {
+        triggerShakeAnimation();
+        
+        // Update our stored reference
+        AsyncStorage.setItem(LAST_STAR_COUNT_KEY, newStarCount.toString())
+          .catch((error: unknown) => console.error('Error saving star count:', error));
+        
+        // Update previous stars reference
+        prevStarsRef.current = newStarCount;
+      }
+    };
+    
+    // Subscribe to star update events
+    eventEmitter.on(EVENTS.STARS_UPDATED, handleStarsUpdated);
+    
+    // Cleanup
+    return () => {
+      eventEmitter.off(EVENTS.STARS_UPDATED, handleStarsUpdated);
+    };
+  }, []);
+  
+  // Handle regular prop updates (for cases where the component doesn't unmount)
   useEffect(() => {
     if (initialized && prevStarsRef.current !== starCount) {
+      console.log('StarIndicator: Star count prop changed', starCount, prevStarsRef.current);
       triggerShakeAnimation();
-      
-      // Save the new star count
-      AsyncStorage.setItem(LAST_STAR_COUNT_KEY, starCount.toString())
-        .catch((error: unknown) => console.error('Error saving star count:', error));
-      
-      // Update previous stars reference
       prevStarsRef.current = starCount;
     }
   }, [starCount, initialized]);
