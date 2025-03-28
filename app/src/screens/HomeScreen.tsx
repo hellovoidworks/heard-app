@@ -1085,9 +1085,9 @@ const HomeScreen = () => {
           {renderNextWindowInfo()}
           <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
             <Button
-              mode="contained"
+              mode="outlined"
               onPress={handleDeliverAnotherLetter}
-              style={[styles.deliverButton, { paddingHorizontal: 12 }]}
+              style={[styles.deliverButton, { borderColor: '#FFFFFF', paddingHorizontal: 12 }]}
               loading={loadingMore}
               disabled={loadingMore || (profile?.stars ?? 0) < 1}
               textColor="#FFFFFF"
@@ -1127,7 +1127,7 @@ const HomeScreen = () => {
           onPress={deliverMoreLetters}
           loading={loadingMore}
           disabled={loadingMore || (profile?.stars ?? 0) < 1}
-          style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12 }]}
+          style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12, alignSelf: 'center' }]}
           textColor="#FFFFFF"
         >
           {(profile?.stars ?? 0) < 1 ? 
@@ -1191,7 +1191,7 @@ const styles = StyleSheet.create({
   deliverButton: {
     marginTop: 20,
     marginBottom: 15,
-    width: '80%',
+    width: 280,
   },
   writeButton: {
     marginTop: 10,
@@ -1286,6 +1286,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     alignItems: 'center',
     paddingTop: 16,
+    width: '100%',
   },
   countdownContainer: {
     marginBottom: 12,
@@ -1297,7 +1298,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   deliverMoreButton: {
-    width: '80%',
+    width: 280,
   },
   retryButton: {
     marginTop: 20,
