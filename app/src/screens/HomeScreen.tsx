@@ -1015,11 +1015,13 @@ const HomeScreen = () => {
                 )}
               </View>
               
-              {/* Right column: Category display */}
+              {/* Right column: Category display at bottom */}
               <View style={styles.rightColumn}>
-                <Text style={styles.categoryName}>
-                  {item.category?.name.toUpperCase()}
-                </Text>
+                <View style={styles.rightColumnContent}>
+                  <Text style={styles.categoryName}>
+                    {item.category?.name.toUpperCase()}
+                  </Text>
+                </View>
               </View>
             </View>
           </Card.Content>
@@ -1227,8 +1229,12 @@ const styles = StyleSheet.create({
   },
   rightColumn: {
     marginLeft: 8,
-    justifyContent: 'center',
+    height: '100%',
+    justifyContent: 'flex-end',
     alignItems: 'flex-end',
+  },
+  rightColumnContent: {
+    marginTop: 'auto',
   },
   moodEmojiContainer: {
     width: 48,
