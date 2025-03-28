@@ -234,7 +234,7 @@ export default function App() {
         flex: 1, 
         justifyContent: 'center', 
         alignItems: 'center', 
-        backgroundColor: '#121212'
+        backgroundColor: '#161616'
       }}>
         <ActivityIndicator size="large" color="#476EF1" />
         <Text style={{ marginTop: 15, color: '#FFFFFF', fontSize: 16 }}>
@@ -245,7 +245,7 @@ export default function App() {
   }
   
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+    <View style={{ flex: 1, backgroundColor: '#161616' }} onLayout={onLayoutRootView}>
       <PaperProvider theme={darkTheme}>
         <AuthProvider key={`auth-provider-${forceReset}`}>
           <CategoryProvider>

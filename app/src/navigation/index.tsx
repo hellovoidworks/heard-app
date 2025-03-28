@@ -326,7 +326,16 @@ const AppNavigator = () => {
   });
 
   return (
-    <NavigationContainer theme={DarkTheme} linking={linking}>
+    <NavigationContainer 
+      theme={{
+        ...DarkTheme,
+        colors: {
+          ...DarkTheme.colors,
+          background: '#161616',
+          card: '#161616'
+        }
+      }} 
+      linking={linking}>
       <Stack.Navigator screenOptions={{ 
         headerShown: false,
         contentStyle: { backgroundColor: '#121212' },
