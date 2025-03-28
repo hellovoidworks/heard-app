@@ -70,7 +70,8 @@ const WriteLetterContentScreen = () => {
                 placeholderTextColor={theme.colors.onSurfaceDisabled}
                 style={[styles.titleInput, { backgroundColor: 'transparent', color: theme.colors.onSurface }]}
                 maxLength={100}
-                theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                selectionColor="white"
                 underlineColor="transparent"
                 activeUnderlineColor="transparent"
                 mode="flat"
@@ -98,7 +99,8 @@ const WriteLetterContentScreen = () => {
                   textAlignVertical: 'top'
                 }]}
                 maxLength={5000}
-                theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                selectionColor="white"
                 underlineColor="transparent"
                 mode="flat"
               />

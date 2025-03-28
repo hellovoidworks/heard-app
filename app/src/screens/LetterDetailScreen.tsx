@@ -395,7 +395,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 fontSize: 16,
                 paddingHorizontal: 0
               }]}
-              theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+              theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+              selectionColor="white"
               underlineColor="transparent"
               activeUnderlineColor="transparent"
               mode="flat"

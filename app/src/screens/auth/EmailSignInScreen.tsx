@@ -129,7 +129,8 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                         borderBottomWidth: email && isValidEmail ? 1 : 0,
                       }]}
                       maxLength={100}
-                      theme={{ colors: { text: theme.colors.onSurface, primary: 'transparent' } }}
+                      theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                      selectionColor="white"
                       underlineColor="transparent"
                       activeUnderlineColor="transparent"
                       mode="flat"
