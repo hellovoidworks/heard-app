@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Text, StyleProp, TextStyle, StyleSheet } from 'react-native';
+import { Text, StyleProp, TextStyle, StyleSheet, ScrollView } from 'react-native';
 
 interface WordByWordTextProps {
   text: string;
@@ -7,6 +7,8 @@ interface WordByWordTextProps {
   speed?: number; // milliseconds per word
   onComplete?: () => void;
   isActive?: boolean;
+  scrollViewRef?: React.RefObject<ScrollView>;
+  autoScroll?: boolean;
 }
 
 const WordByWordText: React.FC<WordByWordTextProps> = ({
@@ -15,11 +17,14 @@ const WordByWordText: React.FC<WordByWordTextProps> = ({
   speed = 100,
   onComplete,
   isActive = true,
+  scrollViewRef,
+  autoScroll = true,
 }) => {
   const [displayedText, setDisplayedText] = useState('');
   const [wordIndex, setWordIndex] = useState(0);
   const words = useRef(text.split(/\s+/)).current;
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textRef = useRef<Text>(null);
 
   useEffect(() => {
     // Reset when text changes
@@ -38,6 +43,24 @@ const WordByWordText: React.FC<WordByWordTextProps> = ({
         
         setDisplayedText(prev => prev + space + nextWord);
         setWordIndex(wordIndex + 1);
+        
+        // Scroll to keep up with the text if autoScroll is enabled
+        if (autoScroll && scrollViewRef?.current && textRef.current) {
+          // Use a small delay to ensure the text has rendered
+          setTimeout(() => {
+            textRef.current?.measureLayout(
+              scrollViewRef.current as any,
+              (x, y, width, height) => {
+                // Scroll to the bottom of the current text with some padding
+                scrollViewRef.current?.scrollTo({
+                  y: y + height - 200, // 200px from bottom for context
+                  animated: true
+                });
+              },
+              () => console.log('Measurement failed')
+            );
+          }, 10);
+        }
         
         if (wordIndex + 1 < words.length) {
           timeoutRef.current = setTimeout(revealNextWord, speed);
@@ -61,7 +84,7 @@ const WordByWordText: React.FC<WordByWordTextProps> = ({
     setDisplayedText(text);
   }
 
-  return <Text style={style}>{displayedText}</Text>;
+  return <Text ref={textRef} style={style}>{displayedText}</Text>;
 };
 
 export default WordByWordText;

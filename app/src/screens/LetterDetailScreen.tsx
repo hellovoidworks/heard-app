@@ -47,6 +47,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [textRevealed, setTextRevealed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(true); // Start animating immediately
   const [showFullText, setShowFullText] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   const fetchLetter = async () => {
     try {
@@ -462,6 +463,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         refreshControl={
@@ -498,13 +500,15 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 ) : (
                   <WordByWordText
                     text={letter.content}
-                    speed={50} // Adjust speed (milliseconds per word)
+                    speed={200} // Adjusted speed (milliseconds per word) - slowed down from 50ms to 200ms
                     style={[styles.content, { color: theme.colors.onSurface }]}
                     onComplete={() => {
                       setTextRevealed(true);
                       setIsAnimating(false);
                     }}
                     isActive={isAnimating}
+                    scrollViewRef={scrollViewRef}
+                    autoScroll={true}
                   />
                 )}
               </View>
