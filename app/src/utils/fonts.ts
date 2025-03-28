@@ -21,6 +21,10 @@ import {
   SourceCodePro_900Black,
 } from '@expo-google-fonts/source-code-pro';
 
+import {
+  RedactedScript_400Regular
+} from '@expo-google-fonts/redacted-script';
+
 // Font configurations
 export const fontsToLoad = {
   // Inter fonts
@@ -43,6 +47,9 @@ export const fontsToLoad = {
   SourceCodePro_700Bold,
   SourceCodePro_800ExtraBold,
   SourceCodePro_900Black,
+  
+  // Redacted Script font
+  RedactedScript_400Regular,
 };
 
 // Font names to use in style definitions
@@ -67,4 +74,7 @@ export const fontNames = {
   sourceCodeProBold: 'SourceCodePro_700Bold',
   sourceCodeProExtraBold: 'SourceCodePro_800ExtraBold',
   sourceCodeProBlack: 'SourceCodePro_900Black',
+  
+  // Redacted Script font family
+  redactedScriptRegular: 'RedactedScript_400Regular',
 }; 
