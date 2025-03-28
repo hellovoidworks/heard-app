@@ -33,278 +33,50 @@ const CorrespondenceTab = () => {
       
       if (!user) return;
 
-      // First, get all letters authored by the current user
-      const { data: authoredLetters, error: letterError } = await supabase
-        .from('letters')
-        .select('id, title, content, created_at, author_id')
-        .eq('author_id', user.id);
-
-      if (letterError) {
-        console.error('Error fetching authored letters:', letterError);
-        return;
-      }
-
-      // Get the unique letter IDs authored by the user
-      const authoredLetterIds = authoredLetters ? authoredLetters.map(letter => letter.id) : [];
-      
-      // Next, get all replies by the current user to find letters they've replied to
-      const { data: myReplies, error: myRepliesError } = await supabase
-        .from('replies')
-        .select('letter_id, created_at')
-        .eq('author_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (myRepliesError) {
-        console.error('Error fetching user replies:', myRepliesError);
-        return;
-      }
-      
-      // Create a map of letter_id to user's most recent reply date
-      const userReplyDatesMap = new Map<string, string>();
-      if (myReplies) {
-        myReplies.forEach(reply => {
-          // Only set if this is the most recent reply (they're ordered by created_at desc)
-          if (!userReplyDatesMap.has(reply.letter_id)) {
-            userReplyDatesMap.set(reply.letter_id, reply.created_at);
-          }
-        });
-      }
-      
-      // Extract unique letter IDs from replies (letters the user has replied to)
-      const repliedToLetterIds = [...userReplyDatesMap.keys()];
-      
-      // Get letters the user has reacted to
-      const { data: myReactions, error: reactionsError } = await supabase
-        .from('reactions')
-        .select('letter_id, reaction_type, created_at')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-        
-      if (reactionsError) {
-        console.error('Error fetching user reactions:', reactionsError);
-        return;
-      }
-      
-      // Create a map of letter_id to user's most recent reaction date
-      const userReactionDatesMap = new Map<string, string>();
-      if (myReactions) {
-        myReactions.forEach(reaction => {
-          // Only set if this is the most recent reaction
-          if (!userReactionDatesMap.has(reaction.letter_id)) {
-            userReactionDatesMap.set(reaction.letter_id, reaction.created_at);
-          }
-        });
-      }
-      
-      // Extract unique letter IDs from reactions (letters the user has reacted to)
-      const reactedToLetterIds = [...userReactionDatesMap.keys()];
-      
-      // Get details of letters the user has replied to or reacted to (that they did not author)
-      const interactedLetterIds = [...new Set([...repliedToLetterIds, ...reactedToLetterIds])];
-      
-      const { data: interactedLetters, error: interactedLettersError } = await supabase
-        .from('letters')
-        .select('id, title, content, created_at, author_id')
-        .in('id', interactedLetterIds)
-        .not('author_id', 'eq', user.id);  // Exclude letters the user authored
-        
-      if (interactedLettersError) {
-        console.error('Error fetching interacted letters:', interactedLettersError);
-        return;
-      }
-      
-      // Combine both sets of letters
-      const allRelevantLetters = [
-        ...(authoredLetters || []),
-        ...(interactedLetters || [])
-      ];
-      
-      if (allRelevantLetters.length === 0) {
-        setCorrespondences([]);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      // Get the complete set of letter IDs to work with
-      const allLetterIds = allRelevantLetters.map(letter => letter.id);
-
-      // Fetch all replies for each letter (from any user)
-      const { data: replyData, error: replyError } = await supabase
-        .from('replies')
-        .select(`
-          id, 
-          letter_id, 
-          content,
-          author_id,
-          created_at
-        `)
-        .in('letter_id', allLetterIds)
-        .order('created_at', { ascending: false });
-
-      if (replyError) {
-        console.error('Error fetching replies:', replyError);
-        return;
-      }
-
-      // Fetch all reactions for each letter (from any user)
-      const { data: allReactions, error: allReactionsError } = await supabase
-        .from('reactions')
-        .select(`
-          letter_id,
-          reaction_type,
-          user_id,
-          created_at
-        `)
-        .in('letter_id', allLetterIds)
-        .order('created_at', { ascending: false });
-
-      if (allReactionsError) {
-        console.error('Error fetching all reactions:', allReactionsError);
-      }
-
-      // Get count of unread replies
-      const { data: unreadCounts, error: unreadError } = await supabase.rpc(
-        'get_unread_reply_count',
-        { p_user_id: user.id, p_letter_ids: allLetterIds }
+      // Use the consolidated RPC function to fetch all correspondence data in a single query
+      const { data, error } = await supabase.rpc(
+        'get_user_correspondences',
+        { p_user_id: user.id }
       );
 
-      if (unreadError) {
-        console.error('Error fetching unread counts:', unreadError);
+      if (error) {
+        console.error('Error fetching correspondences:', error);
+        setCorrespondences([]);
+        return;
       }
 
-      // Create a map for unread counts
-      const unreadCountMap = new Map<string, number>();
-      if (unreadCounts) {
-        unreadCounts.forEach((item: { letter_id: string, unread_count: number }) => {
-          unreadCountMap.set(item.letter_id, item.unread_count);
-        });
+      if (!data || data.length === 0) {
+        setCorrespondences([]);
+        return;
       }
 
-      // Group replies by letter_id
-      const letterRepliesMap = new Map<string, Array<any>>();
-      if (replyData) {
-        replyData.forEach(reply => {
-          if (!letterRepliesMap.has(reply.letter_id)) {
-            letterRepliesMap.set(reply.letter_id, []);
-          }
-          letterRepliesMap.get(reply.letter_id)!.push(reply);
-        });
-      }
+      // Define the type for the RPC function result
+      type CorrespondenceResult = {
+        letter_id: string;
+        title: string;
+        content: string;
+        created_at: string;
+        author_id: string;
+        most_recent_activity_date: string;
+        most_recent_content: string;
+        unread_count: number;
+        participants: string[];
+      };
 
-      // Group reactions by letter_id
-      const letterReactionsMap = new Map<string, Array<any>>();
-      if (allReactions) {
-        allReactions.forEach(reaction => {
-          if (!letterReactionsMap.has(reaction.letter_id)) {
-            letterReactionsMap.set(reaction.letter_id, []);
-          }
-          letterReactionsMap.get(reaction.letter_id)!.push(reaction);
-        });
-      }
-
-      // Find most recent activity date (reply or reaction) for each letter
-      const mostRecentActivityMap = new Map<string, string>();
-      const mostRecentContentMap = new Map<string, string>();
-      
-      // Initialize with letter creation dates and content
-      allRelevantLetters.forEach(letter => {
-        mostRecentActivityMap.set(letter.id, letter.created_at);
-        mostRecentContentMap.set(letter.id, letter.content);
-      });
-      
-      // Update with most recent reply dates and content if newer
-      if (replyData) {
-        // Group by letter and find the most recent
-        const replyDateMap = new Map<string, {date: string, content: string}>();
-        replyData.forEach(reply => {
-          const current = replyDateMap.get(reply.letter_id);
-          if (!current || new Date(reply.created_at) > new Date(current.date)) {
-            replyDateMap.set(reply.letter_id, {
-              date: reply.created_at,
-              content: reply.content
-            });
-          }
-        });
-        
-        // Update the activity and content maps if reply is more recent
-        replyDateMap.forEach((data, letterId) => {
-          const currentActivityDate = mostRecentActivityMap.get(letterId);
-          if (currentActivityDate && new Date(data.date) > new Date(currentActivityDate)) {
-            mostRecentActivityMap.set(letterId, data.date);
-            mostRecentContentMap.set(letterId, data.content);
-          }
-        });
-      }
-      
-      // Update with most recent reaction dates and create reaction content if newer
-      if (allReactions) {
-        // Group by letter and find the most recent
-        const reactionDateMap = new Map<string, {date: string, reactionType: string, userId: string}>();
-        allReactions.forEach(reaction => {
-          const current = reactionDateMap.get(reaction.letter_id);
-          if (!current || new Date(reaction.created_at) > new Date(current.date)) {
-            reactionDateMap.set(reaction.letter_id, {
-              date: reaction.created_at,
-              reactionType: reaction.reaction_type,
-              userId: reaction.user_id
-            });
-          }
-        });
-        
-        // Update the activity and content maps if reaction is more recent
-        reactionDateMap.forEach((data, letterId) => {
-          const currentActivityDate = mostRecentActivityMap.get(letterId);
-          if (currentActivityDate && new Date(data.date) > new Date(currentActivityDate)) {
-            mostRecentActivityMap.set(letterId, data.date);
-            // Create a reaction content message
-            const isCurrentUser = data.userId === user.id;
-            const reactionMessage = isCurrentUser 
-              ? `You reacted with ${data.reactionType}`
-              : `Someone reacted with ${data.reactionType}`;
-            mostRecentContentMap.set(letterId, reactionMessage);
-          }
-        });
-      }
-
-      // Format correspondences for each letter with replies
-      const formattedCorrespondences = allRelevantLetters
-        .filter(letter => {
-          // Include letters authored by the user that have received replies
-          if (letter.author_id === user.id) {
-            return letterRepliesMap.has(letter.id);
-          }
-          // Include letters authored by others that the user has replied to or reacted to
-          return letterRepliesMap.has(letter.id) || reactedToLetterIds.includes(letter.id);
-        })
-        .map(letter => {
-          const replies = letterRepliesMap.get(letter.id) || [];
-          const participants = new Set<string>();
-          
-          participants.add(letter.author_id);
-          replies.forEach(reply => participants.add(reply.author_id));
-          
-          // Get the most recent activity date for this letter (from any user)
-          const mostRecentActivityDate = mostRecentActivityMap.get(letter.id) || letter.created_at;
-          
-          // Get the most recent content (from letter, reply or reaction)
-          const contentPreview = mostRecentContentMap.get(letter.id) || letter.content;
-          
-          return {
-            letter_id: letter.id,
-            title: letter.title,
-            content_preview: contentPreview.substring(0, 100) + (contentPreview.length > 100 ? '...' : ''),
-            mostRecentActivityDate: mostRecentActivityDate,
-            unread_count: unreadCountMap.get(letter.id) || 0,
-            participants: Array.from(participants) as string[],
-          };
-        })
-        // Sort by the most recent activity date by any user (reply or reaction)
-        .sort((a, b) => new Date(b.mostRecentActivityDate).getTime() - new Date(a.mostRecentActivityDate).getTime());
+      // Format the correspondences from the RPC result
+      const formattedCorrespondences = data.map((item: CorrespondenceResult) => ({
+        letter_id: item.letter_id,
+        title: item.title,
+        content_preview: item.most_recent_content.substring(0, 100) + (item.most_recent_content.length > 100 ? '...' : ''),
+        mostRecentActivityDate: item.most_recent_activity_date,
+        unread_count: item.unread_count,
+        participants: item.participants,
+      }));
 
       setCorrespondences(formattedCorrespondences);
     } catch (error) {
       console.error('Error:', error);
+      setCorrespondences([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
