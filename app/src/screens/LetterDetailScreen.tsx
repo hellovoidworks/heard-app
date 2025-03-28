@@ -26,9 +26,9 @@ const REACTION_EMOJIS = [
 ];
 
 const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId, onClose } = route.params;
-  const [letter, setLetter] = useState<LetterWithDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { letterId, letter: initialLetter, onClose } = route.params;
+  const [letter, setLetter] = useState<LetterWithDetails | null>(initialLetter || null);
+  const [loading, setLoading] = useState(!initialLetter);
   const [refreshing, setRefreshing] = useState(false);
   const [reactionModalVisible, setReactionModalVisible] = useState(false);
   const [responseModalVisible, setResponseModalVisible] = useState(false);
@@ -46,6 +46,36 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const fetchLetter = async () => {
     try {
+      // If we already have the letter from navigation params, just fetch reactions
+      if (letter) {
+        setLoading(false);
+        
+        // Record that the user has read this letter if they are logged in
+        if (user && user.id !== letter.author_id) {
+          const { error: readError } = await supabase
+            .from('letter_reads')
+            .upsert([
+              {
+                user_id: user.id,
+                letter_id: letterId,
+                read_at: new Date().toISOString()
+              }
+            ], { 
+              onConflict: 'user_id,letter_id',
+              ignoreDuplicates: true 
+            });
+            
+          if (readError) {
+            console.error('Error recording letter read:', readError);
+          }
+          
+          // Fetch reactions for this letter
+          fetchReactions();
+        }
+        return;
+      }
+      
+      // If we don't have the letter yet, fetch it from the database
       setLoading(true);
       
       // Fetch the letter details

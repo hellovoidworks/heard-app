@@ -1,3 +1,5 @@
+import { LetterWithDetails } from '../types/database.types';
+
 // Define navigation types
 export type RootStackParamList = {
   Auth: undefined;
@@ -5,6 +7,7 @@ export type RootStackParamList = {
   Onboarding: undefined;
   LetterDetail: { 
     letterId: string;
+    letter?: LetterWithDetails;
     onClose?: () => void;
   };
   MyLetterDetail: { letterId: string; };

@@ -898,9 +898,10 @@ const HomeScreen = () => {
   }, [user]);
 
   const handleLetterPress = async (letter: LetterWithDetails) => {
-    // Navigate to letter detail as modal
+    // Navigate to letter detail as modal, passing the entire letter object
     navigation.navigate('LetterDetail', { 
       letterId: letter.id,
+      letter: letter,
       onClose: () => navigation.goBack()
     });
 
