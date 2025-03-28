@@ -1015,7 +1015,8 @@ const HomeScreen = () => {
   const renderLetterItem = ({ item }: { item: LetterWithDetails }) => {
     const isUnread = !item.is_read;
     const categoryColor = item.category?.color || '#FFFFFF';
-    const backgroundColor = isUnread ? categoryColor : `${categoryColor}40`; // 25% opacity for read letters
+    // Use category color with opacity 0.2 for background
+    const backgroundColor = `${categoryColor}33`; // 20% opacity
     const defaultMoodEmoji = '😊';
 
     // Only animate if the letter ID is in the animating set
@@ -1035,7 +1036,11 @@ const HomeScreen = () => {
         <Card
           style={[
             styles.letterCard,
-            { backgroundColor },
+            { 
+              backgroundColor,
+              borderWidth: 1,
+              borderColor: categoryColor 
+            },
             isUnread && styles.unreadCard
           ]}
           onPress={() => handleLetterPress(item)}
@@ -1061,7 +1066,7 @@ const HomeScreen = () => {
               
               {/* Right column: Category display */}
               <View style={styles.rightColumn}>
-                <View style={styles.categoryContainer}>
+                <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
                   <Text style={styles.categoryName}>
                     {item.category?.name.toUpperCase()}
                   </Text>
@@ -1300,7 +1305,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
-    color: '#000000',
+    color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
     lineHeight: 16,
     letterSpacing: -1,
@@ -1311,7 +1316,6 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   categoryContainer: {
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
@@ -1332,7 +1336,7 @@ const styles = StyleSheet.create({
     maxHeight: 36, // Allow for 2 lines at 18px line height
     overflow: 'hidden',
     fontFamily: 'RedactedScript_400Regular',
-    color: '#000000',
+    color: '#FFFFFF',
     opacity: 0.9,
   },
   headerContainer: {
