@@ -159,7 +159,6 @@ const MyLettersTab = () => {
         data={letters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl 
             refreshing={refreshing} 
@@ -196,11 +195,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listContent: {
-    padding: 16,
     paddingBottom: 24,
   },
   letterCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 0,
     marginVertical: 8,
     borderRadius: 12,
     elevation: 2,
