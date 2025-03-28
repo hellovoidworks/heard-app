@@ -9,11 +9,19 @@ interface LetterTitleCardProps {
 }
 
 const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction }) => {
+  const categoryColor = letter.category?.color || '#333333';
+  // Use category color with opacity 0.2 for background
+  const backgroundColor = `${categoryColor}33`; // 20% opacity
+
   return (
     <Card
       style={[
         styles.headerCard,
-        { backgroundColor: letter.category?.color || '#333333' }
+        { 
+          backgroundColor,
+          borderWidth: 1,
+          borderColor: categoryColor 
+        }
       ]}
     >
       <Card.Content>
@@ -24,9 +32,11 @@ const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction 
           <View style={styles.letterTitleContainer}>
             <Title style={styles.letterTitle}>{letter.title}</Title>
             <View style={styles.metadataContainer}>
-              <Text style={styles.categoryName}>
-                {letter.category?.name?.toUpperCase() || ''}
-              </Text>
+              <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
+                <Text style={styles.categoryName}>
+                  {letter.category?.name?.toUpperCase() || ''}
+                </Text>
+              </View>
               {userReaction && (
                 <Text style={styles.reactionText}>
                   You reacted with {userReaction}
@@ -56,13 +66,13 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   moodEmoji: {
-    fontSize: 24,
+    fontSize: 28,
   },
   letterTitleContainer: {
     flex: 1,
@@ -82,10 +92,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  categoryContainer: {
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   categoryName: {
-    fontSize: 12,
+    fontSize: 10,
+    fontWeight: '600',
     color: '#FFFFFF',
     opacity: 0.9,
+    textAlign: 'center',
   },
   reactionText: {
     fontSize: 12,
