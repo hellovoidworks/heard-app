@@ -111,19 +111,26 @@ const MyLettersTab = () => {
         onPress={() => handleLetterPress(item)}
       >
         <Card.Content>
-          <View style={styles.letterHeader}>
-            <View style={styles.moodEmojiContainer}>
-              <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+          <View style={styles.threeColumnLayout}>
+            {/* Left column: Mood emoji */}
+            <View style={styles.leftColumn}>
+              <View style={styles.moodEmojiContainer}>
+                <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+              </View>
             </View>
-            <View style={styles.letterTitleContainer}>
+            
+            {/* Center column: Text and preview */}
+            <View style={styles.centerColumn}>
               <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
               <Paragraph style={styles.letterContent} numberOfLines={2}>{item.content}</Paragraph>
             </View>
-          </View>
-          <View style={styles.letterFooter}>
-            <Text style={styles.categoryName}>
-              {item.category?.name.toUpperCase()}
-            </Text>
+            
+            {/* Right column: Category display */}
+            <View style={styles.rightColumn}>
+              <Text style={styles.categoryName}>
+                {item.category?.name.toUpperCase()}
+              </Text>
+            </View>
           </View>
         </Card.Content>
       </Card>
@@ -190,9 +197,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     elevation: 2,
   },
-  letterHeader: {
+  threeColumnLayout: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  leftColumn: {
+    marginRight: 8,
+    alignSelf: 'center',
+  },
+  centerColumn: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  rightColumn: {
+    marginLeft: 8,
+    alignSelf: 'flex-end',
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
   },
   moodEmojiContainer: {
     width: 48,
@@ -201,14 +222,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
   },
   moodEmoji: {
     fontSize: 24,
-  },
-  letterTitleContainer: {
-    flex: 1,
-    overflow: 'hidden',
   },
   letterTitle: {
     fontSize: 16,
@@ -223,12 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#FFFFFF',
     opacity: 0.9,
-  },
-  letterFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: 12,
   },
   categoryName: {
     fontSize: 12,
