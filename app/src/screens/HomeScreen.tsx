@@ -1056,7 +1056,7 @@ const HomeScreen = () => {
               
               {/* Center column: Text and redacted preview */}
               <View style={styles.centerColumn}>
-                <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
+                <Title style={[styles.letterTitle, { color: categoryColor }]} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
                 {isUnread ? (
                   createRedactedText(item.content)
                 ) : (
@@ -1305,7 +1305,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 6,
-    color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
     lineHeight: 16,
     letterSpacing: -1,
