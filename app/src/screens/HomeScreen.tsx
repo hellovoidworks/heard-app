@@ -1008,9 +1008,11 @@ const HomeScreen = () => {
               
               {/* Right column: Category display */}
               <View style={styles.rightColumn}>
-                <Text style={styles.categoryName}>
-                  {item.category?.name.toUpperCase()}
-                </Text>
+                <View style={styles.categoryContainer}>
+                  <Text style={styles.categoryName}>
+                    {item.category?.name.toUpperCase()}
+                  </Text>
+                </View>
               </View>
             </View>
           </Card.Content>
@@ -1225,6 +1227,7 @@ const styles = StyleSheet.create({
   },
   rightColumn: {
     marginLeft: 8,
+    width: 75,
     alignSelf: 'flex-end',
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
@@ -1254,11 +1257,20 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
   },
+  categoryContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   categoryName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#FFFFFF',
     opacity: 0.9,
+    textAlign: 'center',
   },
   redactedContent: {
     marginTop: -2,
