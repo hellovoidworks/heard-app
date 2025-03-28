@@ -11,6 +11,7 @@ import { CommonActions } from '@react-navigation/native';
 import { View, TouchableOpacity, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fontNames } from '../utils/fonts';
+import StarIndicator from '../components/StarIndicator';
 
 // Import screens from the index file
 import {
@@ -234,25 +235,7 @@ const MainNavigator = () => {
             return (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {/* Star indicator with count */}
-                <View style={{ 
-                  backgroundColor: '#222222', 
-                  borderRadius: 20, 
-                  paddingHorizontal: 10, 
-                  paddingVertical: 5,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginRight: 10
-                }}>
-                  <Text style={{ 
-                    color: 'white', 
-                    marginRight: 4,
-                    fontFamily: fontNames.interMedium,
-                    fontSize: 14
-                  }}>
-                    {profile?.stars ?? 0}
-                  </Text>
-                  <Ionicons name="star" size={16} color="#FFD700" />
-                </View>
+                <StarIndicator starCount={profile?.stars ?? 0} />
                 {/* Profile button */}
                 <Ionicons 
                   name="person-circle-outline" 
