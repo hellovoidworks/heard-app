@@ -1220,6 +1220,7 @@ const styles = StyleSheet.create({
   },
   leftColumn: {
     marginRight: 8,
+    alignSelf: 'center',
   },
   centerColumn: {
     flex: 1,
