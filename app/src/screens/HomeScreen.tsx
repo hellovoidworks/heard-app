@@ -1299,7 +1299,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moodEmoji: {
-    fontSize: 24,
+    fontSize: 28,
   },
   letterTitle: {
     fontSize: 14,
