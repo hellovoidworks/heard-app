@@ -100,13 +100,19 @@ const MyLettersTab = () => {
 
   const renderLetterItem = ({ item }: { item: Letter }) => {
     const categoryColor = item.category?.color || '#333333';
+    // Use category color with opacity 0.2 for background
+    const backgroundColor = `${categoryColor}33`; // 20% opacity
     const defaultMoodEmoji = '😊';
 
     return (
       <Card
         style={[
           styles.letterCard,
-          { backgroundColor: categoryColor }
+          { 
+            backgroundColor,
+            borderWidth: 1,
+            borderColor: categoryColor 
+          }
         ]}
         onPress={() => handleLetterPress(item)}
       >
@@ -127,9 +133,11 @@ const MyLettersTab = () => {
             
             {/* Right column: Category display */}
             <View style={styles.rightColumn}>
-              <Text style={styles.categoryName}>
-                {item.category?.name.toUpperCase()}
-              </Text>
+              <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
+                <Text style={styles.categoryName}>
+                  {item.category?.name.toUpperCase()}
+                </Text>
+              </View>
             </View>
           </View>
         </Card.Content>
@@ -219,12 +227,12 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moodEmoji: {
-    fontSize: 24,
+    fontSize: 28,
   },
   letterTitle: {
     fontSize: 16,
@@ -240,11 +248,19 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
   },
+  categoryContainer: {
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   categoryName: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
     color: '#FFFFFF',
     opacity: 0.9,
+    textAlign: 'center',
   },
   emptyContainer: {
     padding: 20,
