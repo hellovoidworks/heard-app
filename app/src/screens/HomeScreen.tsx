@@ -481,8 +481,8 @@ const HomeScreen = () => {
         if (readLetterIds.length <= 100 && receivedLetterIds.length <= 100) {
           // First try to get unread letters that haven't been received before
           const { data: newPreferredLetters, error: newPreferredError } = await query
-            .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(0)')
-            .filter('id', 'not.in', receivedLetterIds.length > 0 ? `(${receivedLetterIds.join(',')})` : '(0)')
+            .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
+            .filter('id', 'not.in', receivedLetterIds.length > 0 ? `(${receivedLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
             .order('created_at', { ascending: false })
             .limit(limit);
           
@@ -500,8 +500,8 @@ const HomeScreen = () => {
             
             const { data: oldPreferredLetters, error: oldPreferredError } = await baseQuery
               .in('category_id', preferredCategoryIds)
-              .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(0)')
-              .filter('id', 'in', `(${receivedLetterIds.join(',')})`)
+              .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
+              .filter('id', 'in', receivedLetterIds.length > 0 ? `(${receivedLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
               .order('created_at', { ascending: false })
               .limit(remainingLimit);
             
@@ -550,7 +550,7 @@ const HomeScreen = () => {
         
         // Fetch letters from any category, prioritizing unread ones
         const { data: fallbackLetters, error: fallbackError } = await baseQuery
-          .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(0)')
+          .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
           .order('created_at', { ascending: false })
           .limit(remainingLimit * 2); // Fetch extra to account for filtering
         
