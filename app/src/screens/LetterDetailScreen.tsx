@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput } from 'react-native';
 import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -273,22 +273,29 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
   
-  // Auto-focus flag for the TextInput
-  const [autoFocusInput, setAutoFocusInput] = useState(false);
+  // Create a ref for the native TextInput inside PaperTextInput
+  const inputRef = useRef<TextInput>(null);
   
-  // Handle opening the response modal
+  // Handle opening the response modal and focusing the input
   const handleOpenResponseModal = useCallback(() => {
     setResponseModalVisible(true);
-    // Set auto-focus after a small delay to ensure modal is visible
+    
+    // Focus the input after the modal is visible
     setTimeout(() => {
-      setAutoFocusInput(true);
-    }, 100);
+      if (inputRef.current) {
+        inputRef.current.focus();
+      }
+    }, 300); // Increased delay to ensure modal is fully visible
   }, []);
   
-  // Reset auto-focus when modal is closed
+  // Effect to focus the input when the modal becomes visible
   useEffect(() => {
-    if (!responseModalVisible) {
-      setAutoFocusInput(false);
+    if (responseModalVisible && inputRef.current) {
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+        }
+      }, 300);
     }
   }, [responseModalVisible]);
 
@@ -445,7 +452,16 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 underlineColor="transparent"
                 activeUnderlineColor="transparent"
                 mode="flat"
-                autoFocus={autoFocusInput}
+                render={props => (
+                  <TextInput
+                    {...props}
+                    ref={inputRef}
+                    multiline
+                    style={[props.style, { color: theme.colors.onSurface }]}
+                    placeholder="Write your reply..."
+                    placeholderTextColor={theme.colors.onSurfaceDisabled}
+                  />
+                )}
               />
               
               <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
