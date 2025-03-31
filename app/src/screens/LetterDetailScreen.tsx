@@ -508,7 +508,16 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                     }}
                     isActive={isAnimating}
                     scrollViewRef={scrollViewRef}
-                    autoScroll={true}
+                    autoScroll={false} // Removed autoscrolling
+                    wordCountThreshold={150} // Show full text after 150 words
+                    onWordThresholdReached={() => {
+                      // Use a small timeout to ensure smooth transition
+                      setTimeout(() => {
+                        setShowFullText(true); // Show full text after reaching threshold
+                        setTextRevealed(true);
+                        setIsAnimating(false);
+                      }, 50);
+                    }}
                   />
                 )}
               </View>
