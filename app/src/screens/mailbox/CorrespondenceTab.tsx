@@ -17,6 +17,9 @@ type Correspondence = {
   mostRecentActivityDate: string;
   unread_count: number;
   participants: string[];
+  category_id?: string;
+  category_name?: string;
+  category_color?: string;
 };
 
 type CorrespondenceTabProps = {
@@ -65,6 +68,9 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         most_recent_content: string;
         unread_count: number;
         participants: string[];
+        category_id?: string;
+        category_name?: string;
+        category_color?: string;
       };
 
       // Format the correspondences from the RPC result
@@ -75,6 +81,9 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         mostRecentActivityDate: item.most_recent_activity_date,
         unread_count: item.unread_count,
         participants: item.participants,
+        category_id: item.category_id,
+        category_name: item.category_name,
+        category_color: item.category_color,
       }));
 
       setCorrespondences(formattedCorrespondences);
@@ -108,50 +117,70 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
     navigation.navigate('ThreadDetail', { letterId: correspondence.letter_id });
   };
 
-  const renderCorrespondenceItem = ({ item }: { item: Correspondence }) => (
-    <Card 
-      style={[
-        styles.card, 
-        { backgroundColor: theme.colors.surface }
-      ]} 
-      onPress={() => handleCorrespondencePress(item)}
-    >
-      <View style={styles.cardContainer}>
-        {item.unread_count > 0 && <View style={styles.unreadIndicator} />}
-        <Card.Content style={styles.cardContent}>
-          <View style={styles.titleRow}>
-            <Title 
-              style={{ 
-                color: theme.colors.onSurface,
-                fontSize: 16,
-                lineHeight: 20,
-                fontWeight: '600',
-                flex: 1,
-                marginRight: 8
-              }}
-              numberOfLines={2}
-              ellipsizeMode="tail"
-            >
-              {item.title}
-            </Title>
-            <Text style={{ color: theme.colors.onSurfaceDisabled, fontSize: 12 }}>
-              {format(new Date(item.mostRecentActivityDate), 'MMM d')}
-            </Text>
-          </View>
-          <Paragraph 
-            style={{ color: theme.colors.onSurface }}
-            numberOfLines={2}
-            ellipsizeMode="tail"
-          >
-            {item.content_preview}
-          </Paragraph>
-          <View style={styles.cardFooter}>
-            <View />
-          </View>
-        </Card.Content>
-      </View>
-    </Card>
-  );
+  const renderCorrespondenceItem = ({ item }: { item: Correspondence }) => {
+    const isUnread = item.unread_count > 0;
+    const categoryColor = item.category_color || '#FFFFFF';
+    // Use category color with opacity 0.2 for background
+    const backgroundColor = `${categoryColor}33`; // 20% opacity
+
+    return (
+      <Card 
+        style={[
+          styles.card, 
+          { 
+            backgroundColor,
+            borderWidth: 1,
+            borderColor: categoryColor 
+          },
+          isUnread && styles.unreadCard
+        ]} 
+        onPress={() => handleCorrespondencePress(item)}
+      >
+        <View style={styles.cardContainer}>
+          {isUnread && <View style={styles.unreadIndicator} />}
+          <Card.Content style={styles.cardContent}>
+            <View style={styles.threeColumnLayout}>
+              {/* Left column: Empty or could be used for an icon */}
+              <View style={styles.leftColumn}>
+              </View>
+              
+              {/* Center column: Title and content preview */}
+              <View style={styles.centerColumn}>
+                <Title 
+                  style={styles.letterTitle}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {item.title}
+                </Title>
+                <Paragraph 
+                  style={styles.letterContent}
+                  numberOfLines={2}
+                  ellipsizeMode="tail"
+                >
+                  {item.content_preview}
+                </Paragraph>
+              </View>
+              
+              {/* Right column: Date and category */}
+              <View style={styles.rightColumn}>
+                <Text style={styles.dateText}>
+                  {format(new Date(item.mostRecentActivityDate), 'MMM d')}
+                </Text>
+                {item.category_name && (
+                  <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
+                    <Text style={styles.categoryName}>
+                      {item.category_name.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </View>
+          </Card.Content>
+        </View>
+      </Card>
+    );
+  };
 
   if (loading) {
     return (
@@ -198,14 +227,21 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
+    marginHorizontal: 16,
+    marginVertical: 8,
+    borderRadius: 12,
+    elevation: 2,
     marginBottom: 12,
+  },
+  unreadCard: {
+    elevation: 4,
   },
   cardContainer: {
     position: 'relative',
   },
   cardContent: {
-    padding: 16, // Restore original padding
-    paddingTop: 24, // Add extra top padding to create space from the red circle
+    padding: 16,
+    paddingTop: 24, // Add extra top padding to create space from the unread indicator
   },
   unreadIndicator: {
     position: 'absolute',
@@ -216,6 +252,58 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: 'red',
     zIndex: 1,
+  },
+  threeColumnLayout: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  leftColumn: {
+    marginRight: 8,
+    width: 24,
+    alignSelf: 'center',
+  },
+  centerColumn: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  rightColumn: {
+    marginLeft: 8,
+    width: 75,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+  },
+  letterTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+    color: '#FFFFFF',
+    lineHeight: 16,
+    letterSpacing: -1,
+  },
+  letterContent: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  dateText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+  categoryContainer: {
+    borderRadius: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryName: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
+    textAlign: 'center',
   },
   titleRow: {
     flexDirection: 'row',
