@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import WordByWordText from '../components/WordByWordText';
-import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface, useTheme } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { LetterWithDetails } from '../types/database.types';
@@ -273,6 +273,25 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
   
+  // Auto-focus flag for the TextInput
+  const [autoFocusInput, setAutoFocusInput] = useState(false);
+  
+  // Handle opening the response modal
+  const handleOpenResponseModal = useCallback(() => {
+    setResponseModalVisible(true);
+    // Set auto-focus after a small delay to ensure modal is visible
+    setTimeout(() => {
+      setAutoFocusInput(true);
+    }, 100);
+  }, []);
+  
+  // Reset auto-focus when modal is closed
+  useEffect(() => {
+    if (!responseModalVisible) {
+      setAutoFocusInput(false);
+    }
+  }, [responseModalVisible]);
+
   const handleSendResponse = async () => {
     if (!user || !profile || !letter || !responseText.trim()) return;
     
@@ -406,7 +425,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 />
               </View>
               
-              <TextInput
+              <PaperTextInput
                 value={responseText}
                 onChangeText={setResponseText}
                 placeholder="Write your reply..."
@@ -426,6 +445,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 underlineColor="transparent"
                 activeUnderlineColor="transparent"
                 mode="flat"
+                autoFocus={autoFocusInput}
               />
               
               <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
@@ -559,7 +579,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </Button>
             <Button
               mode="contained"
-              onPress={() => setResponseModalVisible(true)}
+              onPress={handleOpenResponseModal}
               icon="reply"
               style={styles.actionButton}
             >
