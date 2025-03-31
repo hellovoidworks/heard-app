@@ -79,7 +79,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           setUserReaction(reactionData.reaction_type);
         }
 
-        // Get all replies to this letter
+        // Get only replies between the current user and the letter author
         const { data: repliesData, error: repliesError } = await supabase
           .from('replies')
           .select(`
@@ -93,6 +93,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             updated_at
           `)
           .eq('letter_id', letterId)
+          .or(`author_id.eq.${user.id},author_id.eq.${letterData.author_id}`)
           .order('created_at', { ascending: true });
 
         if (repliesError) {

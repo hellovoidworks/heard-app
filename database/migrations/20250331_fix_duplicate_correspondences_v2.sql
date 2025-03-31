@@ -76,7 +76,7 @@ BEGIN
     
     UNION ALL
     
-    -- Replies to letters
+    -- Replies to letters (only between the letter author and the current user)
     SELECT
       r.letter_id AS letter_id,
       r.created_at AS activity_date,
@@ -85,10 +85,18 @@ BEGIN
       r.author_id AS actor_id
     FROM public.replies r
     JOIN relevant_letters rl ON r.letter_id = rl.letter_id
+    WHERE 
+      -- Only include replies from the current user
+      r.author_id = p_user_id
+      OR
+      -- Or replies from the letter author to the current user
+      (r.author_id = rl.author_id AND EXISTS (
+        SELECT 1 FROM public.replies ur WHERE ur.letter_id = r.letter_id AND ur.author_id = p_user_id
+      ))
     
     UNION ALL
     
-    -- Reactions to letters
+    -- Reactions to letters (only between the letter author and the current user)
     SELECT
       rc.letter_id AS letter_id,
       rc.created_at AS activity_date,
@@ -97,6 +105,14 @@ BEGIN
       rc.user_id AS actor_id
     FROM public.reactions rc
     JOIN relevant_letters rl ON rc.letter_id = rl.letter_id
+    WHERE 
+      -- Only include reactions from the current user
+      rc.user_id = p_user_id
+      OR
+      -- Or reactions from the letter author to the current user's interactions
+      (rc.user_id = rl.author_id AND EXISTS (
+        SELECT 1 FROM public.replies ur WHERE ur.letter_id = rc.letter_id AND ur.author_id = p_user_id
+      ))
   ),
   most_recent_activities AS (
     SELECT DISTINCT ON (la.letter_id)
@@ -121,6 +137,8 @@ BEGIN
     LEFT JOIN public.reply_reads rr ON r.id = rr.reply_id AND rr.user_id = p_user_id
     JOIN relevant_letters rl ON r.letter_id = rl.letter_id
     WHERE r.author_id != p_user_id AND rr.id IS NULL
+      -- Only count unread replies from the letter author (not from other users)
+      AND r.author_id = rl.author_id
     GROUP BY r.letter_id
   ),
   letter_participants AS (
