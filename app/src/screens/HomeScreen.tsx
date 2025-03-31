@@ -730,7 +730,7 @@ const HomeScreen = () => {
     );
   };
 
-  // Create redacted text using Redacted Script font
+  // Create redacted text using Flow Circular font
   const createRedactedText = useCallback((content: string) => {
     // Limit content to what would reasonably fit in 2 lines
     const truncatedContent = content.length > 100 ? content.substring(0, 100) + '...' : content;
@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     maxHeight: 36, // Allow for 2 lines at 18px line height
     overflow: 'hidden',
-    fontFamily: 'RedactedScript_400Regular',
+    fontFamily: 'FlowCircular_400Regular',
     color: '#FFFFFF',
     opacity: 0.9,
   },
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#000000', // Changed from semi-transparent to solid black
+    backgroundColor: '#121212', // Changed to match bottom navigation background color
     paddingTop: 12,
     paddingBottom: 24, // Increased bottom padding to avoid overlap with the + circle button
     paddingHorizontal: 16,
