@@ -657,7 +657,7 @@ const HomeScreen = () => {
       
       if (newLetters && newLetters.length > 0) {
         console.log(`Delivered ${newLetters.length} new letters`);
-        setLetters(newLetters.map(letter => ({
+        setLetters(newLetters.map((letter: LetterWithDetails) => ({
           ...letter,
           is_read: false
         })));
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: '#000000', // Changed from semi-transparent to solid black
     paddingTop: 12,
     paddingBottom: 24, // Increased bottom padding to avoid overlap with the + circle button
     paddingHorizontal: 16,
