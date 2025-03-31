@@ -85,27 +85,42 @@ const NotificationSettingsScreen = () => {
     
     setSaving(true);
     try {
-      // If enabling notifications for the first time, request permission
+      // If enabling notifications, ensure we have permission and a token
       if (notificationsEnabled) {
-        const token = await registerForPushNotificationsAsync();
-        if (!token) {
-          Alert.alert(
-            'Permission Required',
-            'Push notifications could not be enabled. Please check your device settings.'
-          );
-          setNotificationsEnabled(false);
-          setSaving(false);
-          return;
-        }
+        // First check if we already have permission
+        const permissionStatus = await checkNotificationPermissions();
+        console.log('Current notification permission status:', permissionStatus);
         
-        // Explicitly save the token to the push_tokens table
-        try {
-          console.log('Saving push token to database:', token);
-          await savePushToken(user.id, token);
-          console.log('Successfully saved push token to database');
-        } catch (tokenError) {
-          console.error('Error saving push token:', tokenError);
-          // Continue even if token saving fails - we'll try again later
+        // Get token (this will use existing permission if already granted)
+        const token = await registerForPushNotificationsAsync();
+        
+        if (!token) {
+          console.log('Failed to get push token despite permissions check');
+          
+          // Only show alert if permissions are not granted
+          if (permissionStatus !== 'granted') {
+            Alert.alert(
+              'Permission Required',
+              'Push notifications could not be enabled. Please check your device settings.'
+            );
+            setNotificationsEnabled(false);
+            setSaving(false);
+            return;
+          } else {
+            // This is an unexpected error - permissions are granted but no token
+            console.error('Unexpected: Permission is granted but no token obtained');
+            // Continue anyway to save preferences
+          }
+        } else {
+          // We have a valid token, save it
+          try {
+            console.log('Saving push token to database:', token);
+            await savePushToken(user.id, token);
+            console.log('Successfully saved push token to database');
+          } catch (tokenError) {
+            console.error('Error saving push token:', tokenError);
+            // Continue even if token saving fails - we'll try again later
+          }
         }
         
         // Recheck the permission status after registration

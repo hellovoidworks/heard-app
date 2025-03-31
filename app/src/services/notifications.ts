@@ -40,28 +40,50 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
 
-    // Request permission
+    // Check current permission status
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    console.log('Current notification permission status:', existingStatus);
     let finalStatus = existingStatus;
     
+    // Only request if not already granted
     if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+      console.log('Requesting notification permissions...');
+      try {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+        console.log('New permission status after request:', finalStatus);
+      } catch (permError) {
+        console.error('Error requesting notification permissions:', permError);
+        // Continue anyway - the user might have manually granted permissions
+      }
+    } else {
+      console.log('Notification permissions already granted');
     }
     
-    if (finalStatus !== 'granted') {
-      console.log('Failed to get push token for push notification!');
-      return null;
-    }
-    
+    // Try to get token even if finalStatus isn't granted - the user might have
+    // manually enabled permissions in settings
     try {
       // Get push token
-      console.log('Getting Expo push token with projectId:', Constants.expoConfig?.extra?.eas?.projectId);
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+      console.log('Getting Expo push token with projectId:', projectId);
+      
+      if (!projectId) {
+        console.warn('No projectId found in Constants.expoConfig. This is required for push tokens.');
+      }
+      
       const response = await Notifications.getExpoPushTokenAsync({
-        projectId: Constants.expoConfig?.extra?.eas?.projectId,
+        projectId: projectId,
       });
+      
       token = response.data;
       console.log('Successfully obtained push token:', token);
+      
+      // If we got here, permissions must be granted regardless of what finalStatus says
+      if (finalStatus !== 'granted') {
+        console.log('Got token despite finalStatus not being granted. Updating status.');
+        // Cast to the correct type to avoid TypeScript errors
+        finalStatus = 'granted' as Notifications.PermissionStatus;
+      }
     } catch (error) {
       console.error('Error encountered while fetching Expo token:', error);
       return null;
