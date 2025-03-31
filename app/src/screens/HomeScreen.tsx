@@ -911,7 +911,11 @@ const HomeScreen = () => {
             onPress={handleDeliverAnotherLetter}
             loading={loadingMore}
             disabled={loadingMore || (profile?.stars ?? 0) < 1}
-            style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12, alignSelf: 'center' }]}
+            style={[styles.deliverMoreButton, { 
+              borderColor: (loadingMore || (profile?.stars ?? 0) < 1) ? '#888888' : '#FFFFFF', 
+              paddingHorizontal: 12, 
+              alignSelf: 'center' 
+            }]}
             textColor="#FFFFFF"
           >
             {(profile?.stars ?? 0) < 1 ? 
@@ -1107,7 +1111,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   deliverMoreButton: {
-    width: 280,
+    width: 320,
   },
   retryButton: {
     marginTop: 20,
