@@ -111,7 +111,6 @@ const LoginScreen = ({ navigation }: Props) => {
               {appleAuthAvailable && (
                 <TouchableOpacity 
                   style={styles.appleButtonContainer}
-                  onPress={handleSignInWithApple}
                   disabled={loading}
                 >
                   <AppleAuthentication.AppleAuthenticationButton
