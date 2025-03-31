@@ -3,7 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, Linking, Platform } from 'react-na
 import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
-import { registerForPushNotificationsAsync, checkNotificationPermissions } from '../../services/notifications';
+import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken } from '../../services/notifications';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
@@ -97,6 +97,17 @@ const NotificationSettingsScreen = () => {
           setSaving(false);
           return;
         }
+        
+        // Explicitly save the token to the push_tokens table
+        try {
+          console.log('Saving push token to database:', token);
+          await savePushToken(user.id, token);
+          console.log('Successfully saved push token to database');
+        } catch (tokenError) {
+          console.error('Error saving push token:', tokenError);
+          // Continue even if token saving fails - we'll try again later
+        }
+        
         // Recheck the permission status after registration
         checkSystemPermissions();
       }
