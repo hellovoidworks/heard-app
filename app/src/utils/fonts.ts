@@ -22,8 +22,8 @@ import {
 } from '@expo-google-fonts/source-code-pro';
 
 import {
-  RedactedScript_400Regular
-} from '@expo-google-fonts/redacted-script';
+  FlowCircular_400Regular
+} from '@expo-google-fonts/flow-circular';
 
 // Font configurations
 export const fontsToLoad = {
@@ -48,8 +48,8 @@ export const fontsToLoad = {
   SourceCodePro_800ExtraBold,
   SourceCodePro_900Black,
   
-  // Redacted Script font
-  RedactedScript_400Regular,
+  // Flow Circular font
+  FlowCircular_400Regular,
 };
 
 // Font names to use in style definitions
@@ -75,6 +75,6 @@ export const fontNames = {
   sourceCodeProExtraBold: 'SourceCodePro_800ExtraBold',
   sourceCodeProBlack: 'SourceCodePro_900Black',
   
-  // Redacted Script font family
-  redactedScriptRegular: 'RedactedScript_400Regular',
+  // Flow Circular font family
+  flowCircularRegular: 'FlowCircular_400Regular',
 }; 
