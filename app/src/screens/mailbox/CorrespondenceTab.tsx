@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
@@ -19,7 +19,11 @@ type Correspondence = {
   participants: string[];
 };
 
-const CorrespondenceTab = () => {
+type CorrespondenceTabProps = {
+  onUnreadCountChange?: (count: number) => void;
+};
+
+const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
   const [correspondences, setCorrespondences] = useState<Correspondence[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -74,9 +78,16 @@ const CorrespondenceTab = () => {
       }));
 
       setCorrespondences(formattedCorrespondences);
+      
+      // Calculate total unread count and notify parent component
+      const totalUnreadCount = formattedCorrespondences.reduce(
+        (total: number, item: Correspondence) => total + item.unread_count, 0
+      );
+      onUnreadCountChange?.(totalUnreadCount);
     } catch (error) {
       console.error('Error:', error);
       setCorrespondences([]);
+      onUnreadCountChange?.(0);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -101,47 +112,44 @@ const CorrespondenceTab = () => {
     <Card 
       style={[
         styles.card, 
-        { backgroundColor: theme.colors.surface },
-        item.unread_count > 0 && [styles.unreadCard, { backgroundColor: theme.colors.elevation.level2 }]
+        { backgroundColor: theme.colors.surface }
       ]} 
       onPress={() => handleCorrespondencePress(item)}
     >
-      <Card.Content>
-        <View style={styles.titleRow}>
-          <Title 
-            style={{ 
-              color: theme.colors.onSurface,
-              fontSize: 16,
-              lineHeight: 20,
-              fontWeight: '600',
-              flex: 1,
-              marginRight: 8
-            }}
+      <View style={styles.cardContainer}>
+        {item.unread_count > 0 && <View style={styles.unreadIndicator} />}
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.titleRow}>
+            <Title 
+              style={{ 
+                color: theme.colors.onSurface,
+                fontSize: 16,
+                lineHeight: 20,
+                fontWeight: '600',
+                flex: 1,
+                marginRight: 8
+              }}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {item.title}
+            </Title>
+            <Text style={{ color: theme.colors.onSurfaceDisabled, fontSize: 12 }}>
+              {format(new Date(item.mostRecentActivityDate), 'MMM d')}
+            </Text>
+          </View>
+          <Paragraph 
+            style={{ color: theme.colors.onSurface }}
             numberOfLines={2}
             ellipsizeMode="tail"
           >
-            {item.title}
-          </Title>
-          <Text style={{ color: theme.colors.onSurfaceDisabled, fontSize: 12 }}>
-            {format(new Date(item.mostRecentActivityDate), 'MMM d')}
-          </Text>
-        </View>
-        <Paragraph 
-          style={{ color: theme.colors.onSurface }}
-          numberOfLines={2}
-          ellipsizeMode="tail"
-        >
-          {item.content_preview}
-        </Paragraph>
-        <View style={styles.cardFooter}>
-          <View />
-          {item.unread_count > 0 && (
-            <Chip mode="flat" style={{ backgroundColor: theme.colors.primary }}>
-              {item.unread_count} new
-            </Chip>
-          )}
-        </View>
-      </Card.Content>
+            {item.content_preview}
+          </Paragraph>
+          <View style={styles.cardFooter}>
+            <View />
+          </View>
+        </Card.Content>
+      </View>
     </Card>
   );
 
@@ -192,9 +200,22 @@ const styles = StyleSheet.create({
   card: {
     marginBottom: 12,
   },
-  unreadCard: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#BB86FC',
+  cardContainer: {
+    position: 'relative',
+  },
+  cardContent: {
+    padding: 16, // Restore original padding
+    paddingTop: 24, // Add extra top padding to create space from the red circle
+  },
+  unreadIndicator: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'red',
+    zIndex: 1,
   },
   titleRow: {
     flexDirection: 'row',
