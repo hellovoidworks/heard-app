@@ -73,11 +73,13 @@
     "notification": {
       "icon": "./assets/notification-icon.png",
       "color": "#161616",
-      "iosDisplayInForeground": true
+      "iosDisplayInForeground": true,
+      "androidMode": "default",
+      "androidCollapsedTitle": "${title}"
     },
     "extra": {
       "eas": {
-        "projectId": "d4f1c6e8-a8b3-4e5f-9c7d-2b1a3e5f8c9d"
+        "projectId": "a3a69752-4412-4edf-ab67-fde51fdcfe0f"
       }
     },
     "build": {
