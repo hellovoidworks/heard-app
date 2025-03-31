@@ -428,10 +428,8 @@ const HomeScreen = () => {
           name: letter.category_name,
           color: letter.category_color
         },
-        author: {
-          display_name: letter.author_display_name,
-          username: letter.author_username
-        },
+        display_name: letter.display_name,
+        author: letter.author,
         is_read: letter.is_read,
         display_order: letter.display_order
       }));
