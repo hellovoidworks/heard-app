@@ -4,6 +4,7 @@ import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } fr
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
 import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken } from '../../services/notifications';
+import { testSavePushToken } from '../../services/test-notifications';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
@@ -13,6 +14,7 @@ const NotificationSettingsScreen = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [systemPermissionsGranted, setSystemPermissionsGranted] = useState(true);
+  const [testingToken, setTestingToken] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
@@ -252,6 +254,46 @@ const NotificationSettingsScreen = () => {
           </Button>
         )}
       </View>
+      
+      {/* Test Button for Developers */}
+      <View style={styles.devSection}>
+        <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+        <Text style={[styles.devTitle, { color: theme.colors.error }]}>Developer Testing</Text>
+        <Button
+          mode="outlined"
+          onPress={async () => {
+            if (!user) return;
+            
+            setTestingToken(true);
+            try {
+              const result = await testSavePushToken(user.id);
+              console.log('Test save token result:', result);
+              
+              if (result.success) {
+                Alert.alert(
+                  'Test Successful', 
+                  `Token saved successfully! Found ${result.tokensInDatabase} tokens in database.`
+                );
+              } else {
+                Alert.alert(
+                  'Test Failed', 
+                  `Error: ${result.error}`
+                );
+              }
+            } catch (error) {
+              console.error('Error in test token save:', error);
+              Alert.alert('Test Error', `Exception: ${error}`);
+            } finally {
+              setTestingToken(false);
+            }
+          }}
+          style={styles.testButton}
+          disabled={testingToken}
+          loading={testingToken}
+        >
+          Test Direct Token Save
+        </Button>
+      </View>
     </ScrollView>
   );
 };
@@ -259,6 +301,18 @@ const NotificationSettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  devSection: {
+    marginTop: 40,
+    paddingHorizontal: 16,
+  },
+  devTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginVertical: 8,
+  },
+  testButton: {
+    marginTop: 8,
   },
   loadingContainer: {
     flex: 1,

@@ -97,8 +97,13 @@ export async function registerForPushNotificationsAsync() {
 }
 
 export async function savePushToken(userId: string, token: string) {
+  console.log('===== SAVING PUSH TOKEN =====');
+  console.log('User ID:', userId);
+  console.log('Token:', token);
+  
   try {
     // First, check if this token already exists for this user
+    console.log('Checking if token already exists in push_tokens table...');
     const { data: existingTokens, error: fetchError } = await supabase
       .from('push_tokens')
       .select('*')
@@ -107,30 +112,59 @@ export async function savePushToken(userId: string, token: string) {
 
     if (fetchError) {
       console.error('Error checking existing push token:', fetchError);
+      console.error('Error details:', JSON.stringify(fetchError));
       return;
     }
 
+    console.log('Existing tokens query result:', existingTokens);
+    
     // If token doesn't exist, insert it
     if (!existingTokens || existingTokens.length === 0) {
-      const { error } = await supabase
+      console.log('Token does not exist, inserting new token...');
+      
+      const tokenData = {
+        user_id: userId,
+        token: token,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      console.log('Token data to insert:', tokenData);
+      
+      const { data: insertData, error } = await supabase
         .from('push_tokens')
-        .insert({
-          user_id: userId,
-          token: token,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+        .insert(tokenData)
+        .select();
 
       if (error) {
         console.error('Error saving push token:', error);
+        console.error('Error details:', JSON.stringify(error));
       } else {
         console.log('Successfully saved push token');
+        console.log('Insert result:', insertData);
       }
     } else {
       console.log('Push token already exists for this user');
+      console.log('Existing token record:', existingTokens[0]);
     }
+    
+    // Double-check that the token was saved
+    console.log('Verifying token was saved...');
+    const { data: verifyTokens, error: verifyError } = await supabase
+      .from('push_tokens')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (verifyError) {
+      console.error('Error verifying push token:', verifyError);
+    } else {
+      console.log('All tokens for user:', verifyTokens);
+    }
+    
+    console.log('===== PUSH TOKEN SAVE COMPLETE =====');
   } catch (error) {
-    console.error('Error saving push token:', error);
+    console.error('Exception saving push token:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
   }
 }
 

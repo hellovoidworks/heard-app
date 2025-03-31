@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { sendPushNotification } from './notifications';
+import { sendPushNotification, savePushToken, registerForPushNotificationsAsync } from './notifications';
 import * as Notifications from 'expo-notifications';
 
 /**
@@ -88,5 +88,51 @@ async function scheduleLocalNotification() {
   } catch (error) {
     console.error('Error scheduling local notification:', error);
     throw error;
+  }
+}
+
+/**
+ * Test function to directly register and save a push token
+ * This bypasses the notification settings screen and directly saves a token
+ * @param userId The user ID to save the token for
+ */
+export async function testSavePushToken(userId: string) {
+  console.log('Starting direct push token test for user:', userId);
+  
+  try {
+    // Get a push token
+    const token = await registerForPushNotificationsAsync();
+    
+    if (!token) {
+      console.error('Failed to get push token for testing');
+      return { success: false, error: 'No token obtained' };
+    }
+    
+    console.log('Successfully obtained test push token:', token);
+    
+    // Save the token directly
+    await savePushToken(userId, token);
+    
+    // Verify the token was saved
+    const { data, error } = await supabase
+      .from('push_tokens')
+      .select('*')
+      .eq('user_id', userId);
+      
+    if (error) {
+      console.error('Error verifying saved token:', error);
+      return { success: false, error };
+    }
+    
+    console.log('Push tokens for user after test:', data);
+    
+    return { 
+      success: true, 
+      token, 
+      tokensInDatabase: data?.length || 0 
+    };
+  } catch (error) {
+    console.error('Exception in testSavePushToken:', error);
+    return { success: false, error };
   }
 }
