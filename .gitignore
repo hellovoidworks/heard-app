@@ -117,3 +117,4 @@ yarn-error.*
 venv/
 *.pyc
 __pycache__/
+supabase/.temp/

@@ -3,8 +3,7 @@ import { View, StyleSheet, ScrollView, Alert, Linking, Platform } from 'react-na
 import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
-import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken } from '../../services/notifications';
-import { testSavePushToken } from '../../services/test-notifications';
+import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken, testSavePushToken } from '../../services/notifications';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
@@ -264,26 +263,64 @@ const NotificationSettingsScreen = () => {
           onPress={async () => {
             if (!user) return;
             
+            // Set a timeout to prevent infinite loading
+            const timeoutId = setTimeout(() => {
+              console.warn('Test token save operation timed out after 15 seconds');
+              Alert.alert(
+                'Operation Timed Out',
+                'The token save operation took too long. Check console logs for details.'
+              );
+              setTestingToken(false);
+            }, 15000); // 15 second timeout
+            
             setTestingToken(true);
+            console.log('Starting test token save operation...');
+            
             try {
+              // Log each step of the process
+              console.log('Step 1: Calling testSavePushToken for user:', user.id);
               const result = await testSavePushToken(user.id);
-              console.log('Test save token result:', result);
+              console.log('Step 2: Received result from testSavePushToken:', JSON.stringify(result, null, 2));
+              
+              // Clear the timeout since we got a response
+              clearTimeout(timeoutId);
               
               if (result.success) {
+                console.log('Step 3: Test successful');
                 Alert.alert(
                   'Test Successful', 
-                  `Token saved successfully! Found ${result.tokensInDatabase} tokens in database.`
+                  `Token saved successfully! ${result.message || ''}
+
+Token: ${result.token || 'N/A'}
+Tokens in DB: ${result.tokensInDatabase || 0}`
                 );
               } else {
+                console.warn('Step 3: Test failed with error:', result.error);
                 Alert.alert(
                   'Test Failed', 
-                  `Error: ${result.error}`
+                  `Error: ${result.error}
+
+Details: ${result.details || 'No details provided'}`
                 );
               }
             } catch (error) {
-              console.error('Error in test token save:', error);
-              Alert.alert('Test Error', `Exception: ${error}`);
+              // Clear the timeout since we got a response (even if it's an error)
+              clearTimeout(timeoutId);
+              
+              console.error('Unhandled exception in test token save:', error);
+              
+              // Try to extract more information from the error
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
+              
+              console.error('Error details:\nMessage:', errorMessage, '\nStack:', errorStack);
+              
+              Alert.alert(
+                'Test Error', 
+                `An unexpected error occurred: ${errorMessage}\n\nCheck the console logs for more details.`
+              );
             } finally {
+              console.log('Test token save operation completed');
               setTestingToken(false);
             }
           }}

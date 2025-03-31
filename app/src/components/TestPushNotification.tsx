@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { createTestNotification, sendTestPushNotification } from '../services/test-notifications';
+import { testSavePushToken, sendPushNotification } from '../services/notifications';
+import { supabase } from '../services/supabase';
+import * as Notifications from 'expo-notifications';
 
 /**
  * A component for testing push notifications
@@ -11,6 +13,27 @@ export const TestPushNotification = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+
+  // Schedule a local notification for immediate delivery
+  const scheduleLocalNotification = async () => {
+    try {
+      console.log('Scheduling local notification...');
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Local Test Notification',
+          body: 'This is a local test notification sent at ' + new Date().toLocaleTimeString(),
+          data: { test: true },
+          sound: true,
+        },
+        trigger: null, // null means send immediately
+      });
+      console.log('Local notification scheduled successfully');
+      return true;
+    } catch (error) {
+      console.error('Error scheduling local notification:', error);
+      return false;
+    }
+  };
 
   const handleTestDbNotification = async () => {
     if (!user) {
@@ -22,22 +45,58 @@ export const TestPushNotification = () => {
     setResult(null);
 
     try {
-      // First create the DB notification
-      const dbResponse = await createTestNotification(user.id);
+      // Create a test notification in the database based on the actual schema
+      const { data, error } = await supabase
+        .from('notifications')
+        .insert({
+          recipient_id: user.id,
+          sender_id: user.id, // Self-sent for testing
+          type: 'test',
+          read: false,
+          created_at: new Date().toISOString()
+        })
+        .select();
       
-      if (!dbResponse.success) {
-        setResult(`Error creating DB notification: ${JSON.stringify(dbResponse.error)}`);
+      if (error) {
+        setResult(`Error creating DB notification: ${error.message}`);
         return;
       }
       
-      // Then send a direct push notification
-      const pushResponse = await sendTestPushNotification(user.id);
-      
-      setResult(pushResponse.success 
-        ? 'Database notification created and push notification sent successfully!' 
-        : `DB notification created but push failed: ${JSON.stringify(pushResponse.error)}`);
+      // Try to send a push notification via Expo's sendPushNotification function
+      try {
+        const pushResult = await sendPushNotification(
+          user.id, 
+          'Test Push', 
+          'This is a test push notification', 
+          { test: true }
+        );
+        
+        if (!pushResult.success) {
+          console.warn('Edge function push failed, trying local notification');
+          // If the Edge Function fails, try a local notification as fallback
+          const localSuccess = await scheduleLocalNotification();
+          
+          if (localSuccess) {
+            setResult('Database notification created. Edge function failed but local notification sent successfully!');
+          } else {
+            setResult(`DB notification created but push failed: ${pushResult.error?.message || 'Unknown error'}. Local notification also failed.`);
+          }
+        } else {
+          setResult('Database notification created and push notification sent successfully!');
+        }
+      } catch (pushError) {
+        console.error('Push notification error:', pushError);
+        
+        // Try local notification as fallback
+        const localSuccess = await scheduleLocalNotification();
+        if (localSuccess) {
+          setResult('Database notification created. Edge function failed but local notification sent successfully!');
+        } else {
+          setResult(`DB notification created but push failed: ${pushError instanceof Error ? pushError.message : String(pushError)}`);
+        }
+      }
     } catch (error) {
-      setResult(`Exception: ${error}`);
+      setResult(`Exception: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -53,12 +112,34 @@ export const TestPushNotification = () => {
     setResult(null);
 
     try {
-      const response = await sendTestPushNotification(user.id);
-      setResult(response.success 
-        ? 'Push notification sent successfully!' 
-        : `Error: ${JSON.stringify(response.error)}`);
+      // Test saving the push token
+      const tokenResult = await testSavePushToken(user.id);
+      
+      if (tokenResult.success) {
+        setResult(`Push token saved successfully! Token: ${tokenResult.token || 'N/A'}`);
+      } else {
+        setResult(`Failed to save push token: ${tokenResult.error}\nDetails: ${tokenResult.details || 'No details provided'}`);
+      }
     } catch (error) {
-      setResult(`Exception: ${error}`);
+      setResult(`Exception: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestLocalNotification = async () => {
+    setLoading(true);
+    setResult(null);
+    
+    try {
+      const success = await scheduleLocalNotification();
+      if (success) {
+        setResult('Local notification sent successfully!');
+      } else {
+        setResult('Failed to send local notification');
+      }
+    } catch (error) {
+      setResult(`Exception: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setLoading(false);
     }
@@ -83,6 +164,14 @@ export const TestPushNotification = () => {
           disabled={loading || !user}
         >
           <Text style={styles.buttonText}>Test Direct Push</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={handleTestLocalNotification}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>Test Local Notification</Text>
         </TouchableOpacity>
       </View>
       

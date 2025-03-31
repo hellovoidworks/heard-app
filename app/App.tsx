@@ -12,6 +12,9 @@ import { fontsToLoad } from './src/utils/fonts';
 
 console.log('=== App initialization started ===');
 
+// Expo notifications are automatically initialized in the notifications.ts file
+console.log('Expo notifications configured');
+
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
 
