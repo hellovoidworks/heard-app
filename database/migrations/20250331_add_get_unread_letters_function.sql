@@ -25,21 +25,21 @@ DECLARE
 BEGIN
   -- Get user's read letters
   CREATE TEMP TABLE temp_read_letters ON COMMIT DROP AS
-  SELECT letter_id
-  FROM public.letter_reads
-  WHERE user_id = p_user_id;
+  SELECT lr.letter_id
+  FROM public.letter_reads lr
+  WHERE lr.user_id = p_user_id;
   
   -- Get user's received letters
   CREATE TEMP TABLE temp_received_letters ON COMMIT DROP AS
-  SELECT letter_id
-  FROM public.letter_received
-  WHERE user_id = p_user_id;
+  SELECT lrec.letter_id
+  FROM public.letter_received lrec
+  WHERE lrec.user_id = p_user_id;
   
   -- Get user's preferred categories
   CREATE TEMP TABLE temp_preferred_categories ON COMMIT DROP AS
-  SELECT category_id
-  FROM public.user_category_preferences
-  WHERE user_id = p_user_id;
+  SELECT ucp.category_id
+  FROM public.user_category_preferences ucp
+  WHERE ucp.user_id = p_user_id;
   
   -- First try to get unread letters from preferred categories that haven't been received
   CREATE TEMP TABLE temp_result_letters ON COMMIT DROP AS
@@ -139,17 +139,17 @@ BEGIN
   INSERT INTO public.letter_received (user_id, letter_id, received_at, display_order)
   SELECT 
     p_user_id AS user_id,
-    id AS letter_id,
+    trl.id AS letter_id,
     NOW() AS received_at,
-    display_order
-  FROM temp_result_letters
+    trl.display_order
+  FROM temp_result_letters trl
   ON CONFLICT (user_id, letter_id) 
   DO UPDATE SET display_order = EXCLUDED.display_order;
   
   -- Return the result set
   RETURN QUERY
-  SELECT * FROM temp_result_letters
-  ORDER BY display_order DESC;
+  SELECT * FROM temp_result_letters trl
+  ORDER BY trl.display_order DESC;
 END;
 $$ LANGUAGE plpgsql;
 
