@@ -18,11 +18,31 @@ const NotificationSettingsScreen = () => {
   useEffect(() => {
     fetchNotificationPreferences();
     checkSystemPermissions();
+    requestInitialPermissions();
   }, []);
 
   const checkSystemPermissions = async () => {
     const permissionStatus = await checkNotificationPermissions();
     setSystemPermissionsGranted(permissionStatus === 'granted');
+  };
+
+  const requestInitialPermissions = async () => {
+    console.log('Requesting initial notification permissions');
+    try {
+      // Request permissions without saving to profile yet
+      // This ensures the app shows up in iOS settings
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        console.log('Successfully obtained push token on screen open:', token);
+        // We don't save the token here - that happens when the user enables notifications
+      } else {
+        console.log('No push token obtained on screen open');
+      }
+      // Refresh permission status after request
+      checkSystemPermissions();
+    } catch (error) {
+      console.error('Error requesting initial notification permissions:', error);
+    }
   };
 
   const openSettings = () => {
