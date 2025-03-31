@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
   },
   rightColumn: {
     marginLeft: 8,
+    width: 75,
     alignSelf: 'flex-end',
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
@@ -235,12 +236,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   letterTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 8,
+    marginBottom: 6,
     color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 18,
+    lineHeight: 16,
     letterSpacing: -1,
   },
   letterContent: {
@@ -261,6 +262,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
+    fontFamily: 'SourceCodePro-SemiBold',
   },
   emptyContainer: {
     padding: 20,

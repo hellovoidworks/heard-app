@@ -730,8 +730,10 @@ const HomeScreen = () => {
 
   // Create redacted text using Flow Circular font
   const createRedactedText = useCallback((content: string) => {
+    // Ensure we have enough content to fill 2 lines
+    const minLength = Math.max(content.length, 60);
     // Limit content to what would reasonably fit in 2 lines
-    const truncatedContent = content.length > 100 ? content.substring(0, 100) + '...' : content;
+    const truncatedContent = content.length > 120 ? content.substring(0, 120) + '...' : content;
     
     return (
       <Text style={styles.redactedContent} numberOfLines={2} ellipsizeMode="tail">
@@ -1060,12 +1062,14 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
+    fontFamily: 'SourceCodePro-SemiBold',
   },
   redactedContent: {
     marginTop: -2,
     fontSize: 14,
     lineHeight: 18,
-    maxHeight: 36, // Allow for 2 lines at 18px line height
+    minHeight: 36, // Ensure space for exactly 2 lines
+    maxHeight: 36, // Limit to exactly 2 lines at 18px line height
     overflow: 'hidden',
     fontFamily: 'FlowCircular_400Regular',
     color: '#FFFFFF',

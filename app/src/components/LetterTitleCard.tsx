@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
+    fontFamily: 'SourceCodePro-SemiBold',
   },
   reactionText: {
     fontSize: 12,
