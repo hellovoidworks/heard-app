@@ -11,46 +11,44 @@ const MailboxScreen = () => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={[styles.tabBar, { backgroundColor: theme.colors.surface }]}>
-        <TouchableOpacity 
-          style={[
-            styles.tab, 
-            activeTab === 'correspondence' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]
-          ]} 
-          onPress={() => setActiveTab('correspondence')}
-        >
-          <View style={styles.tabTextContainer}>
+      <View style={[styles.tabBar, { backgroundColor: '#222222' }]}>
+          <TouchableOpacity 
+            style={[
+              styles.tab, 
+              activeTab === 'correspondence' && [styles.activeTab, { backgroundColor: theme.colors.primary }]
+            ]} 
+            onPress={() => setActiveTab('correspondence')}
+          >
+            <View style={styles.tabTextContainer}>
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'correspondence' ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
+              ]}>
+                My Responses
+              </Text>
+              {unreadCount > 0 && (
+                <View style={[styles.unreadBadge, activeTab === 'correspondence' ? { backgroundColor: '#FFFFFF' } : { backgroundColor: 'red' }]}>
+                  <Text style={[styles.unreadBadgeText, activeTab === 'correspondence' ? { color: theme.colors.primary } : { color: '#FFFFFF' }]}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[
+              styles.tab, 
+              activeTab === 'myLetters' && [styles.activeTab, { backgroundColor: theme.colors.primary }]
+            ]} 
+            onPress={() => setActiveTab('myLetters')}
+          >
             <Text style={[
               styles.tabText, 
-              { color: theme.colors.onSurface },
-              activeTab === 'correspondence' && { color: theme.colors.primary }
+              activeTab === 'myLetters' ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
             ]}>
-              My Responses
+              My Mail
             </Text>
-            {unreadCount > 0 && (
-              <View style={styles.unreadBadge}>
-                <Text style={styles.unreadBadgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[
-            styles.tab, 
-            activeTab === 'myLetters' && [styles.activeTab, { borderBottomColor: theme.colors.primary }]
-          ]} 
-          onPress={() => setActiveTab('myLetters')}
-        >
-          <Text style={[
-            styles.tabText, 
-            { color: theme.colors.onSurface },
-            activeTab === 'myLetters' && { color: theme.colors.primary }
-          ]}>
-            My Mail
-          </Text>
-        </TouchableOpacity>
+          </TouchableOpacity>
       </View>
       
       <View style={[styles.tabContent, { backgroundColor: theme.colors.background }]}>
@@ -68,6 +66,10 @@ const styles = StyleSheet.create({
   },
   tabBar: {
     flexDirection: 'row',
+    backgroundColor: '#222222',
+    borderRadius: 25,
+    padding: 4,
+    margin: 8,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -76,11 +78,14 @@ const styles = StyleSheet.create({
   },
   tab: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    borderRadius: 20,
+    marginHorizontal: 4,
   },
   activeTab: {
-    borderBottomWidth: 2,
+    // Pill style active indicator
   },
   tabTextContainer: {
     flexDirection: 'row',
@@ -89,9 +94,9 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontWeight: '500',
+    fontSize: 13,
   },
   unreadBadge: {
-    backgroundColor: 'red',
     borderRadius: 8,
     minWidth: 16,
     height: 16,
@@ -101,7 +106,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 3,
   },
   unreadBadgeText: {
-    color: 'white',
     fontSize: 10,
     fontWeight: '900',
   },

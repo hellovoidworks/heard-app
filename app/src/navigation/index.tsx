@@ -261,7 +261,37 @@ const MainNavigator = () => {
           },
         })}
       />
-      <Tab.Screen name="Mailbox" component={MailboxScreen} />
+      <Tab.Screen 
+        name="Mailbox" 
+        component={MailboxScreen} 
+        options={({ navigation }) => ({
+          headerTitle: () => null,
+          headerLeft: () => null,
+          headerRight: () => {
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                {/* Star indicator with count */}
+                <StarIndicator starCount={profile?.stars ?? 0} />
+                {/* Profile button */}
+                <Ionicons 
+                  name="person-circle-outline" 
+                  size={22} 
+                  color="#FFFFFF"
+                  style={{ marginRight: 15 }}
+                  onPress={() => {
+                    navigation.getParent()?.navigate('Profile');
+                  }}
+                />
+              </View>
+            );
+          },
+          headerStyle: {
+            backgroundColor: '#121212',
+          },
+          headerShadowVisible: false,
+          headerTitleAlign: 'left',
+        })}
+      />
     </Tab.Navigator>
   );
 };
