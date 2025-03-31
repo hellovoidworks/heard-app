@@ -18,15 +18,6 @@ import { StorageService, STORAGE_KEYS } from '../services/storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
-// Add timeout utility
-const timeoutPromise = (promise: Promise<any>, timeoutMs: number) => {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error(`Operation timed out after ${timeoutMs}ms`)), timeoutMs)
-    )
-  ]);
-};
 
 const HomeScreen = () => {
   const [letters, setLetters] = useState<LetterWithDetails[]>([]);
@@ -607,99 +598,7 @@ const HomeScreen = () => {
     }
   };
   
-  /**
-   * A simplified method to get letters
-   * This is used as a fallback when the main method times out
-   */
-  const getSimpleLetters = async (limit: number = INITIAL_LETTERS_LIMIT) => {
-    if (!user) return [];
-    
-    try {
-      console.log('DEBUG: Using simplified letter fetching method');
-      
-      // Simple query to get the most recent letters without complex filtering
-      const { data: letters, error } = await supabase
-        .from('letters')
-        .select(`
-          *,
-          category:categories(*),
-          author:user_profiles!letters_author_id_fkey(*)
-        `)
-        .neq('author_id', user.id) // Not written by the current user
-        .order('created_at', { ascending: false }) // Get newest first
-        .limit(limit);
-      
-      if (error) {
-        console.error('Error fetching simple letters:', error);
-        return [];
-      }
-      
-      if (!letters || letters.length === 0) {
-        console.log('No letters found with simplified query');
-        return [];
-      }
-      
-      console.log(`Found ${letters.length} letters with simplified query`);
-      
-      // Get read status for these letters
-      const letterIds = letters.map(letter => letter.id);
-      const { data: readData, error: readError } = await supabase
-        .from('letter_reads')
-        .select('letter_id')
-        .eq('user_id', user.id)
-        .in('letter_id', letterIds);
-        
-      if (readError) {
-        console.error('Error fetching read status:', readError);
-      }
-      
-      // Convert read data to a Set for faster lookups
-      const readLetterIds = new Set(readData ? readData.map(item => item.letter_id) : []);
-      
-      // Add read status to each letter
-      const lettersWithReadStatus = letters.map(letter => ({
-        ...letter,
-        is_read: readLetterIds.has(letter.id),
-        display_order: 0 // Default display order
-      }));
-      
-      // Track which letters were received by the user
-      if (lettersWithReadStatus.length > 0) {
-        try {
-          // Create letter_received entries for each letter
-          const baseOrder = 1000;
-          const letterReceivedEntries = lettersWithReadStatus.map((letter, index) => ({
-            user_id: user.id,
-            letter_id: letter.id,
-            received_at: new Date().toISOString(),
-            display_order: baseOrder + (lettersWithReadStatus.length - index - 1)
-          }));
-          
-          // Insert the records
-          const { error: insertError } = await supabase
-            .from('letter_received')
-            .upsert(letterReceivedEntries, { 
-              onConflict: 'user_id,letter_id', 
-              ignoreDuplicates: false 
-            });
-          
-          if (insertError) {
-            console.error('Error tracking received letters in simple method:', insertError);
-          } else {
-            console.log(`Tracked ${letterReceivedEntries.length} letters as received`);
-            setAnyLettersInWindow(true);
-          }
-        } catch (trackError) {
-          console.error('Error tracking received letters in simple method:', trackError);
-        }
-      }
-      
-      return lettersWithReadStatus;
-    } catch (error) {
-      console.error('Error in simplified letter fetching:', error);
-      return [];
-    }
-  };
+
 
   /**
    * Loads initial letters when the component mounts
@@ -734,60 +633,43 @@ const HomeScreen = () => {
       
       console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');
       
-      try {
-        // Set a 10-second timeout for this operation
-        const fetchedLetters = await timeoutPromise(getLettersForCurrentWindow(), 10000);
-        
-        console.log('DEBUG: getLettersForCurrentWindow returned', fetchedLetters?.length || 0, 'letters');
-        
-        if (fetchedLetters && fetchedLetters.length > 0) {
-          console.log(`Loaded ${fetchedLetters.length} letters successfully`);
-          setLetters(fetchedLetters);
-          // Save fetched letters to local storage
-          await saveLettersToStorage(fetchedLetters);
+      // Fetch letters directly without timeout fallback
+      const fetchedLetters = await getLettersForCurrentWindow();
+      
+      console.log('DEBUG: getLettersForCurrentWindow returned', fetchedLetters?.length || 0, 'letters');
+      
+      if (fetchedLetters && fetchedLetters.length > 0) {
+        console.log(`Loaded ${fetchedLetters.length} letters successfully`);
+        setLetters(fetchedLetters);
+        // Save fetched letters to local storage
+        await saveLettersToStorage(fetchedLetters);
+      } else {
+        console.log('No letters available to display, delivering new letters automatically');
+        // Automatically deliver new letters if none exist
+        const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+        if (newLetters && newLetters.length > 0) {
+          console.log(`Delivered ${newLetters.length} new letters automatically`);
+          
+          // Add new letters to animating set for animation
+          setAnimatingLetterIds(prev => {
+            const next = new Set(prev);
+            newLetters.forEach(letter => next.add(letter.id));
+            return next;
+          });
+          
+          const newLettersWithReadStatus = newLetters.map(letter => ({
+            ...letter,
+            is_read: false
+          }));
+          
+          setLetters(newLettersWithReadStatus);
+          setAnyLettersInWindow(true);
+          
+          // Save the new letters to local storage
+          await saveLettersToStorage(newLettersWithReadStatus);
         } else {
-          console.log('No letters available to display, delivering new letters automatically');
-          // Automatically deliver new letters if none exist
-          const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
-          if (newLetters && newLetters.length > 0) {
-            console.log(`Delivered ${newLetters.length} new letters automatically`);
-            
-            // Add new letters to animating set for animation
-            setAnimatingLetterIds(prev => {
-              const next = new Set(prev);
-              newLetters.forEach(letter => next.add(letter.id));
-              return next;
-            });
-            
-            const newLettersWithReadStatus = newLetters.map(letter => ({
-              ...letter,
-              is_read: false
-            }));
-            
-            setLetters(newLettersWithReadStatus);
-            setAnyLettersInWindow(true);
-            
-            // Save the new letters to local storage
-            await saveLettersToStorage(newLettersWithReadStatus);
-          } else {
-            console.log('No new letters available to deliver');
-            setLetters([]);
-          }
-        }
-      } catch (timeoutError) {
-        console.error('Letters loading timed out:', timeoutError);
-        // Try the simplified method as a fallback
-        console.log('Trying simplified letter fetching as fallback');
-        const simpleLetters = await getSimpleLetters();
-        if (simpleLetters && simpleLetters.length > 0) {
-          console.log(`Loaded ${simpleLetters.length} letters using simplified method`);
-          setLetters(simpleLetters);
-          // Save the simplified letters to local storage
-          await saveLettersToStorage(simpleLetters);
-        } else {
-          // Show empty state if all methods fail
+          console.log('No new letters available to deliver');
           setLetters([]);
-          setLoadError('Letter loading timed out. Please try refreshing or check your internet connection.');
         }
       }
     } catch (error) {
@@ -825,13 +707,8 @@ const HomeScreen = () => {
         // Add a big increment to ensure new letters have higher values
       }
       
-      // Apply timeout to letter fetching to prevent UI freezing
-      const fetchLettersPromise = getUnreadLettersNotByUser(MORE_LETTERS_LIMIT);
-      const moreLetters = await timeoutPromise(fetchLettersPromise, 8000).catch(error => {
-        console.error('Letter fetching timed out:', error);
-        // Use simplified method as fallback
-        return getSimpleLetters(MORE_LETTERS_LIMIT);
-      });
+      // Fetch letters directly without timeout fallback
+      const moreLetters = await getUnreadLettersNotByUser(MORE_LETTERS_LIMIT);
       
       if (!moreLetters || moreLetters.length === 0) {
         console.log('No more unread letters available');
