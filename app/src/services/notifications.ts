@@ -138,4 +138,38 @@ export async function removePushToken(userId: string, token?: string) {
   } catch (error) {
     console.error('Error removing push token(s):', error);
   }
-} 
+}
+
+/**
+ * Send a push notification to a specific user using Supabase Edge Function
+ * @param userId The ID of the user to send the notification to
+ * @param title The notification title
+ * @param body The notification body text
+ * @param data Optional additional data to include with the notification
+ */
+export async function sendPushNotification(userId: string, title: string, body: string, data?: Record<string, any>) {
+  try {
+    console.log('Sending push notification to user:', userId);
+    
+    // Get the current session to include the auth token
+    const { data: sessionData } = await supabase.auth.getSession();
+    
+    const { data: result, error } = await supabase.functions.invoke('send-push-notification', {
+      body: { userId, title, body, data },
+      headers: sessionData?.session ? {
+        Authorization: `Bearer ${sessionData.session.access_token}`
+      } : undefined
+    });
+
+    if (error) {
+      console.error('Error sending push notification:', error);
+      return { success: false, error };
+    }
+
+    console.log('Push notification sent successfully:', result);
+    return { success: true, result };
+  } catch (error) {
+    console.error('Exception sending push notification:', error);
+    return { success: false, error };
+  }
+}
