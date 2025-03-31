@@ -54,7 +54,7 @@ BEGIN
       l.mood_emoji,
       c.name AS category_name,
       c.color AS category_color,
-      up.display_name AS author_display_name,
+      up.username AS author_display_name,
       up.username AS author_username,
       FALSE AS is_read,
       (base_order + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
@@ -85,7 +85,7 @@ BEGIN
         l.mood_emoji,
         c.name AS category_name,
         c.color AS category_color,
-        up.display_name AS author_display_name,
+        up.username AS author_display_name,
         up.username AS author_username,
         FALSE AS is_read,
         (base_order + 500 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
@@ -118,7 +118,7 @@ BEGIN
         l.mood_emoji,
         c.name AS category_name,
         c.color AS category_color,
-        up.display_name AS author_display_name,
+        up.username AS author_display_name,
         up.username AS author_username,
         FALSE AS is_read,
         (base_order + 1000 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
