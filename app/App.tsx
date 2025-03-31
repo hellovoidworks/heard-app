@@ -4,11 +4,12 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { CategoryProvider } from './src/contexts/CategoryContext';
 import AppNavigator from './src/navigation';
 import { supabase } from './src/services/supabase';
-import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
+import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator, AppState } from 'react-native';
 import { darkTheme } from './src/utils/theme';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontsToLoad } from './src/utils/fonts';
+import * as Notifications from 'expo-notifications';
 
 console.log('=== App initialization started ===');
 
@@ -45,6 +46,21 @@ export default function App() {
   useEffect(() => {
     console.log('=== App useEffect running ===');
     
+    // --- Add AppState listener to clear notification badge ---
+    const handleAppStateChange = async (nextAppState: any) => {
+      if (nextAppState === 'active') {
+        console.log('App has come to the foreground, clearing badge count.');
+        await Notifications.setBadgeCountAsync(0);
+      }
+    };
+
+    // Clear badge immediately on app load
+    Notifications.setBadgeCountAsync(0);
+
+    // Subscribe to AppState changes
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    // --- End AppState listener ---
+
     // Handle deep linking for magic link authentication
     const handleDeepLink = async (url: string) => {
       console.log('Deep link received:', url);
@@ -225,6 +241,7 @@ export default function App() {
       console.log('Cleaning up App component listeners');
       subscription.remove();
       authListener?.subscription?.unsubscribe();
+      appStateSubscription.remove();
     };
   }, []);
 
