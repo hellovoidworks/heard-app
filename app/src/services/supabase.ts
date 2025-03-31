@@ -122,6 +122,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
   },
+  // Configure Edge Functions
+  global: {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  },
+  // Set the function URL format
+  // @ts-ignore - functionsUrl is valid but TypeScript definitions might be outdated
+  functionsUrl: `${supabaseUrl}/functions/v1`,
 });
 
 // Export types
