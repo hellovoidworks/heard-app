@@ -30,8 +30,10 @@
               "co.voidworks.heardapp"
             ]
           }
-        ]
-      }
+        ],
+        "UIBackgroundModes": ["remote-notification"]
+      },
+      "useFrameworks": "static"
     },
     "android": {
       "adaptiveIcon": {
@@ -59,11 +61,31 @@
     },
     "scheme": "heardapp",
     "plugins": [
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#161616"
+        }
+      ]
     ],
+    "notification": {
+      "icon": "./assets/notification-icon.png",
+      "color": "#161616",
+      "iosDisplayInForeground": true
+    },
     "extra": {
       "eas": {
         "projectId": "d4f1c6e8-a8b3-4e5f-9c7d-2b1a3e5f8c9d"
+      }
+    },
+    "build": {
+      "production": {
+        "ios": {
+          "credentialsSource": "local",
+          "appleTeamId": "DKQ9N3J9SS"
+        }
       }
     }
   }
