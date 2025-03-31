@@ -55,7 +55,18 @@ BEGIN
       c.name AS category_name,
       c.color AS category_color,
       l.display_name,
-      jsonb_build_object('username', up.username, 'id', up.id) AS author,
+      jsonb_build_object(
+        'id', up.id,
+        'username', up.username,
+        'avatar_url', up.avatar_url,
+        'notification_preferences', up.notification_preferences,
+        'created_at', up.created_at,
+        'updated_at', up.updated_at,
+        'birthdate', up.birthdate,
+        'onboarding_step', up.onboarding_step,
+        'onboarding_completed', up.onboarding_completed,
+        'stars', up.stars
+      ) AS author,
       FALSE AS is_read,
       (base_order + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
     FROM public.letters l
@@ -86,7 +97,18 @@ BEGIN
         c.name AS category_name,
         c.color AS category_color,
         l.display_name,
-        jsonb_build_object('username', up.username, 'id', up.id) AS author,
+        jsonb_build_object(
+        'id', up.id,
+        'username', up.username,
+        'avatar_url', up.avatar_url,
+        'notification_preferences', up.notification_preferences,
+        'created_at', up.created_at,
+        'updated_at', up.updated_at,
+        'birthdate', up.birthdate,
+        'onboarding_step', up.onboarding_step,
+        'onboarding_completed', up.onboarding_completed,
+        'stars', up.stars
+      ) AS author,
         FALSE AS is_read,
         (base_order + 500 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
       FROM public.letters l
@@ -119,7 +141,18 @@ BEGIN
         c.name AS category_name,
         c.color AS category_color,
         l.display_name,
-        jsonb_build_object('username', up.username, 'id', up.id) AS author,
+        jsonb_build_object(
+        'id', up.id,
+        'username', up.username,
+        'avatar_url', up.avatar_url,
+        'notification_preferences', up.notification_preferences,
+        'created_at', up.created_at,
+        'updated_at', up.updated_at,
+        'birthdate', up.birthdate,
+        'onboarding_step', up.onboarding_step,
+        'onboarding_completed', up.onboarding_completed,
+        'stars', up.stars
+      ) AS author,
         FALSE AS is_read,
         (base_order + 1000 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
       FROM public.letters l
