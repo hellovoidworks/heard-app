@@ -9,6 +9,7 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@expo-google-fonts/flow-circular": "^0.2.3",
     "@expo-google-fonts/inter": "^0.2.3",
     "@expo-google-fonts/redacted-script": "^0.2.3",
     "@expo-google-fonts/source-code-pro": "^0.2.3",
