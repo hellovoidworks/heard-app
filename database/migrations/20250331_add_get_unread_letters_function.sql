@@ -15,8 +15,8 @@ RETURNS TABLE (
   mood_emoji TEXT,
   category_name TEXT,
   category_color TEXT,
-  author_display_name TEXT,
-  author_username TEXT,
+  display_name TEXT,
+  author JSONB,
   is_read BOOLEAN,
   display_order INTEGER
 ) AS $$
@@ -54,8 +54,8 @@ BEGIN
       l.mood_emoji,
       c.name AS category_name,
       c.color AS category_color,
-      l.display_name AS author_display_name,
-      up.username AS author_username,
+      l.display_name,
+      jsonb_build_object('username', up.username, 'id', up.id) AS author,
       FALSE AS is_read,
       (base_order + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
     FROM public.letters l
@@ -85,8 +85,8 @@ BEGIN
         l.mood_emoji,
         c.name AS category_name,
         c.color AS category_color,
-        l.display_name AS author_display_name,
-        up.username AS author_username,
+        l.display_name,
+        jsonb_build_object('username', up.username, 'id', up.id) AS author,
         FALSE AS is_read,
         (base_order + 500 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
       FROM public.letters l
@@ -118,8 +118,8 @@ BEGIN
         l.mood_emoji,
         c.name AS category_name,
         c.color AS category_color,
-        l.display_name AS author_display_name,
-        up.username AS author_username,
+        l.display_name,
+        jsonb_build_object('username', up.username, 'id', up.id) AS author,
         FALSE AS is_read,
         (base_order + 1000 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
       FROM public.letters l
