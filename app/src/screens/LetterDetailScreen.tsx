@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -383,58 +383,69 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         animationType="slide"
         transparent={true}
         visible={responseModalVisible}
-        onRequestClose={() => setResponseModalVisible(false)}
+        onRequestClose={() => {
+          Keyboard.dismiss();
+          setResponseModalVisible(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <Surface style={[styles.bottomModalContent, { backgroundColor: theme.colors.surface }]}>
-            <View style={styles.modalHeader}>
-              <IconButton
-                icon="close"
-                size={20}
-                onPress={() => setResponseModalVisible(false)}
-                style={styles.closeButton}
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <Surface style={[styles.bottomModalContent, { backgroundColor: theme.colors.surface }]}>
+              <View style={styles.modalHeader}>
+                <IconButton
+                  icon="close"
+                  size={20}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setResponseModalVisible(false);
+                  }}
+                  style={styles.closeButton}
+                />
+              </View>
+              
+              <TextInput
+                value={responseText}
+                onChangeText={setResponseText}
+                placeholder="Write your reply..."
+                placeholderTextColor={theme.colors.onSurfaceDisabled}
+                multiline
+                numberOfLines={6}
+                style={[styles.responseInput, { 
+                  backgroundColor: 'transparent', 
+                  color: theme.colors.onSurface,
+                  textAlignVertical: 'top',
+                  minHeight: 150,
+                  fontSize: 16,
+                  paddingHorizontal: 0
+                }]}
+                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                selectionColor="white"
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+                mode="flat"
               />
-            </View>
-            
-            <TextInput
-              value={responseText}
-              onChangeText={setResponseText}
-              placeholder="Write your reply..."
-              placeholderTextColor={theme.colors.onSurfaceDisabled}
-              multiline
-              numberOfLines={6}
-              style={[styles.responseInput, { 
-                backgroundColor: 'transparent', 
-                color: theme.colors.onSurface,
-                textAlignVertical: 'top',
-                minHeight: 150,
-                fontSize: 16,
-                paddingHorizontal: 0
-              }]}
-              theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
-              selectionColor="white"
-              underlineColor="transparent"
-              activeUnderlineColor="transparent"
-              mode="flat"
-            />
-            
-            <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
-              <Button
-                mode="contained"
-                onPress={handleSendResponse}
-                disabled={!responseText.trim() || sendingResponse}
-                loading={sendingResponse}
-                style={{ flex: 1 }}
-              >
-                Send Reply +2{' '}
-                <Text style={{ 
-                  color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
-                  fontSize: 16
-                }}>★</Text>
-              </Button>
-            </View>
-          </Surface>
-        </View>
+              
+              <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+                <Button
+                  mode="contained"
+                  onPress={handleSendResponse}
+                  disabled={!responseText.trim() || sendingResponse}
+                  loading={sendingResponse}
+                  style={{ flex: 1 }}
+                >
+                  Send Reply +2{' '}
+                  <Text style={{ 
+                    color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
+                    fontSize: 16
+                  }}>★</Text>
+                </Button>
+              </View>
+            </Surface>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     );
   };
