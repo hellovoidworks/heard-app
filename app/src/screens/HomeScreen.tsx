@@ -1140,22 +1140,8 @@ const HomeScreen = () => {
     if (unreadLetters.length === 0) {
       return (
         <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
-          {renderNextWindowInfo()}
-          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-            <Button
-              mode="outlined"
-              onPress={handleDeliverAnotherLetter}
-              style={[styles.deliverButton, { borderColor: '#FFFFFF', paddingHorizontal: 12 }]}
-              loading={loadingMore}
-              disabled={loadingMore || (profile?.stars ?? 0) < 1}
-              textColor="#FFFFFF"
-            >
-              {(profile?.stars ?? 0) < 1 ? 
-                "WRITE OR REPLY TO GET STARS ★" : 
-                <>GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" /></>
-              }
-            </Button>
-          </Animated.View>
+          <Text style={styles.emptyText}>No unread mail</Text>
+          <Text style={styles.emptySubText}>Check back later or get new mail</Text>
         </View>
       );
     }
@@ -1165,7 +1151,7 @@ const HomeScreen = () => {
         data={unreadLetters}
         renderItem={renderLetterItem}
         keyExtractor={(item) => item.id}
-        ListHeaderComponent={renderHeader}
+        contentContainerStyle={{ paddingBottom: 120 }} // Increased padding to make room for the footer with extra spacing
       />
     );
   };
@@ -1175,24 +1161,37 @@ const HomeScreen = () => {
     
     return (
       <View style={styles.headerContainer}>
+        <Text style={styles.headerText}>Your Unread Mail</Text>
+      </View>
+    );
+  };
+  
+  // New function to render the footer with the countdown and button
+  const renderFooter = () => {
+    if (!user) return null;
+    
+    return (
+      <View style={styles.footerContainer}>
         <View style={styles.countdownContainer}>
           <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
             New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
           </Text>
         </View>
-        <Button 
-          mode="outlined"
-          onPress={deliverMoreLetters}
-          loading={loadingMore}
-          disabled={loadingMore || (profile?.stars ?? 0) < 1}
-          style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12, alignSelf: 'center' }]}
-          textColor="#FFFFFF"
-        >
-          {(profile?.stars ?? 0) < 1 ? 
-            "WRITE OR REPLY TO GET STARS ★" : 
-            <>GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" /></>
-          }
-        </Button>
+        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+          <Button 
+            mode="outlined"
+            onPress={handleDeliverAnotherLetter}
+            loading={loadingMore}
+            disabled={loadingMore || (profile?.stars ?? 0) < 1}
+            style={[styles.deliverMoreButton, { borderColor: '#FFFFFF', paddingHorizontal: 12, alignSelf: 'center' }]}
+            textColor="#FFFFFF"
+          >
+            {(profile?.stars ?? 0) < 1 ? 
+              "WRITE OR REPLY TO GET STARS ★" : 
+              <>GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" /></>
+            }
+          </Button>
+        </Animated.View>
       </View>
     );
   };
@@ -1200,6 +1199,7 @@ const HomeScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {renderContent()}
+      {renderFooter()}
     </View>
   );
 };
@@ -1344,6 +1344,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: 16,
     width: '100%',
+  },
+  headerText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'SourceCodePro-SemiBold',
+  },
+  footerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingTop: 12,
+    paddingBottom: 24, // Increased bottom padding to avoid overlap with the + circle button
+    paddingHorizontal: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 5,
   },
   countdownContainer: {
     marginBottom: 12,
