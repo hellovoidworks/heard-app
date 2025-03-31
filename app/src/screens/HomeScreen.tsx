@@ -107,7 +107,7 @@ const HomeScreen = () => {
             // Add new letters to animating set for animation
             setAnimatingLetterIds(prev => {
               const next = new Set(prev);
-              fetchedLetters.forEach(letter => next.add(letter.id));
+              fetchedLetters.forEach((letter: LetterWithDetails) => next.add(letter.id));
               return next;
             });
             
@@ -369,7 +369,7 @@ const HomeScreen = () => {
           console.log('DEBUG: Calling getUnreadLettersNotByUser');
           const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
           console.log('DEBUG: getUnreadLettersNotByUser returned', newLetters?.length || 0, 'letters');
-          return newLetters.map(letter => ({
+          return newLetters.map((letter: LetterWithDetails) => ({
             ...letter,
             is_read: false
           }));
@@ -389,7 +389,7 @@ const HomeScreen = () => {
 
   /**
    * Gets a specific number of unread letters not authored by the current user
-   * Returns random letters from all categories, prioritizing preferred categories
+   * Uses the database function get_unread_letters_not_by_user for improved performance
    * @param limit Number of letters to fetch
    */
   const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT) => {
@@ -398,198 +398,51 @@ const HomeScreen = () => {
     if (!user) return [];
     
     try {
-      // Fetch user data in parallel to reduce sequential database calls
-      const [readResult, preferencesResult, receivedResult] = await Promise.all([
-        // Get all read letter IDs for the current user
-        supabase
-          .from('letter_reads')
-          .select('letter_id')
-          .eq('user_id', user.id),
-        
-        // Get user's category preferences
-        supabase
-          .from('user_category_preferences')
-          .select('category_id')
-          .eq('user_id', user.id),
-          
-        // Get all letters already received by this user in any window
-        supabase
-          .from('letter_received')
-          .select('letter_id')
-          .eq('user_id', user.id)
-      ]);
+      // Call the optimized database function to get unread letters
+      const { data, error } = await supabase
+        .rpc('get_unread_letters_not_by_user', {
+          p_user_id: user.id,
+          p_limit: limit
+        });
       
-      // Handle errors and extract data
-      const readData = readResult.error ? [] : readResult.data || [];
-      const categoryPreferences = preferencesResult.error ? [] : preferencesResult.data || [];
-      const receivedData = receivedResult.error ? [] : receivedResult.data || [];
-      
-      if (readResult.error) {
-        console.error('Error fetching read letters:', readResult.error);
+      if (error) {
+        console.error('Error calling get_unread_letters_not_by_user:', error);
+        return [];
       }
       
-      if (preferencesResult.error) {
-        console.error('Error fetching category preferences:', preferencesResult.error);
+      if (!data || data.length === 0) {
+        console.log('No unread letters available');
+        return [];
       }
       
-      if (receivedResult.error) {
-        console.error('Error fetching previously received letters:', receivedResult.error);
-      }
-      
-      // Extract IDs into arrays/sets for faster lookups
-      const readLetterIds = readData.map(item => item.letter_id);
-      const readLetterIdSet = new Set(readLetterIds); // For faster lookups
-      const preferredCategoryIds = categoryPreferences.map(pref => pref.category_id);
-      const receivedLetterIds = receivedData.map(item => item.letter_id);
-      const receivedLetterIdSet = new Set(receivedLetterIds); // For faster lookups
-      
-      console.log(`DEBUG: User has read ${readLetterIds.length} letters`);
-      console.log(`User has ${preferredCategoryIds.length} preferred categories`);
-      console.log(`DEBUG: User has received ${receivedLetterIds.length} letters previously`);
-      
-      // If user has preferences, first try to get unread letters from preferred categories
-      let resultLetters: any[] = [];
-      
-      // Build query based on user preferences
-      const baseQuery = supabase
-        .from('letters')
-        .select(`
-          *,
-          category:categories(*),
-          author:user_profiles!letters_author_id_fkey(*)
-        `)
-        .neq('author_id', user.id); // Not written by the current user
-      
-      // Strategy: Try to get letters in a single query if possible
-      // If user has preferred categories, prioritize those
-      if (preferredCategoryIds.length > 0) {
-        console.log('DEBUG: Fetching letters with preferred categories');
-        
-        // Optimize query based on data size
-        let query = baseQuery.in('category_id', preferredCategoryIds);
-        
-        // For small to medium datasets, use direct filtering in the query
-        if (readLetterIds.length <= 100 && receivedLetterIds.length <= 100) {
-          // First try to get unread letters that haven't been received before
-          const { data: newPreferredLetters, error: newPreferredError } = await query
-            .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
-            .filter('id', 'not.in', receivedLetterIds.length > 0 ? `(${receivedLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
-            .order('created_at', { ascending: false })
-            .limit(limit);
-          
-          if (newPreferredError) {
-            console.error('Error fetching new preferred letters:', newPreferredError);
-          } else if (newPreferredLetters && newPreferredLetters.length > 0) {
-            console.log(`Found ${newPreferredLetters.length} new unread letters from preferred categories`);
-            resultLetters = newPreferredLetters;
-          }
-          
-          // If we didn't get enough new letters, try getting some that were received before
-          if (resultLetters.length < limit && receivedLetterIds.length > 0) {
-            const remainingLimit = limit - resultLetters.length;
-            console.log(`Fetching ${remainingLimit} more letters from previously received`);
-            
-            const { data: oldPreferredLetters, error: oldPreferredError } = await baseQuery
-              .in('category_id', preferredCategoryIds)
-              .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
-              .filter('id', 'in', receivedLetterIds.length > 0 ? `(${receivedLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
-              .order('created_at', { ascending: false })
-              .limit(remainingLimit);
-            
-            if (oldPreferredError) {
-              console.error('Error fetching old preferred letters:', oldPreferredError);
-            } else if (oldPreferredLetters) {
-              resultLetters = [...resultLetters, ...oldPreferredLetters];
-            }
-          }
-        } else {
-          // For larger datasets, fetch a batch and filter in memory
-          console.log('DEBUG: Large dataset detected, using optimized approach');
-          const { data: candidateLetters, error: candidateError } = await query
-            .order('created_at', { ascending: false })
-            .limit(Math.min(limit * 3, 100)); // Fetch more than we need to have enough after filtering
-          
-          if (candidateError) {
-            console.error('Error fetching candidate letters:', candidateError);
-          } else if (candidateLetters && candidateLetters.length > 0) {
-            // First prioritize letters that haven't been read or received before
-            const newUnreadLetters = candidateLetters.filter(letter => 
-              !readLetterIdSet.has(letter.id) && !receivedLetterIdSet.has(letter.id)
-            );
-            
-            // If we don't have enough, add letters that have been received but not read
-            if (newUnreadLetters.length < limit) {
-              const receivedUnreadLetters = candidateLetters.filter(letter => 
-                !readLetterIdSet.has(letter.id) && receivedLetterIdSet.has(letter.id)
-              );
-              
-              resultLetters = [...newUnreadLetters, ...receivedUnreadLetters].slice(0, limit);
-            } else {
-              resultLetters = newUnreadLetters.slice(0, limit);
-            }
-          }
-        }
-      }
-      
-      // If we didn't get enough letters from preferred categories, get more from any category
-      if (resultLetters.length < limit) {
-        const remainingLimit = limit - resultLetters.length;
-        console.log(`DEBUG: Fetching ${remainingLimit} fallback letters from any category`);
-        
-        // Create a set of IDs we already have to avoid duplicates
-        const existingIds = new Set(resultLetters.map(letter => letter.id));
-        
-        // Fetch letters from any category, prioritizing unread ones
-        const { data: fallbackLetters, error: fallbackError } = await baseQuery
-          .filter('id', 'not.in', readLetterIds.length > 0 ? `(${readLetterIds.join(',')})` : '(00000000-0000-0000-0000-000000000000)')
-          .order('created_at', { ascending: false })
-          .limit(remainingLimit * 2); // Fetch extra to account for filtering
-        
-        if (fallbackError) {
-          console.error('Error fetching fallback letters:', fallbackError);
-        } else if (fallbackLetters && fallbackLetters.length > 0) {
-          // Filter out any letters we already have
-          const newFallbackLetters = fallbackLetters.filter(letter => !existingIds.has(letter.id));
-          
-          console.log(`Found ${newFallbackLetters.length} fallback letters`);
-          resultLetters = [...resultLetters, ...newFallbackLetters.slice(0, remainingLimit)];
-        }
-      }
-      
-      // Track which letters were received by the user in a single batch operation
-      if (resultLetters.length > 0 && user) {
-        try {
-          console.log('DEBUG: Tracking letters as received');
-          // Create letter_received entries for each letter with display_order
-          const baseOrder = 1000;
-          const letterReceivedEntries = resultLetters.map((letter, index) => ({
-            user_id: user.id,
-            letter_id: letter.id,
-            received_at: new Date().toISOString(),
-            // Using descending display_order (latest first) - higher index = higher priority
-            display_order: baseOrder + (resultLetters.length - index - 1)
-          }));
-          
-          // Insert the records
-          const { error: insertError } = await supabase
-            .from('letter_received')
-            .upsert(letterReceivedEntries, { 
-              onConflict: 'user_id,letter_id', 
-              ignoreDuplicates: false // Update display_order if needed
-            });
-          
-          if (insertError) {
-            console.error('Error tracking received letters:', insertError);
-          } else {
-            console.log(`Tracked ${letterReceivedEntries.length} letters as received by user`);
-            setAnyLettersInWindow(true);
-          }
-        } catch (trackError) {
-          console.error('Error tracking received letters:', trackError);
-        }
-      }
+      // Transform the data to match the expected format
+      const resultLetters = data.map((letter: any) => ({
+        id: letter.id,
+        title: letter.title,
+        content: letter.content,
+        created_at: letter.created_at,
+        author_id: letter.author_id,
+        category_id: letter.category_id,
+        mood_emoji: letter.mood_emoji,
+        category: {
+          name: letter.category_name,
+          color: letter.category_color
+        },
+        author: {
+          display_name: letter.author_display_name,
+          username: letter.author_username
+        },
+        is_read: letter.is_read,
+        display_order: letter.display_order
+      }));
       
       console.log(`DEBUG: getUnreadLettersNotByUser - Returning ${resultLetters.length} letters`);
+      
+      // The database function already handles tracking letters as received
+      if (resultLetters.length > 0) {
+        setAnyLettersInWindow(true);
+      }
+      
       return resultLetters;
       
     } catch (error) {
@@ -653,11 +506,11 @@ const HomeScreen = () => {
           // Add new letters to animating set for animation
           setAnimatingLetterIds(prev => {
             const next = new Set(prev);
-            newLetters.forEach(letter => next.add(letter.id));
+            newLetters.forEach((letter: LetterWithDetails) => next.add(letter.id));
             return next;
           });
           
-          const newLettersWithReadStatus = newLetters.map(letter => ({
+          const newLettersWithReadStatus = newLetters.map((letter: LetterWithDetails) => ({
             ...letter,
             is_read: false
           }));
