@@ -103,6 +103,8 @@ const MyLettersTab = () => {
     // Use category color with opacity 0.2 for background
     const backgroundColor = `${categoryColor}33`; // 20% opacity
     const defaultMoodEmoji = '😊';
+    // Format the date to display in the top right corner (month and date only)
+    const formattedDate = format(new Date(item.created_at), 'MMM d');
 
     return (
       <Card
@@ -117,6 +119,10 @@ const MyLettersTab = () => {
         onPress={() => handleLetterPress(item)}
       >
         <Card.Content>
+          {/* Date display in top right */}
+          <View style={styles.dateContainer}>
+            <Text style={styles.dateText}>{formattedDate}</Text>
+          </View>
           <View style={styles.threeColumnLayout}>
             {/* Left column: Mood emoji */}
             <View style={styles.leftColumn}>
@@ -263,6 +269,20 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: 'center',
     fontFamily: 'SourceCodePro-SemiBold',
+  },
+  dateContainer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    zIndex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  dateText: {
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontFamily: 'SourceCodePro-Regular',
+    opacity: 0.8,
   },
   emptyContainer: {
     padding: 20,

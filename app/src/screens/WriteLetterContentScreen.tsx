@@ -102,6 +102,7 @@ const WriteLetterContentScreen = () => {
                 theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
                 selectionColor="white"
                 underlineColor="transparent"
+                activeUnderlineColor="transparent"
                 mode="flat"
               />
             </ScrollView>
