@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePreload } from '../../contexts/PreloadContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fontNames } from '../../utils/fonts';
 
@@ -19,6 +20,7 @@ interface Category {
 
 const CategoryPreferencesScreen = ({ navigation }: Props) => {
   const { user } = useAuth();
+  const { preloadedCategories } = usePreload();
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,9 +38,16 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   }, [user]);
 
   useEffect(() => {
-    console.log('Fetching categories...');
-    fetchCategories();
-  }, []);
+    console.log('Checking for preloaded categories...');
+    if (preloadedCategories && preloadedCategories.length > 0) {
+      console.log(`Using ${preloadedCategories.length} preloaded categories`);
+      setCategories(preloadedCategories);
+      setLoading(false);
+    } else {
+      console.log('No preloaded categories found, fetching from database...');
+      fetchCategories();
+    }
+  }, [preloadedCategories]);
 
   const fetchCategories = async () => {
     try {

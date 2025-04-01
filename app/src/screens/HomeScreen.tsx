@@ -452,6 +452,38 @@ const HomeScreen = () => {
 
 
   /**
+   * Checks if the user has just completed onboarding
+   */
+  const checkIfNewlyOnboarded = async () => {
+    if (!user) return false;
+    
+    try {
+      // Check if the user has any letters received
+      const { data: existingLetters, error: letterError } = await supabase
+        .from('letter_received')
+        .select('id')
+        .eq('user_id', user.id)
+        .limit(1);
+        
+      if (letterError) {
+        console.error('Error checking for existing letters:', letterError);
+        return false;
+      }
+      
+      // If user has no letters and has completed onboarding, they're newly onboarded
+      if (!existingLetters || existingLetters.length === 0) {
+        console.log('User has no existing letters, checking onboarding status');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error checking if newly onboarded:', error);
+      return false;
+    }
+  };
+
+  /**
    * Loads initial letters when the component mounts
    */
   const loadInitialLetters = async () => {
@@ -480,6 +512,14 @@ const HomeScreen = () => {
         // If letters exist but from a previous window, clear them
         console.log('Clearing stored letters from previous delivery window');
         await clearStoredLetters();
+      }
+      
+      // Check if this is a newly onboarded user with no letters
+      const isNewlyOnboarded = await checkIfNewlyOnboarded();
+      if (isNewlyOnboarded) {
+        console.log('Newly onboarded user detected, treating as new delivery window');
+        // Force the current window to be treated as a new window
+        setCurrentWindow(prev => ({ ...prev, isNewWindow: true }));
       }
       
       console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');

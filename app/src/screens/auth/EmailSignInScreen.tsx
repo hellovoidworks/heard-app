@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { TextInput, Button, Text, useTheme } from 'react-native-paper';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TextInput, Button, Text, useTheme, IconButton } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
@@ -15,6 +15,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [isValidEmail, setIsValidEmail] = useState(false);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Validate email whenever it changes
   useEffect(() => {
@@ -101,16 +102,20 @@ const EmailSignInScreen = ({ navigation }: Props) => {
       >
         <View style={styles.mainContainer}>
           {/* Header with back button */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-              <Text style={styles.backButtonText}>← Back</Text>
-            </TouchableOpacity>
+          <View style={[styles.header, { marginTop: insets.top > 0 ? insets.top + 16 : 32 }]}>
+            <IconButton
+              icon="arrow-left"
+              size={24}
+              onPress={handleBack}
+              iconColor={theme.colors.onBackground}
+            />
           </View>
 
           {/* Main content */}
           <View style={styles.content}>
             {!magicLinkSent ? (
               <>
+                <Text style={styles.emailIcon}>✉️</Text>
                 <Text style={styles.title}>Sign in with Email</Text>
                 
                 <Text style={styles.emailInstructions}>
@@ -159,10 +164,11 @@ const EmailSignInScreen = ({ navigation }: Props) => {
               </>
             ) : (
               <View style={styles.magicLinkSentContainer}>
+                <Text style={styles.emailIcon}>🔗</Text>
                 <Text style={styles.title}>Magic Link Sent</Text>
                 
                 <Text style={styles.magicLinkText}>
-                  Magic link sent! Check your email at {email} and click the link to sign in.
+                  Magic link sent! Check your email at {email} and click the button to sign in.
                 </Text>
                 
                 <Button
@@ -201,24 +207,24 @@ const styles = StyleSheet.create({
     height: 20,
   },
   header: {
-    padding: 16,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  backButton: {
-    padding: 8,
-  },
-  backButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    paddingHorizontal: 8,
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   content: {
     padding: 20,
     flex: 1,
   },
+  emailIcon: {
+    fontSize: 48,
+    textAlign: 'center',
+    marginBottom: 8, // Reduced from 16 to move title higher
+  },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '900', // Increased from 'bold' to make it bolder
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 30,

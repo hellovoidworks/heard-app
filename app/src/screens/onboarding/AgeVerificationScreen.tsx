@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePreload } from '../../contexts/PreloadContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { useFocusEffect } from '@react-navigation/native';
@@ -13,11 +14,13 @@ type Props = NativeStackScreenProps<OnboardingStackParamList, 'AgeVerification'>
 
 const AgeVerificationScreen = ({ navigation }: Props) => {
   const { user } = useAuth();
+  const { setPreloadedCategories } = usePreload();
   const [date, setDate] = useState(new Date(2000, 0, 1)); // Default to January 1, 2000
   const [showDatePicker, setShowDatePicker] = useState(Platform.OS === 'ios');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isOver18, setIsOver18] = useState(true); // Default to true for initial date (2000)
+  const [categoriesLoading, setCategoriesLoading] = useState(false);
   const theme = useTheme();
 
   // Reset loading state when screen comes into focus
@@ -32,10 +35,43 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   // Log navigation state for debugging
   useEffect(() => {
     console.log('AgeVerificationScreen mounted');
+    // Preload categories when the screen mounts
+    preloadCategories();
     return () => {
       console.log('AgeVerificationScreen unmounted');
     };
   }, []);
+  
+  // Preload categories to improve user experience
+  const preloadCategories = async () => {
+    if (categoriesLoading) return;
+    
+    setCategoriesLoading(true);
+    console.log('Preloading categories for better user experience...');
+    
+    try {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      
+      if (error) {
+        console.error('Error preloading categories:', error);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log(`Successfully preloaded ${data.length} categories`);
+        setPreloadedCategories(data);
+      } else {
+        console.warn('No categories found during preloading');
+      }
+    } catch (error) {
+      console.error('Exception in preloadCategories:', error);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
 
   const validateAge = (selectedDate: Date) => {
     // Calculate age
