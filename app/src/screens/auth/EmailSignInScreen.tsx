@@ -32,6 +32,13 @@ const EmailSignInScreen = ({ navigation }: Props) => {
       }
       StatusBar.setHidden(false);
       
+      // Force layout update to fix any sizing issues
+      setTimeout(() => {
+        if (Platform.OS === 'ios') {
+          StatusBar.setHidden(false);
+        }
+      }, 100);
+      
       return () => {
         // Cleanup if needed
       };
@@ -109,7 +116,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['bottom']}>
       {/* StatusBar is now managed by useFocusEffect */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidView}
@@ -200,6 +207,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#121212',
   },
   keyboardAvoidView: {
     flex: 1,
