@@ -158,20 +158,17 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
             borderWidth: 1,
             borderColor: categoryColor,
           },
-          isUnread && styles.unreadCard, // Style applied conditionally
+          isUnread && styles.unreadCard
         ]}
         onPress={() => handleCorrespondencePress(item)}
       >
         <View style={styles.cardContainer}>
-          {isUnread && <View style={styles.unreadIndicator} />} {/* Unread dot remains top-left */}
+          {isUnread && <View style={styles.unreadIndicator} />}
           <Card.Content style={styles.cardContent}>
-            {/* Top Row: Emoji | Title | Category */}
             <View style={styles.topRow}>
-              {/* Left: Emoji */}
               <View style={styles.emojiContainer}>
                 <Text style={styles.emojiText}>{moodEmoji}</Text>
               </View>
-              {/* Center: Title */}
               <View style={styles.titleContainer}>
                 <Title
                   style={styles.letterTitle}
@@ -181,7 +178,6 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
                   {item.letter_title}
                 </Title>
               </View>
-              {/* Right: Category */}
               <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}50` }]}>
                 <Text style={styles.categoryNameText}>
                   {categoryName.toUpperCase()}
@@ -189,9 +185,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
               </View>
             </View>
 
-            {/* Bottom Row: Reply Preview and Date */}
             <View style={styles.bottomRow}>
-              {/* Left Column: Reply Preview */}
               <View style={styles.replyPreviewContainer}>
                 <Paragraph
                   style={styles.letterContent}
@@ -211,8 +205,6 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
                   )}
                 </Paragraph>
               </View>
-              
-              {/* Right Column: Date */}
               <View style={styles.dateContainer}>
                 <Text style={styles.dateText}>
                   {format(new Date(item.most_recent_interaction_at), 'MMM d')}
