@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'NotificationPermission'>;
 
 const NotificationPermissionScreen = ({ navigation }: Props) => {
-  const { user } = useAuth();
+  const { user, checkOnboardingStatus } = useAuth();
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -151,16 +151,28 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   };
 
   const completeOnboarding = () => {
-    console.log('Completing onboarding, navigating to Main...');
+    console.log('Completing onboarding...');
     try {
-      // @ts-ignore - This is a workaround for navigation issues
-      navigation.navigate('Main');
-      console.log('Navigation successful');
+      // Instead of trying to navigate directly, we'll refresh the onboarding status
+      // This will cause the AppNavigator to re-render with isOnboardingComplete=true
+      // which will automatically show the Main screen
+      console.log('Checking onboarding status to trigger navigation change');
+      checkOnboardingStatus()
+        .then(() => {
+          console.log('Onboarding status checked successfully');
+        })
+        .catch((error) => {
+          console.error('Error checking onboarding status:', error);
+          Alert.alert(
+            'Error',
+            'Could not complete onboarding. Please restart the app.'
+          );
+        });
     } catch (error) {
-      console.error('Navigation failed:', error);
+      console.error('Onboarding completion failed:', error);
       Alert.alert(
-        'Navigation Error',
-        'Could not navigate to the main app. Please restart the app.'
+        'Error',
+        'Could not complete onboarding. Please restart the app.'
       );
     }
   };
