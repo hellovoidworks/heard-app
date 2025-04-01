@@ -350,8 +350,9 @@ const styles = StyleSheet.create({
   },
   skipButtonText: {
     color: '#FFFFFF',
-    fontSize: 14,
+    fontSize: 12,
     textAlign: 'center',
+    opacity: 0.7,
   },
 });
 
