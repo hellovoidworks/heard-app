@@ -391,9 +391,10 @@ const HomeScreen = () => {
    * Gets a specific number of unread letters not authored by the current user
    * Uses the database function get_unread_letters_not_by_user for improved performance
    * @param limit Number of letters to fetch
+   * @param forceDelivery If true, forces delivery even if there are no unread letters available
    */
-  const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT) => {
-    console.log('DEBUG: getUnreadLettersNotByUser - Start', limit);
+  const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT, forceDelivery: boolean = false) => {
+    console.log('DEBUG: getUnreadLettersNotByUser - Start', limit, forceDelivery ? '(forced)' : '');
     
     if (!user) return [];
     
@@ -470,9 +471,9 @@ const HomeScreen = () => {
         return false;
       }
       
-      // If user has no letters and has completed onboarding, they're newly onboarded
+      // If user has no letters, they're newly onboarded
       if (!existingLetters || existingLetters.length === 0) {
-        console.log('User has no existing letters, checking onboarding status');
+        console.log('User has no existing letters, treating as newly onboarded');
         return true;
       }
       
@@ -520,14 +521,24 @@ const HomeScreen = () => {
         console.log('Newly onboarded user detected, treating as new delivery window');
         // Force the current window to be treated as a new window
         setCurrentWindow(prev => ({ ...prev, isNewWindow: true }));
+        // Also set anyLettersInWindow to false to ensure we trigger letter delivery
+        setAnyLettersInWindow(false);
       }
       
       console.log('DEBUG: Calling getLettersForCurrentWindow with timeout...');
       
       // Fetch letters directly without timeout fallback
-      const fetchedLetters = await getLettersForCurrentWindow();
+      let fetchedLetters = await getLettersForCurrentWindow();
       
       console.log('DEBUG: getLettersForCurrentWindow returned', fetchedLetters?.length || 0, 'letters');
+      
+      // If no letters were returned and this is a newly onboarded user, force deliver letters
+      if ((!fetchedLetters || fetchedLetters.length === 0) && isNewlyOnboarded) {
+        console.log('No letters returned for newly onboarded user, forcing letter delivery');
+        // Force deliver letters for new users
+        fetchedLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
+        console.log('Forced delivery returned', fetchedLetters?.length || 0, 'letters');
+      }
       
       if (fetchedLetters && fetchedLetters.length > 0) {
         console.log(`Loaded ${fetchedLetters.length} letters successfully`);
@@ -892,12 +903,7 @@ const HomeScreen = () => {
             style={[styles.writeLetterButton, { backgroundColor: theme.colors.primary }]}
             labelStyle={styles.writeLetterButtonLabel}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              Write Mail +5
-              <View style={{ marginTop: 2, marginLeft: 2 }}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-              </View>
-            </View>
+            Write Mail +5<Ionicons name="star" size={16} color="#FFD700" />
           </Button>
         </View>
       );
