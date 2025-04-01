@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: 10, // Reduce overall padding
-    paddingVertical: 8, // Even less vertical padding
+    paddingVertical: 16, // Increased vertical padding for better spacing
   },
   topRow: {
     flexDirection: 'row',
