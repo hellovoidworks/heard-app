@@ -210,10 +210,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('AuthContext: Setting up auth state change listener');
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('AuthContext: Auth state changed:', event);
-        
+        console.log(`AuthContext: Auth event received: ${event}`);
+
+        switch (event) {
+          case 'INITIAL_SESSION':
+            console.log('AuthContext: Initial session established.');
+            break;
+          case 'SIGNED_IN':
+            console.log('AuthContext: User signed in.');
+            break;
+          case 'SIGNED_OUT':
+            console.log('AuthContext: User signed out.');
+            setProfile(null);
+            setUser(null);
+            setIsOnboardingComplete(null);
+            // Clear relevant async storage if needed on sign out
+            // await AsyncStorage.removeItem('some_key');
+            return; // No further profile fetching needed on sign out
+          case 'PASSWORD_RECOVERY':
+            console.log('AuthContext: Password recovery event.');
+            break;
+          case 'TOKEN_REFRESHED':
+            console.log('AuthContext: Token refreshed successfully.');
+            if (session) {
+              // Check if expires_at exists before using it
+              if (session.expires_at) {
+                console.log(`AuthContext: New token expires at: ${new Date(session.expires_at * 1000).toISOString()}`);
+              } else {
+                console.warn('AuthContext: TOKEN_REFRESHED event, session exists but expires_at is missing.');
+              }
+            } else {
+              console.warn('AuthContext: TOKEN_REFRESHED event received but session is null.');
+            }
+            break;
+          case 'USER_UPDATED':
+            console.log('AuthContext: User details updated.');
+            break;
+          default:
+            console.log(`AuthContext: Unhandled auth event: ${event}`);
+        }
+
         if (session?.user) {
-          console.log('AuthContext: User authenticated:', session.user.email, 'ID:', session.user.id);
+          console.log('AuthContext: Session exists. User authenticated:', session.user.email, 'ID:', session.user.id);
           setUser(session.user);
           
           try {
