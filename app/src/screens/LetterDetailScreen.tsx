@@ -17,12 +17,12 @@ type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 // Available reaction emojis
 const REACTION_EMOJIS = [
   { emoji: '❤️', name: 'heart' },
-  { emoji: '👍', name: 'thumbs_up' },
-  { emoji: '👏', name: 'clap' },
-  { emoji: '😊', name: 'smile' },
-  { emoji: '😢', name: 'sad' },
-  { emoji: '🙏', name: 'pray' },
-  { emoji: '💯', name: 'hundred' },
+  { emoji: '🥰', name: 'smiling_face_with_hearts' },
+  { emoji: '😍', name: 'heart_eyes' },
+  { emoji: '😘', name: 'kissing_heart' },
+  { emoji: '😂', name: 'joy' },
+  { emoji: '😲', name: 'astonished' },
+  { emoji: '😢', name: 'cry' },
   { emoji: '🔥', name: 'fire' },
 ];
 
@@ -386,9 +386,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   key={item.name}
                   style={[
                     styles.emojiButton,
-                    { backgroundColor: theme.colors.surfaceVariant },
-                    userReactions[item.emoji] && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }],
-                    sendingReaction && selectedEmoji === item.emoji && [styles.selectedEmojiButton, { backgroundColor: theme.colors.primary }]
+                    { backgroundColor: theme.colors.surfaceVariant }
                   ]}
                   onPress={() => handleReaction(item.emoji)}
                   disabled={sendingReaction}
@@ -719,19 +717,19 @@ const styles = StyleSheet.create({
   emojiGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     marginBottom: 16,
   },
   emojiButton: {
-    width: 60,
-    height: 60,
+    width: '22%',
+    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    margin: 4,
-    borderRadius: 30,
+    margin: '1.5%',
+    borderRadius: 9999, // Using a very large value ensures a perfect circle regardless of size
   },
   selectedEmojiButton: {
-    borderWidth: 2,
+    // No special styling for selected emoji buttons
   },
   emojiText: {
     fontSize: 24,
