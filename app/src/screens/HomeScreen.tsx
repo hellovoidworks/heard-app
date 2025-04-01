@@ -892,7 +892,12 @@ const HomeScreen = () => {
             style={[styles.writeLetterButton, { backgroundColor: theme.colors.primary }]}
             labelStyle={styles.writeLetterButtonLabel}
           >
-            Write Mail +5<Ionicons name="star" size={16} color="#FFD700" />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              Write Mail +5
+              <View style={{ marginTop: 2, marginLeft: 2 }}>
+                <Ionicons name="star" size={16} color="#FFD700" />
+              </View>
+            </View>
           </Button>
         </View>
       );
