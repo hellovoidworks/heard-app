@@ -1,4 +1,4 @@
--- Migration to redefine correspondences based on user pairs (letter author <-> replier)
+-- Migration to redefine correspondences based on user pairs (letter author <-> replier/reactor)
 
 CREATE OR REPLACE FUNCTION get_user_correspondences_by_pair(p_user_id UUID)
 RETURNS TABLE (
@@ -40,6 +40,24 @@ BEGIN
     LEFT JOIN public.categories c ON l.category_id = c.id 
     LEFT JOIN public.replies r ON l.id = r.letter_id
   ),
+  user_reactions AS (
+    -- Get all letters that the user has reacted to
+    SELECT
+      rc.letter_id,
+      l.author_id as letter_author_id,
+      l.title as letter_title,
+      l.created_at as letter_created_at,
+      c.name as category_name,
+      c.color as category_color,
+      l.mood_emoji,
+      rc.reaction_type,
+      rc.created_at as reaction_created_at
+    FROM public.reactions rc
+    JOIN public.letters l ON rc.letter_id = l.id
+    LEFT JOIN public.categories c ON l.category_id = c.id
+    WHERE rc.user_id = p_user_id
+      AND l.author_id != p_user_id -- Only include reactions to letters NOT written by the user
+  ),
   relevant_pairs AS (
     -- Identify unique conversation pairs involving p_user_id
     -- Pair 1: p_user_id is the letter author, other is a replier
@@ -71,10 +89,24 @@ BEGIN
       li.mood_emoji
     FROM letter_interactions li
     WHERE li.replier_id = p_user_id
-      AND li.letter_author_id != p_user_id 
+      AND li.letter_author_id != p_user_id
+      
+    UNION
+    
+    -- Pair 3: p_user_id reacted to a letter, other is the letter author
+    SELECT DISTINCT
+      ur.letter_id,
+      ur.letter_author_id as other_participant_id,
+      ur.letter_title,
+      ur.letter_author_id,
+      ur.letter_created_at,
+      ur.category_name,
+      ur.category_color,
+      ur.mood_emoji
+    FROM user_reactions ur
   ),
   pair_interactions AS (
-    -- Get all interactions (original letter post + replies) specifically between the pair for each letter
+    -- Get all interactions (original letter post + replies + reactions) specifically between the pair for each letter
     SELECT
       rp.letter_id,
       rp.other_participant_id,
@@ -110,6 +142,25 @@ BEGIN
     WHERE (r.author_id = p_user_id AND rp.other_participant_id = rp.letter_author_id) 
        OR (r.author_id = rp.other_participant_id AND rp.other_participant_id = r.author_id) 
        AND r.author_id IN (p_user_id, rp.other_participant_id)
+       
+    UNION ALL
+    
+    SELECT
+      rp.letter_id,
+      rp.other_participant_id,
+      rp.letter_title,
+      rp.letter_author_id,
+      rp.letter_created_at,
+      rp.category_name, 
+      rp.category_color, 
+      rp.mood_emoji,
+      -- Include reactions by the current user
+      p_user_id as interactor_id,
+      rc.created_at as interaction_at,
+      'Reacted with ' || rc.reaction_type as interaction_content
+    FROM relevant_pairs rp
+    JOIN public.reactions rc ON rp.letter_id = rc.letter_id
+    WHERE rc.user_id = p_user_id
   ),
   ranked_pair_interactions AS (
     -- Rank interactions within each pair to find the most recent
