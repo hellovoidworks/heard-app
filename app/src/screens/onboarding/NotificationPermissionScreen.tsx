@@ -332,7 +332,7 @@ const styles = StyleSheet.create({
   },
   handEmoji: {
     fontSize: 36,
-    marginLeft: 63, // Offset to the right from center
+    marginLeft: 135, // Offset to the right from center
   },
   buttonContainer: {
     width: '100%',
