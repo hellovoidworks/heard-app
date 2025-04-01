@@ -343,6 +343,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             }]}
             underlineColor="transparent"
             activeUnderlineColor="transparent"
+            selectionColor="#FFFFFF"
+            cursorColor="#FFFFFF"
             theme={{ colors: { text: theme.colors.onSurface } }}
           />
           <Button
