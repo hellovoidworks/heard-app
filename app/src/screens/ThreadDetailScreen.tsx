@@ -25,7 +25,7 @@ import LetterTitleCard from '../components/LetterTitleCard';
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
 const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId } = route.params; // Now using letterId instead of threadId
+  const { letterId, otherParticipantId } = route.params; // Get both IDs
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
   const [userReaction, setUserReaction] = useState<string | null>(null);
@@ -42,7 +42,12 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       setLoading(true);
       
-      if (!user || !letterId) return;
+      // Ensure we have all necessary IDs
+      if (!user || !letterId || !otherParticipantId) {
+        console.warn('Missing user, letterId, or otherParticipantId');
+        setLoading(false);
+        return;
+      }
 
       // Get the original letter
       const { data: letterData, error: letterError } = await supabase
@@ -79,34 +84,31 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           setUserReaction(reactionData.reaction_type);
         }
 
-        // Get only replies between the current user and the letter author
+        // Fetch ALL replies for the letter first
         const { data: repliesData, error: repliesError } = await supabase
-          .from('replies')
-          .select(`
-            id,
-            letter_id,
-            author_id,
-            display_name,
-            content,
-            reply_to_id,
-            created_at,
-            updated_at
-          `)
+          .from('replies') 
+          .select('*') // Select all columns for simplicity
           .eq('letter_id', letterId)
-          .or(`author_id.eq.${user.id},author_id.eq.${letterData.author_id}`)
           .order('created_at', { ascending: true });
 
         if (repliesError) {
           console.error('Error fetching replies:', repliesError);
+          setReplies([]); // Clear replies on error
           return;
         }
 
         if (repliesData) {
-          setReplies(repliesData as ReplyWithDetails[]);
+          // Filter replies to only include those between the current user and the specific other participant
+          const filteredReplies = repliesData.filter(reply => 
+            reply.author_id === user.id || reply.author_id === otherParticipantId
+          );
+
+          // Display only the filtered replies relevant to this specific conversation pair
+          setReplies(filteredReplies as ReplyWithDetails[]);
           
-          // Mark unread replies as read
-          const unreadReplyIds = repliesData
-            .filter(reply => reply.author_id !== user.id)
+          // Identify unread replies *from the other participant* in this specific thread
+          const unreadReplyIds = filteredReplies 
+            .filter(reply => reply.author_id === otherParticipantId) // Only consider replies from the other participant
             .map(reply => reply.id);
             
           if (unreadReplyIds.length > 0) {
@@ -191,7 +193,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchLetterAndReplies();
-  }, [letterId, user]);
+  }, [letterId, otherParticipantId, user]); // Add otherParticipantId dependency
 
   const handleRefresh = () => {
     setRefreshing(true);

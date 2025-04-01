@@ -12,14 +12,14 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 type Correspondence = {
   letter_id: string;
-  title: string;
-  content_preview: string;
-  mostRecentActivityDate: string;
-  unread_count: number;
-  participants: string[];
-  category_id?: string;
-  category_name?: string;
-  category_color?: string;
+  other_participant_id: string;
+  other_participant_name?: string;
+  letter_title: string;
+  letter_author_id: string;
+  most_recent_interaction_at: string;
+  most_recent_interaction_content: string;
+  most_recent_interactor_id: string;
+  unread_message_count: number;
 };
 
 type CorrespondenceTabProps = {
@@ -40,9 +40,8 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
       
       if (!user) return;
 
-      // Use the consolidated RPC function to fetch all correspondence data in a single query
       const { data, error } = await supabase.rpc(
-        'get_user_correspondences',
+        'get_user_correspondences_by_pair',
         { p_user_id: user.id }
       );
 
@@ -57,40 +56,54 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         return;
       }
 
-      // Define the type for the RPC function result
-      type CorrespondenceResult = {
+      type CorrespondencePairResult = {
         letter_id: string;
-        title: string;
-        content: string;
-        created_at: string;
-        author_id: string;
-        most_recent_activity_date: string;
-        most_recent_content: string;
-        unread_count: number;
-        participants: string[];
-        category_id?: string;
-        category_name?: string;
-        category_color?: string;
+        other_participant_id: string;
+        letter_title: string;
+        letter_author_id: string;
+        letter_created_at: string;
+        most_recent_interaction_at: string;
+        most_recent_interaction_content: string;
+        most_recent_interactor_id: string;
+        unread_message_count: number;
       };
 
-      // Format the correspondences from the RPC result
-      const formattedCorrespondences = data.map((item: CorrespondenceResult) => ({
+      const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id): id is string => id !== null);
+      const uniqueOtherParticipantIds = [...new Set(otherParticipantIds)];
+
+      let participantNames: { [key: string]: string } = {};
+      if (uniqueOtherParticipantIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, username')
+          .in('id', uniqueOtherParticipantIds);
+
+        if (profilesError) {
+          console.error('Error fetching participant profiles:', profilesError);
+        } else if (profilesData) { // Add explicit types for profile and accumulator
+          participantNames = profilesData.reduce((acc: { [key: string]: string }, profile: { id: string; username: string | null }) => {
+            acc[profile.id] = profile.username || 'Unknown User'; // Fallback name
+            return acc;
+          }, {} as { [key: string]: string });
+        }
+      }
+
+      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => ({
         letter_id: item.letter_id,
-        title: item.title,
-        content_preview: item.most_recent_content.substring(0, 100) + (item.most_recent_content.length > 100 ? '...' : ''),
-        mostRecentActivityDate: item.most_recent_activity_date,
-        unread_count: item.unread_count,
-        participants: item.participants,
-        category_id: item.category_id,
-        category_name: item.category_name,
-        category_color: item.category_color,
+        other_participant_id: item.other_participant_id,
+        other_participant_name: participantNames[item.other_participant_id] || 'User', // Use fetched name
+        letter_title: item.letter_title,
+        letter_author_id: item.letter_author_id,
+        most_recent_interaction_at: item.most_recent_interaction_at,
+        most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
+        most_recent_interactor_id: item.most_recent_interactor_id,
+        unread_message_count: item.unread_message_count,
       }));
 
       setCorrespondences(formattedCorrespondences);
-      
-      // Calculate total unread count and notify parent component
+
       const totalUnreadCount = formattedCorrespondences.reduce(
-        (total: number, item: Correspondence) => total + item.unread_count, 0
+        (total: number, item: Correspondence) => total + item.unread_message_count, 0
       );
       onUnreadCountChange?.(totalUnreadCount);
     } catch (error) {
@@ -113,15 +126,16 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
   };
 
   const handleCorrespondencePress = (correspondence: Correspondence) => {
-    // Navigate to the thread detail screen with the letter ID
-    navigation.navigate('ThreadDetail', { letterId: correspondence.letter_id });
+    navigation.navigate('ThreadDetail', {
+      letterId: correspondence.letter_id,
+      otherParticipantId: correspondence.other_participant_id,
+    });
   };
 
   const renderCorrespondenceItem = ({ item }: { item: Correspondence }) => {
-    const isUnread = item.unread_count > 0;
-    const categoryColor = item.category_color || '#FFFFFF';
-    // Use category color with opacity 0.2 for background
-    const backgroundColor = `${categoryColor}33`; // 20% opacity
+    const isUnread = item.unread_message_count > 0;
+    const categoryColor = '#CCCCCC';
+    const backgroundColor = `${categoryColor}33`;
 
     return (
       <Card 
@@ -140,40 +154,31 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
           {isUnread && <View style={styles.unreadIndicator} />}
           <Card.Content style={styles.cardContent}>
             <View style={styles.threeColumnLayout}>
-              {/* Left column: Empty or could be used for an icon */}
               <View style={styles.leftColumn}>
               </View>
-              
-              {/* Center column: Title and content preview */}
               <View style={styles.centerColumn}>
                 <Title 
                   style={styles.letterTitle}
-                  numberOfLines={2}
+                  numberOfLines={1}
                   ellipsizeMode="tail"
                 >
-                  {item.title}
+                  {item.letter_title}
                 </Title>
+                <Text style={styles.participantName}>
+                  Conversation with: {item.other_participant_name}
+                </Text>
                 <Paragraph 
                   style={styles.letterContent}
                   numberOfLines={2}
                   ellipsizeMode="tail"
                 >
-                  {item.content_preview}
+                  {item.most_recent_interaction_content}
                 </Paragraph>
               </View>
-              
-              {/* Right column: Date and category */}
               <View style={styles.rightColumn}>
                 <Text style={styles.dateText}>
-                  {format(new Date(item.mostRecentActivityDate), 'MMM d')}
+                  {format(new Date(item.most_recent_interaction_at), 'MMM d')}
                 </Text>
-                {item.category_name && (
-                  <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
-                    <Text style={styles.categoryName}>
-                      {item.category_name.toUpperCase()}
-                    </Text>
-                  </View>
-                )}
               </View>
             </View>
           </Card.Content>
@@ -195,7 +200,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
       <FlatList
         data={correspondences}
         renderItem={renderCorrespondenceItem}
-        keyExtractor={(item) => item.letter_id}
+        keyExtractor={(item) => `${item.letter_id}-${item.other_participant_id}`}
         contentContainerStyle={styles.listContent}
         refreshControl={
           <RefreshControl
@@ -241,17 +246,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     padding: 16,
-    paddingTop: 24, // Add extra top padding to create space from the unread indicator
-  },
-  unreadIndicator: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'red',
-    zIndex: 1,
+    paddingTop: 24,
   },
   threeColumnLayout: {
     flexDirection: 'row',
@@ -273,12 +268,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   letterTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     marginBottom: 6,
     color: '#FFFFFF',
     lineHeight: 16,
     letterSpacing: -1,
+  },
+  participantName: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    marginBottom: 4,
   },
   letterContent: {
     fontSize: 14,
@@ -291,31 +292,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     opacity: 0.8,
   },
-  categoryContainer: {
-    borderRadius: 8,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryName: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    opacity: 0.9,
-    textAlign: 'center',
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 8,
-  },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -324,4 +300,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CorrespondenceTab; 
+export default CorrespondenceTab;

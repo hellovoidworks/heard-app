@@ -11,7 +11,10 @@ export type RootStackParamList = {
     onClose?: () => void;
   };
   MyLetterDetail: { letterId: string; };
-  ThreadDetail: { letterId: string };
+  ThreadDetail: { 
+    letterId: string;
+    otherParticipantId: string; // Added for pair-based threading
+  };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   WriteLetterContent: { title?: string; content?: string };
   WriteLetterDetails: { title: string; content: string; categoryId?: string };
