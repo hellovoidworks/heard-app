@@ -871,7 +871,14 @@ const HomeScreen = () => {
       return (
         <View style={[styles.emptyContainer, { backgroundColor: theme.colors.background }]}>
           <Text style={styles.emptyText}>No unread mail</Text>
-          <Text style={styles.emptySubText}>Check back later or get new mail</Text>
+          <Button
+            mode="contained"
+            onPress={() => navigation.navigate('WriteLetter', {})}
+            style={[styles.writeLetterButton, { backgroundColor: theme.colors.primary }]}
+            labelStyle={styles.writeLetterButtonLabel}
+          >
+            Write Mail +5<Ionicons name="star" size={16} color="#FFD700" />
+          </Button>
         </View>
       );
     }
@@ -988,6 +995,14 @@ const styles = StyleSheet.create({
   writeButton: {
     marginTop: 10,
     width: '80%',
+  },
+  writeLetterButton: {
+    marginTop: 20,
+    paddingHorizontal: 16,
+  },
+  writeLetterButtonLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   buttonLabel: {
     fontSize: 14,
