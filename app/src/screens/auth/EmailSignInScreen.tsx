@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
@@ -21,29 +20,6 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   useEffect(() => {
     validateEmail(email);
   }, [email]);
-  
-  // Reset StatusBar when this screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      // This ensures the StatusBar is properly set when the screen is focused
-      StatusBar.setBarStyle('light-content');
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#121212');
-      }
-      StatusBar.setHidden(false);
-      
-      // Force layout update to fix any sizing issues
-      setTimeout(() => {
-        if (Platform.OS === 'ios') {
-          StatusBar.setHidden(false);
-        }
-      }, 100);
-      
-      return () => {
-        // Cleanup if needed
-      };
-    }, [])
-  );
 
   // Simple email validation function
   const validateEmail = (text: string) => {
@@ -117,19 +93,21 @@ const EmailSignInScreen = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['bottom']}>
-      {/* StatusBar is now managed by useFocusEffect */}
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.mainContainer}>
+          {/* Header with back button */}
           <View style={styles.header}>
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
           </View>
 
+          {/* Main content */}
           <View style={styles.content}>
             {!magicLinkSent ? (
               <>
@@ -198,7 +176,10 @@ const EmailSignInScreen = ({ navigation }: Props) => {
               </View>
             )}
           </View>
-        </ScrollView>
+          
+          {/* Empty view to push content up when keyboard appears */}
+          <View style={styles.spacer} />
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -212,8 +193,12 @@ const styles = StyleSheet.create({
   keyboardAvoidView: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
+  mainContainer: {
+    flex: 1,
+    paddingTop: Platform.OS === 'ios' ? 20 : 10,
+  },
+  spacer: {
+    height: 20,
   },
   header: {
     padding: 16,

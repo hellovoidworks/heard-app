@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useFocusEffect } from '@react-navigation/native';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, Title, Divider, IconButton, useTheme } from 'react-native-paper';
@@ -29,29 +28,6 @@ const LoginScreen = ({ navigation }: Props) => {
     
     checkAppleAuthAvailability();
   }, []);
-  
-  // Reset StatusBar when this screen comes into focus
-  useFocusEffect(
-    React.useCallback(() => {
-      // This ensures the StatusBar is properly set when the screen is focused
-      StatusBar.setBarStyle('light-content');
-      if (Platform.OS === 'android') {
-        StatusBar.setBackgroundColor('#121212');
-      }
-      StatusBar.setHidden(false);
-      
-      // Force layout update to fix any sizing issues
-      setTimeout(() => {
-        if (Platform.OS === 'ios') {
-          StatusBar.setHidden(false);
-        }
-      }, 100);
-      
-      return () => {
-        // Cleanup if needed
-      };
-    }, [])
-  );
 
   const handleSignInWithApple = async () => {
     try {
@@ -108,64 +84,61 @@ const LoginScreen = ({ navigation }: Props) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['bottom']}>
-      {/* StatusBar is now managed by useFocusEffect */}
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
-      >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.logoContainer}>
+      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+      <View style={styles.mainContainer}>
+        {/* Logo at the top */}
+        <View style={styles.logoContainer}>
+          <Image 
+            source={require('../../../assets/logo.png')} 
+            style={styles.logo} 
+            resizeMode="contain"
+          />
+        </View>
+
+        {/* Main content in the middle */}
+        <View style={styles.content}>
+          <View style={styles.mainImageContainer}>
             <Image 
-              source={require('../../../assets/logo.png')} 
-              style={styles.logo} 
+              source={require('../../assets/main-1.png')} 
+              style={styles.mainImage} 
               resizeMode="contain"
             />
           </View>
-
-          <View style={styles.content}>
-            <View style={styles.mainImageContainer}>
-              <Image 
-                source={require('../../assets/main-1.png')} 
-                style={styles.mainImage} 
-                resizeMode="contain"
+        </View>
+        
+        {/* Buttons at the bottom */}
+        <View style={styles.buttonsContainer}>
+          {appleAuthAvailable && (
+            <TouchableOpacity 
+              style={styles.appleButtonContainer}
+              disabled={loading}
+            >
+              <AppleAuthentication.AppleAuthenticationButton
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                cornerRadius={30}
+                style={styles.appleButton}
+                onPress={handleSignInWithApple}
               />
-            </View>
-
-            <View style={styles.buttonsContainer}>
-              {appleAuthAvailable && (
-                <TouchableOpacity 
-                  style={styles.appleButtonContainer}
-                  disabled={loading}
-                >
-                  <AppleAuthentication.AppleAuthenticationButton
-                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                    cornerRadius={30}
-                    style={styles.appleButton}
-                    onPress={handleSignInWithApple}
-                  />
-                </TouchableOpacity>
-              )}
-              
-              <TouchableOpacity
-                style={styles.emailButtonContainer}
-                onPress={handleEmailSignIn}
-                disabled={loading}
-              >
-                <LinearGradient
-                  colors={['#62DDD2', '#9292FF']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientButton}
-                >
-                  <Text style={styles.emailButtonText}>Sign in with Email</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            </TouchableOpacity>
+          )}
+          
+          <TouchableOpacity
+            style={styles.emailButtonContainer}
+            onPress={handleEmailSignIn}
+            disabled={loading}
+          >
+            <LinearGradient
+              colors={['#62DDD2', '#9292FF']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.gradientButton}
+            >
+              <Text style={styles.emailButtonText}>Sign in with Email</Text>
+            </LinearGradient>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
@@ -175,30 +148,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
   },
-  keyboardAvoidView: {
+  mainContainer: {
     flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
+    paddingTop: Platform.OS === 'ios' ? 50 : 30, // Account for status bar
     justifyContent: 'space-between',
   },
   logoContainer: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 20,
+    paddingTop: 20,
   },
   logo: {
     width: 250,
     height: 100,
   },
   content: {
-    padding: 20,
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   mainImageContainer: {
     alignItems: 'center',
-    marginBottom: 30,
   },
   mainImage: {
     width: '100%',
@@ -206,7 +176,8 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     width: '100%',
-    marginTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
     alignItems: 'center',
   },
   appleButtonContainer: {
