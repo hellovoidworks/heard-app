@@ -230,11 +230,22 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     if (!loading && replies.length > 0) {
+      // Scroll to the end of the conversation
       setTimeout(() => {
         scrollViewRef.current?.scrollToEnd({ animated: false });
       }, 200);
+      
+      // Mark all replies from the other participant as read
+      const unreadReplyIds = replies
+        .filter(reply => reply.author_id === otherParticipantId)
+        .map(reply => reply.id);
+        
+      if (unreadReplyIds.length > 0) {
+        console.log('[ThreadDetailScreen] Marking replies as read:', unreadReplyIds);
+        markRepliesAsRead(unreadReplyIds);
+      }
     }
-  }, [loading, replies.length]);
+  }, [loading, replies.length, otherParticipantId, markRepliesAsRead]);
 
   const canReply = useMemo(() => {
     if (!user) return false;

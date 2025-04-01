@@ -3,7 +3,7 @@ import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
@@ -37,7 +37,8 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
-  const fetchCorrespondences = async () => {
+  // Main fetch function that shows loading indicator
+  const fetchCorrespondences = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -123,11 +124,104 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user, onUnreadCountChange]);
 
   useEffect(() => {
     fetchCorrespondences();
   }, [user]);
+  
+  // Background refresh function that doesn't show loading indicator
+  const refreshInBackground = useCallback(async () => {
+    try {
+      if (!user) return;
+
+      console.log('[CorrespondenceTab] Refreshing in background');
+      
+      const { data, error } = await supabase.rpc(
+        'get_user_correspondences_by_pair',
+        { p_user_id: user.id }
+      );
+
+      if (error) {
+        console.error('Error fetching correspondences:', error);
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        setCorrespondences([]);
+        onUnreadCountChange?.(0);
+        return;
+      }
+
+      type CorrespondencePairResult = {
+        letter_id: string;
+        other_participant_id: string;
+        letter_title: string;
+        letter_author_id: string;
+        letter_created_at: string;
+        category_name: string | null;
+        category_color: string | null;
+        most_recent_interaction_at: string;
+        most_recent_interaction_content: string;
+        most_recent_interactor_id: string;
+        unread_message_count: number;
+        mood_emoji: string | null;
+      };
+
+      const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
+      const uniqueOtherParticipantIds = [...new Set(otherParticipantIds)];
+
+      let participantNames: { [key: string]: string } = {};
+      if (uniqueOtherParticipantIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('id, username')
+          .in('id', uniqueOtherParticipantIds);
+
+        if (profilesError) {
+          console.error('Error fetching participant profiles:', profilesError);
+        } else if (profilesData) {
+          participantNames = profilesData.reduce((acc: { [key: string]: string }, profile: { id: string; username: string | null }) => {
+            acc[profile.id] = profile.username || 'Unknown User';
+            return acc;
+          }, {} as { [key: string]: string });
+        }
+      }
+
+      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => ({
+        letter_id: item.letter_id,
+        other_participant_id: item.other_participant_id,
+        other_participant_name: participantNames[item.other_participant_id] || 'User',
+        letter_title: item.letter_title,
+        letter_author_id: item.letter_author_id,
+        most_recent_interaction_at: item.most_recent_interaction_at,
+        most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
+        most_recent_interactor_id: item.most_recent_interactor_id,
+        unread_message_count: item.unread_message_count,
+        category_name: item.category_name,
+        category_color: item.category_color,
+        mood_emoji: item.mood_emoji,
+      }));
+
+      setCorrespondences(formattedCorrespondences);
+
+      const totalUnreadCount = formattedCorrespondences.reduce(
+        (total: number, item: Correspondence) => total + item.unread_message_count, 0
+      );
+      onUnreadCountChange?.(totalUnreadCount);
+    } catch (error) {
+      console.error('Error in background refresh:', error);
+    }
+  }, [user, onUnreadCountChange]);
+
+  // Automatically refresh the correspondence list when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      console.log('[CorrespondenceTab] Screen came into focus, refreshing correspondences in background');
+      refreshInBackground();
+      return () => {};
+    }, [refreshInBackground])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
