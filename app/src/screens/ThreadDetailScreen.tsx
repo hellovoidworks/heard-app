@@ -283,16 +283,6 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      {letter && <LetterTitleCard letter={letter} />}
-      
-      {userReaction && (
-        <View style={styles.reactionContainer}>
-          <Text style={[styles.reactionText, { backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16 }]}>
-            You reacted with {userReaction.emoji} on {userReaction.date}
-          </Text>
-        </View>
-      )}
-      
       <ScrollView
         ref={scrollViewRef}
         style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
@@ -300,6 +290,18 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           paddingBottom: canReply ? 8 : Math.max(insets.bottom, 16) 
         }}
       >
+        {/* Letter Title Card */}
+        {letter && <LetterTitleCard letter={letter} />}
+        
+        {/* User Reaction */}
+        {userReaction && (
+          <View style={styles.reactionContainer}>
+            <Text style={[styles.reactionText, { backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16 }]}>
+              You reacted with {userReaction.emoji} on {userReaction.date}
+            </Text>
+          </View>
+        )}
+        
         {/* Original Letter */}
         <Paragraph style={[styles.originalLetter, { color: theme.colors.onSurface }]}>
           {letter.content}
