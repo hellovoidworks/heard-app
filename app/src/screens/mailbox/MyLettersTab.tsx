@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -21,6 +22,19 @@ type Letter = {
     color: string;
   } | null;
   mood_emoji?: string;
+  view_count: number;
+  reply_count: number;
+  reaction_count: number;
+};
+
+// Helper function to format numbers (e.g., 1100 -> 1.1k)
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'k';
+  }
+  return num.toString();
 };
 
 const MyLettersTab = () => {
@@ -37,23 +51,15 @@ const MyLettersTab = () => {
       
       if (!user) return;
 
-      // Get all letters authored by the user
+      // Get all letters with their stats in a single query using the fixed database function
       const { data, error } = await supabase
-        .from('letters')
-        .select(`
-          id,
-          title,
-          content,
-          created_at,
-          category:categories(id, name, color),
-          mood_emoji
-        `)
-        .eq('author_id', user.id)
-        // No longer filtering by parent_id as we've moved to using the replies table
-        .order('created_at', { ascending: false });
+        .rpc('get_my_letters_with_stats', { user_id: user.id });
+        
+      // Debug: Log the raw data to see what we're getting from the database
+      console.log('Raw letter data from database:', data ? data.slice(0, 2) : 'No data');
 
       if (error) {
-        console.error('Error fetching letters:', error);
+        console.error('Error fetching letters with stats:', error);
         return;
       }
 
@@ -64,19 +70,29 @@ const MyLettersTab = () => {
         return;
       }
 
-      // Process the data to ensure category is correctly formatted
-      const processedLetters = data.map(letter => ({
+      // Process the data to match our Letter type
+      const processedLetters = data.map((letter: any) => {
+        // Debug: Log each letter's view count
+        console.log(`Letter "${letter.title}": view_count=${letter.view_count}, type=${typeof letter.view_count}`);
+        
+        return ({
         id: letter.id,
         title: letter.title,
         content: letter.content,
         created_at: letter.created_at,
-        category: Array.isArray(letter.category) 
-          ? (letter.category.length > 0 ? letter.category[0] : null) 
-          : letter.category,
-        mood_emoji: letter.mood_emoji
-      }));
+        category: letter.category_id ? {
+          id: letter.category_id,
+          name: letter.category_name,
+          color: letter.category_color
+        } : null,
+        mood_emoji: letter.mood_emoji,
+        view_count: parseInt(letter.view_count) || 0,
+        reply_count: parseInt(letter.reply_count) || 0,
+        reaction_count: parseInt(letter.reaction_count) || 0
+      });
+      });
 
-      setLetters(processedLetters as Letter[]);
+      setLetters(processedLetters);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -119,10 +135,7 @@ const MyLettersTab = () => {
         onPress={() => handleLetterPress(item)}
       >
         <Card.Content>
-          {/* Date display in top right */}
-          <View style={styles.dateContainer}>
-            <Text style={styles.dateText}>{formattedDate}</Text>
-          </View>
+          {/* Date display is now moved to be inline with title */}
           <View style={styles.threeColumnLayout}>
             {/* Left column: Mood emoji */}
             <View style={styles.leftColumn}>
@@ -135,10 +148,32 @@ const MyLettersTab = () => {
             <View style={styles.centerColumn}>
               <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
               <Paragraph style={styles.letterContent} numberOfLines={2}>{item.content}</Paragraph>
+              
+              {/* Statistics row */}
+              <View style={styles.statsContainer}>
+                {/* Views */}
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="eye-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.statText}>{formatNumber(item.view_count || 0)}</Text>
+                </View>
+                
+                {/* Replies */}
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="reply-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.statText}>{formatNumber(item.reply_count || 0)}</Text>
+                </View>
+                
+                {/* Reactions */}
+                <View style={styles.statItem}>
+                  <MaterialCommunityIcons name="emoticon-outline" size={14} color="#FFFFFF" />
+                  <Text style={styles.statText}>{formatNumber(item.reaction_count || 0)}</Text>
+                </View>
+              </View>
             </View>
             
-            {/* Right column: Category display */}
+            {/* Right column: Date and Category display */}
             <View style={styles.rightColumn}>
+              <Text style={styles.dateText}>{formattedDate}</Text>
               <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
                 <Text style={styles.categoryName}>
                   {item.category?.name.toUpperCase()}
@@ -226,7 +261,7 @@ const styles = StyleSheet.create({
   rightColumn: {
     marginLeft: 8,
     width: 75,
-    alignSelf: 'flex-end',
+    alignSelf: 'flex-start',
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
   },
@@ -244,16 +279,17 @@ const styles = StyleSheet.create({
   letterTitle: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 6,
     color: '#FFFFFF',
     fontFamily: 'SourceCodePro-SemiBold',
     lineHeight: 16,
     letterSpacing: -1,
+    marginBottom: 6,
   },
   letterContent: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#FFFFFF',
     opacity: 0.9,
+    lineHeight: 16,
   },
   categoryContainer: {
     borderRadius: 8,
@@ -270,19 +306,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'SourceCodePro-SemiBold',
   },
-  dateContainer: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    zIndex: 1,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
+
   dateText: {
-    fontSize: 10,
+    fontSize: 11,
     color: '#FFFFFF',
     fontFamily: 'SourceCodePro-Regular',
     opacity: 0.8,
+    textAlign: 'right',
+    marginBottom: 4,
   },
   emptyContainer: {
     padding: 20,
@@ -294,6 +325,22 @@ const styles = StyleSheet.create({
   },
   writeButton: {
     marginTop: 10,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    marginTop: 4,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  statText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    opacity: 0.9,
+    marginLeft: 4,
+    fontFamily: 'SourceCodePro-Regular',
   },
 });
 

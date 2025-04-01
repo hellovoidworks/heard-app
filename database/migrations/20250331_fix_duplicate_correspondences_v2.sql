@@ -11,7 +11,9 @@ RETURNS TABLE (
   most_recent_activity_date TIMESTAMPTZ,
   most_recent_content TEXT,
   unread_count BIGINT,
-  participants TEXT[]
+  participants TEXT[],
+  category_name TEXT,
+  category_color TEXT
 ) AS $$
 BEGIN
   RETURN QUERY
@@ -157,11 +159,15 @@ BEGIN
     COALESCE(mra.activity_date, rl.created_at) AS most_recent_activity_date,
     COALESCE(mra.content, rl.content) AS most_recent_content,
     COALESCE(uc.unread_count, 0) AS unread_count,
-    COALESCE(lp.participants, ARRAY[rl.author_id]::TEXT[]) AS participants
+    COALESCE(lp.participants, ARRAY[rl.author_id]::TEXT[]) AS participants,
+    cat.name AS category_name,
+    cat.color AS category_color
   FROM relevant_letters rl
   LEFT JOIN most_recent_activities mra ON rl.letter_id = mra.letter_id
   LEFT JOIN unread_counts uc ON rl.letter_id = uc.letter_id
   LEFT JOIN letter_participants lp ON rl.letter_id = lp.letter_id
+  JOIN public.letters l ON rl.letter_id = l.id
+  JOIN public.categories cat ON l.category_id = cat.id
   WHERE
     -- Include letters authored by the user that have received replies
     (rl.relationship = 'authored' AND EXISTS (
