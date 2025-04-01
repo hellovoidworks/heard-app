@@ -6,8 +6,8 @@ import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from 'date
  */
 
 // Define delivery hours in LOCAL TIME
-export const MORNING_HOUR = 3;  // 3am local time for testing
-export const MORNING_MINUTE_TEST = 5; // For testing 3:05am transition
+export const MORNING_HOUR = 4;  // 4am local time for testing
+export const MORNING_MINUTE_TEST = 31; // For testing 4:31am transition
 export const EVENING_HOUR = 20; // 8pm local time
 
 /**
@@ -24,7 +24,7 @@ const createLocalTime = (date: Date, hour: number): Date => {
  * Get the current delivery window based on LOCAL TIME
  * @returns Object containing start and end times of the current delivery window
  */
-export const getCurrentDeliveryWindow = (): { start: Date, end: Date, isNewWindow: boolean } => {
+export const getCurrentDeliveryWindow = (): { start: Date, end: Date } => {
   // Get current time
   const now = new Date();
   const currentHour = now.getHours();
@@ -33,7 +33,6 @@ export const getCurrentDeliveryWindow = (): { start: Date, end: Date, isNewWindo
   // Variables to hold the window boundaries
   let windowStart: Date;
   let windowEnd: Date;
-  let isNewWindow = false;
 
 
 
@@ -62,35 +61,16 @@ export const getCurrentDeliveryWindow = (): { start: Date, end: Date, isNewWindo
     windowEnd = createLocalTime(now, MORNING_HOUR); // Creates 08:00:00 today
   }
   
-  // For morning test window, check if we're within 30 seconds of the test minute
-  if (currentHour === MORNING_HOUR) {
-    const thirtySecondsAgo = new Date(now.getTime() - 30 * 1000);
-    const thirtySecondsAhead = new Date(now.getTime() + 30 * 1000);
-    
-    // Create a date for the exact test time
-    const exactTestTime = new Date(now);
-    exactTestTime.setHours(MORNING_HOUR, MORNING_MINUTE_TEST, 0, 0);
-    
-    // Check if we're within 30 seconds of the exact test time
-    isNewWindow = exactTestTime >= thirtySecondsAgo && exactTestTime <= thirtySecondsAhead;
-    
-    console.log(`WINDOW DEBUG: Exact test time: ${exactTestTime.toLocaleString()} (${exactTestTime.toISOString()})`);
-    console.log(`WINDOW DEBUG: 30s window: ${thirtySecondsAgo.toLocaleString()} to ${thirtySecondsAhead.toLocaleString()}`);
-  } else {
-    // For regular windows, check if we just entered this window (within the last 5 minutes)
-    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-    isNewWindow = windowStart.getTime() > fiveMinutesAgo.getTime();
-  }
+  // Log some debug info about the current time
+  console.log(`WINDOW DEBUG: Current Time: ${now.toLocaleString()} (${now.toISOString()})`);
+  console.log(`WINDOW DEBUG: Morning Hour: ${MORNING_HOUR}, Morning Minute: ${MORNING_MINUTE_TEST}, Evening Hour: ${EVENING_HOUR}`);
   
   // Log the calculated window for debugging
-  console.log(`WINDOW DEBUG: Current Time: ${now.toLocaleString()} (${now.toISOString()})`);
   console.log(`WINDOW DEBUG: Current Hour: ${currentHour}, Current Minute: ${currentMinute}`);
-  console.log(`WINDOW DEBUG: Morning Hour: ${MORNING_HOUR}, Morning Minute: ${MORNING_MINUTE_TEST}, Evening Hour: ${EVENING_HOUR}`);
   console.log(`WINDOW DEBUG: isPastMorningTestTime: ${isPastMorningTestTime}`);
   console.log(`WINDOW DEBUG: Delivery Window: ${windowStart.toLocaleString()} (${windowStart.toISOString()}) - ${windowEnd.toLocaleString()} (${windowEnd.toISOString()})`);
-  console.log(`WINDOW DEBUG: Is New Window: ${isNewWindow}`);
 
-  return { start: windowStart, end: windowEnd, isNewWindow };
+  return { start: windowStart, end: windowEnd };
 };
 
 /**
