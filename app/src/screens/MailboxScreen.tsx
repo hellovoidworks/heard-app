@@ -3,11 +3,18 @@ import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 import CorrespondenceTab from './mailbox/CorrespondenceTab';
 import MyLettersTab from './mailbox/MyLettersTab';
+import { updateAppBadgeCount } from '../services/notifications';
 
 const MailboxScreen = () => {
   const [activeTab, setActiveTab] = useState('correspondence');
   const [unreadCount, setUnreadCount] = useState(0);
   const theme = useTheme();
+  
+  // Update the app badge count whenever unreadCount changes
+  useEffect(() => {
+    console.log(`[MailboxScreen] Unread count changed to ${unreadCount}, updating app badge`);
+    updateAppBadgeCount(unreadCount);
+  }, [unreadCount]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

@@ -408,3 +408,17 @@ export async function sendPushNotification(userId: string, title: string, body: 
     return { success: false, error };
   }
 }
+
+/**
+ * Updates the app icon badge count to match the number of unread messages
+ * @param count The number to set as the badge count
+ */
+export async function updateAppBadgeCount(count: number) {
+  try {
+    console.log(`[updateAppBadgeCount] Setting app badge count to ${count}`);
+    await Notifications.setBadgeCountAsync(count);
+    console.log(`[updateAppBadgeCount] App badge count set successfully to ${count}`);
+  } catch (error) {
+    console.error('[updateAppBadgeCount] Error setting app badge count:', error);
+  }
+}
