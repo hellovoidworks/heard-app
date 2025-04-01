@@ -91,24 +91,19 @@ export async function registerForPushNotificationsAsync() {
       return null;
     }
 
-    // Check current permission status
+    // Check current permission status without requesting
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     console.log('Current notification permission status:', existingStatus);
     let finalStatus = existingStatus;
     
-    // Only request if not already granted
+    // Don't automatically request permissions here - this should be done explicitly
+    // by the calling code before invoking this function
     if (existingStatus !== 'granted') {
-      console.log('Requesting notification permissions...');
-      try {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-        console.log('New permission status after request:', finalStatus);
-      } catch (permError) {
-        console.error('Error requesting notification permissions:', permError);
-        // Continue anyway - the user might have manually granted permissions
-      }
+      console.log('Notification permissions not granted, cannot get push token');
+      // Return null if permissions aren't granted
+      return null;
     } else {
-      console.log('Notification permissions already granted');
+      console.log('Using existing notification permissions');
     }
     
     // Try to get token even if finalStatus isn't granted - the user might have

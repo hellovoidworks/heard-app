@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Platform, Alert } from 'react-native';
 import { Button, Text, Title, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync, savePushToken } from '../../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,9 +27,24 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       }
 
       console.log('Requesting notification permissions...');
-      // Request notification permissions
+      // Request notification permissions directly using Notifications API
+      // This ensures we only request permissions when the user taps the button
       let token = null;
       try {
+        // First check current permission status without requesting
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        console.log('Current notification permission status:', existingStatus);
+        
+        // Only request if not already granted
+        if (existingStatus !== 'granted') {
+          console.log('Explicitly requesting notification permissions...');
+          const { status } = await Notifications.requestPermissionsAsync();
+          console.log('New permission status after explicit request:', status);
+        } else {
+          console.log('Notification permissions already granted');
+        }
+        
+        // Now try to get the token
         token = await registerForPushNotificationsAsync();
         if (token) {
           console.log('Push token obtained:', token);
