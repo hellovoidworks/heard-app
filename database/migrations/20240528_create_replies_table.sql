@@ -47,22 +47,49 @@ CREATE TRIGGER set_updated_at_replies
 BEFORE UPDATE ON public.replies
 FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- Create a function to handle notifications for new replies
+-- Function to handle inserting notifications when a new reply is created
 CREATE OR REPLACE FUNCTION public.handle_new_reply()
 RETURNS TRIGGER AS $$
+DECLARE
+  original_letter_author_id uuid;
+  parent_reply_author_id uuid;
+  other_party_in_thread_id uuid;
+  recipient_user_id uuid;
 BEGIN
-  -- Insert a notification for the original letter author
-  INSERT INTO public.notifications (recipient_id, sender_id, letter_id, type)
-  SELECT l.author_id, NEW.author_id, NEW.letter_id, 'reply'
-  FROM public.letters l
-  WHERE l.id = NEW.letter_id AND l.author_id != NEW.author_id;
-  
-  -- If this is a reply to another reply, also notify that reply's author
+  -- Get the original letter author
+  SELECT author_id INTO original_letter_author_id
+  FROM public.letters
+  WHERE id = NEW.letter_id;
+
+  -- Determine the recipient
   IF NEW.reply_to_id IS NOT NULL THEN
-    INSERT INTO public.notifications (recipient_id, sender_id, letter_id, type)
-    SELECT r.author_id, NEW.author_id, NEW.letter_id, 'reply'
-    FROM public.replies r
-    WHERE r.id = NEW.reply_to_id AND r.author_id != NEW.author_id;
+    -- This is a reply to a specific reply
+    -- Get the author of the parent reply
+    SELECT author_id INTO parent_reply_author_id
+    FROM public.replies
+    WHERE id = NEW.reply_to_id;
+    recipient_user_id := parent_reply_author_id; -- Notify the author of the specific reply being responded to
+  ELSE
+    -- This is a general reply to the letter's thread (reply_to_id is NULL)
+    IF NEW.author_id = original_letter_author_id THEN
+      -- The original author is replying generally. Notify the *other* participant.
+      -- Find the author of any previous reply in this thread who is NOT the original author.
+      SELECT author_id INTO other_party_in_thread_id
+      FROM public.replies
+      WHERE letter_id = NEW.letter_id
+      AND author_id != NEW.author_id -- Exclude self
+      LIMIT 1; -- We only need one instance of the other party
+      recipient_user_id := other_party_in_thread_id;
+    ELSE
+      -- Someone else (not the original author) is replying generally. Notify the *original* letter author.
+      recipient_user_id := original_letter_author_id;
+    END IF;
+  END IF;
+
+  -- Insert notification only if we found a valid recipient and they are not the sender
+  IF recipient_user_id IS NOT NULL AND recipient_user_id != NEW.author_id THEN
+    INSERT INTO public.notifications (recipient_id, sender_id, letter_id, reply_id, type)
+    VALUES (recipient_user_id, NEW.author_id, NEW.letter_id, NEW.id, 'reply');
   END IF;
   
   RETURN NEW;
@@ -70,7 +97,8 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Create a trigger for the handle_new_reply function
-CREATE TRIGGER on_reply_created
+DROP TRIGGER IF EXISTS trigger_new_reply ON public.replies; -- Drop existing trigger if it exists
+CREATE TRIGGER trigger_new_reply
 AFTER INSERT ON public.replies
 FOR EACH ROW EXECUTE FUNCTION public.handle_new_reply();
 

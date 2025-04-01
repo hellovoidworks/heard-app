@@ -21,7 +21,34 @@ serve(async (req) => {
     const requestBody = await req.json();
     console.log('Request body:', requestBody);
     
-    const { userId, title, body, data } = requestBody;
+    // Log the full incoming request body
+    console.log('Full request body:', JSON.stringify(requestBody));
+    
+    // Extract data from the webhook payload's "record" field
+    if (requestBody.type !== 'INSERT' || !requestBody.record) {
+      console.log('Ignoring non-insert event or missing record');
+      return new Response(JSON.stringify({ message: 'Invalid webhook payload' }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+    
+    // Use snake_case field names from the database record
+    const { user_id, title, body, data } = requestBody.record;
+    const userId = user_id; // Assign to camelCase if needed later
+    
+    // Add null/undefined checks for safety
+    if (!userId || !title || !body) {
+      console.error('Missing required fields in webhook record:', requestBody.record);
+      return new Response(JSON.stringify({ message: 'Missing required fields in webhook record' }), {
+        headers: { 'Content-Type': 'application/json' },
+        status: 400,
+      });
+    }
+    
+    // Log the exact user ID being used for the query
+    console.log(`Extracted userId for query: ${userId}`);
+    console.log(`Processing notification for user: ${userId}`);
     
     // Create a Supabase client with the Admin key
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -36,8 +63,10 @@ serve(async (req) => {
     const { data: tokens, error: tokenError } = await supabaseClient
       .from('push_tokens')
       .select('token, platform')
-      .eq('user_id', userId);
+      .eq('user_id', userId); // Use the extracted userId here
     
+    // Log the raw query result and error (if any)
+    console.log('Raw tokens query result:', JSON.stringify(tokens));
     if (tokenError) {
       console.error('Error fetching tokens:', tokenError);
       return new Response(JSON.stringify({ error: tokenError.message }), {
@@ -46,15 +75,32 @@ serve(async (req) => {
       });
     }
     
+    // Log before the 404 check
+    console.log(`Found ${tokens ? tokens.length : 0} total tokens for user ${userId} before filtering.`);
     if (!tokens || tokens.length === 0) {
-      console.log('No push tokens found for user:', userId);
+      console.log('No push tokens found for user (before filtering): ', userId);
       return new Response(JSON.stringify({ message: 'No push tokens found for user' }), {
         headers: { 'Content-Type': 'application/json' },
         status: 404,
       });
     }
     
-    console.log('Found tokens for user:', tokens.length);
+    // Filter for Expo tokens only
+    const expoTokens = tokens.filter(token => token.platform === 'expo');
+    
+    // Log after filtering
+    console.log(`Found ${expoTokens.length} Expo tokens after filtering. Filtered tokens: ${JSON.stringify(expoTokens)}`);
+    
+    // Check if the *filtered* list is empty
+    if (expoTokens.length === 0) {
+        console.log(`No Expo tokens found for user ${userId} after filtering.`);
+        return new Response(JSON.stringify({ message: 'No Expo push tokens found for user' }), { // Modify message slightly
+            headers: { 'Content-Type': 'application/json' },
+            status: 404,
+        });
+    }
+    
+    console.log(`Proceeding to send ${expoTokens.length} Expo notifications.`);
     
     // Define the result type to avoid TypeScript errors
     type PushResult = {
@@ -68,11 +114,6 @@ serve(async (req) => {
     };
     
     const results: PushResult[] = [];
-    
-    // Filter for Expo tokens only
-    const expoTokens = tokens.filter(token => token.platform === 'expo');
-    
-    console.log(`Found ${expoTokens.length} Expo tokens`);
     
     // Send to Expo devices via Expo Push API
     if (expoTokens.length > 0) {
