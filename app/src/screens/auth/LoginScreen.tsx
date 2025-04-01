@@ -95,15 +95,13 @@ const LoginScreen = ({ navigation }: Props) => {
           />
         </View>
 
-        {/* Main content in the middle */}
-        <View style={styles.content}>
-          <View style={styles.mainImageContainer}>
-            <Image 
-              source={require('../../assets/main-1.png')} 
-              style={styles.mainImage} 
-              resizeMode="contain"
-            />
-          </View>
+        {/* Main image in the middle */}
+        <View style={styles.mainImageContainer}>
+          <Image 
+            source={require('../../assets/main-1.png')} 
+            style={styles.mainImage} 
+            resizeMode="contain"
+          />
         </View>
         
         {/* Buttons at the bottom */}
@@ -161,14 +159,11 @@ const styles = StyleSheet.create({
     width: 250,
     height: 100,
   },
-  content: {
+  mainImageContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 20,
-  },
-  mainImageContainer: {
-    alignItems: 'center',
   },
   mainImage: {
     width: '100%',
