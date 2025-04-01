@@ -6,8 +6,8 @@ import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from 'date
  */
 
 // Define delivery hours in LOCAL TIME
-export const MORNING_HOUR = 4;  // 4am local time for testing
-export const MORNING_MINUTE_TEST = 31; // For testing 4:31am transition
+export const MORNING_HOUR = 8;  // 8am local time
+export const MORNING_MINUTE_TEST = 0; // No test minute during standard operation
 export const EVENING_HOUR = 20; // 8pm local time
 
 /**
