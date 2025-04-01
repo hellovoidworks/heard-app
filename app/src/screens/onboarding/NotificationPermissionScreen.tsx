@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Platform, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Platform, Alert, Image, TouchableOpacity } from 'react-native';
 import { Button, Text, Title, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import * as Notifications from 'expo-notifications';
 import { registerForPushNotificationsAsync, savePushToken } from '../../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,24 +26,9 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       }
 
       console.log('Requesting notification permissions...');
-      // Request notification permissions directly using Notifications API
-      // This ensures we only request permissions when the user taps the button
+      // Request notification permissions
       let token = null;
       try {
-        // First check current permission status without requesting
-        const { status: existingStatus } = await Notifications.getPermissionsAsync();
-        console.log('Current notification permission status:', existingStatus);
-        
-        // Only request if not already granted
-        if (existingStatus !== 'granted') {
-          console.log('Explicitly requesting notification permissions...');
-          const { status } = await Notifications.requestPermissionsAsync();
-          console.log('New permission status after explicit request:', status);
-        } else {
-          console.log('Notification permissions already granted');
-        }
-        
-        // Now try to get the token
         token = await registerForPushNotificationsAsync();
         if (token) {
           console.log('Push token obtained:', token);
@@ -206,39 +190,45 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       </View>
       
       <View style={styles.content}>
-        <View style={[styles.iconContainer, { backgroundColor: theme.colors.surfaceVariant }]}>
-          <Ionicons name="notifications" size={100} color={theme.colors.primary} />
-        </View>
-        
-        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Stay Updated</Title>
+        {/* Title and description */}
+        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Don't miss anything!</Title>
         
         <Text style={[styles.description, { color: theme.colors.onBackground }]}>
-          Enable notifications to receive updates when someone responds to your letters or sends you a message.
+          Keep up when you receive new mail or when someone responds to you
         </Text>
         
-        <Button
-          mode="contained"
-          onPress={handleEnableNotifications}
-          style={styles.primaryButton}
-          loading={loading}
-          disabled={loading}
-          buttonColor={theme.colors.primary}
-          textColor={theme.colors.onPrimary}
-          labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
-        >
-          Enable Notifications
-        </Button>
+        {/* Notification image */}
+        <View style={styles.imageContainer}>
+          <Image 
+            source={require('../../assets/notification-request.png')} 
+            style={styles.notificationImage} 
+            resizeMode="contain"
+          />
+        </View>
         
-        <Button
-          mode="text"
-          onPress={handleSkip}
-          style={styles.skipButton}
-          disabled={loading}
-          textColor={theme.colors.primary}
-          labelStyle={{ fontSize: 16 }}
-        >
-          Not Now
-        </Button>
+        {/* Buttons at the bottom */}
+        <View style={styles.buttonContainer}>
+          <Button
+            mode="contained"
+            onPress={handleEnableNotifications}
+            style={styles.primaryButton}
+            loading={loading}
+            disabled={loading}
+            buttonColor={theme.colors.primary}
+            textColor={theme.colors.onPrimary}
+            labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
+          >
+            Enable Notifications
+          </Button>
+          
+          <TouchableOpacity
+            onPress={handleSkip}
+            disabled={loading}
+            style={styles.skipButton}
+          >
+            <Text style={styles.skipButtonText}>Not Now</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -258,27 +248,34 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     flex: 1,
-  },
-  iconContainer: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
-    backgroundColor: '#f0e6ff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 30,
   },
   title: {
     textAlign: 'center',
     marginBottom: 20,
+    fontSize: 28,
   },
   description: {
     textAlign: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
     fontSize: 16,
     lineHeight: 24,
+  },
+  imageContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  notificationImage: {
+    width: '100%',
+    height: 300,
+  },
+  buttonContainer: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
   },
   primaryButton: {
     width: '100%',
@@ -287,7 +284,12 @@ const styles = StyleSheet.create({
     borderRadius: 28,
   },
   skipButton: {
-    marginTop: 8,
+    padding: 10,
+  },
+  skipButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });
 
