@@ -15,6 +15,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
 type Thread = {
   id: string;
+  replierId: string;
   latestReplyDate: string;
   latestReplyContent: string;
   replyCount: number;
@@ -144,27 +145,45 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           display_name,
           content,
           created_at,
+          reply_to_id,
           updated_at
         `)
         .eq('letter_id', letterId)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
         
       if (repliesError) {
         console.error('Error fetching replies:', repliesError);
         return;
       }
       
-      if (repliesData && repliesData.length > 0) {
-        // Create a thread object with the latest reply data
-        const thread: Thread = {
-          id: letterId,
-          latestReplyDate: repliesData[0].created_at,
-          latestReplyContent: repliesData[0].content,
-          replyCount: repliesData.length,
-          replierName: repliesData[0].display_name
-        };
-        
-        setThreads([thread]);
+      if (repliesData && repliesData.length > 0) { 
+        // Group replies by author_id
+        const repliesByAuthor = repliesData.reduce((acc, reply) => {
+          const authorId = reply.author_id;
+          if (!acc[authorId]) {
+            acc[authorId] = [];
+          }
+          acc[authorId].push(reply);
+          return acc;
+        }, {} as { [key: string]: ReplyWithDetails[] });
+
+        // Create a thread summary for each author
+        const processedThreads: Thread[] = Object.entries(repliesByAuthor).map(([authorId, authorReplies]) => {
+          const latestReply = authorReplies[authorReplies.length - 1]; // Last one is latest due to ascending order
+          return {
+            id: `${letterId}-${authorId}`, // Unique key for the list item
+            replierId: authorId,
+            latestReplyDate: latestReply.created_at,
+            latestReplyContent: latestReply.content,
+            replyCount: authorReplies.length,
+            replierName: latestReply.display_name || 'User', // Use display name from latest reply
+          };
+        });
+
+        // Sort threads by the latest reply date, newest first
+        processedThreads.sort((a, b) => new Date(b.latestReplyDate).getTime() - new Date(a.latestReplyDate).getTime());
+
+        setThreads(processedThreads);
       } else {
         setThreads([]);
       }
@@ -188,13 +207,12 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     alert('Delete letter functionality would go here');
   };
   
-  const handleViewThreads = () => {
-    // Navigate to see threads/conversations around this letter
-    navigation.navigate('ThreadDetail', { letterId: letterId });
-  };
-
-  const navigateToThread = (threadId: string) => {
-    navigation.navigate('ThreadDetail', { letterId: threadId });
+  // Updated function to navigate to the specific thread with a participant
+  const navigateToThread = (participantId: string) => {
+    navigation.navigate('ThreadDetail', { 
+      letterId: letterId, 
+      otherParticipantId: participantId // Pass the specific replier ID
+    });
   };
 
   if (loading && !refreshing) {
@@ -273,33 +291,37 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
                 Conversations
               </Text>
-              {threads.map((thread, index) => (
-                <TouchableOpacity 
-                  key={index} 
-                  style={[styles.threadItem, { backgroundColor: theme.colors.surfaceVariant }]}
-                  onPress={() => navigateToThread(thread.id)}
-                >
-                  <View style={styles.threadHeader}>
-                    <Text style={[styles.threadReplier, { color: theme.colors.primary }]}>
-                      {thread.replierName}
-                    </Text>
-                    <Text style={[styles.threadDate, { color: theme.colors.onSurfaceDisabled }]}>
-                      {format(new Date(thread.latestReplyDate), 'MMM d, yyyy')}
-                    </Text>
-                  </View>
-                  <Text 
-                    style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
-                    numberOfLines={2}
-                  >
-                    {thread.latestReplyContent}
-                  </Text>
-                  <View style={styles.threadFooter}>
-                    <Text style={[styles.replyCount, { color: theme.colors.onSurfaceDisabled }]}>
-                      {thread.replyCount} {thread.replyCount === 1 ? 'reply' : 'replies'}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              <FlatList
+                data={threads}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => ( // Pass replierId to navigateToThread
+                  <TouchableOpacity onPress={() => navigateToThread(item.replierId)}>
+                    <Card style={styles.threadCard}>
+                      <Card.Content>
+                        <View style={styles.threadHeader}>
+                          <Text style={[styles.threadReplier, { color: theme.colors.primary }]}>
+                            {item.replierName}
+                          </Text>
+                          <Text style={[styles.threadDate, { color: theme.colors.onSurfaceDisabled }]}>
+                            {format(new Date(item.latestReplyDate), 'MMM d, yyyy')}
+                          </Text>
+                        </View>
+                        <Text 
+                          style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
+                          numberOfLines={2}
+                        >
+                          {item.latestReplyContent}
+                        </Text>
+                        <View style={styles.threadFooter}>
+                          <Text style={[styles.replyCount, { color: theme.colors.onSurfaceDisabled }]}>
+                            {item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'}
+                          </Text>
+                        </View>
+                      </Card.Content>
+                    </Card>
+                  </TouchableOpacity>
+                )}
+              />
             </View>
           )}
           
@@ -322,18 +344,6 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           )}
         </View>
       </ScrollView>
-      
-      {replyCount > 0 && (
-        <View style={[styles.bottomBar, { backgroundColor: theme.colors.surface }]}>
-          <Button
-            mode="contained"
-            onPress={handleViewThreads}
-            style={styles.viewThreadsButton}
-          >
-            View Conversations ({replyCount})
-          </Button>
-        </View>
-      )}
     </SafeAreaView>
   );
 };
@@ -442,19 +452,11 @@ const styles = StyleSheet.create({
   reactionCount: {
     fontSize: 14,
   },
-  bottomBar: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  viewThreadsButton: {
-    width: '100%',
-  },
   threadsContainer: {
     marginTop: 16,
     marginBottom: 16,
   },
-  threadItem: {
+  threadCard: {
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
