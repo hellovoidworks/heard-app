@@ -2,6 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
+import { AppState, AppStateStatus } from 'react-native';
 
 console.log('=== AuthContext module initialized ===');
 
@@ -331,12 +332,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
+    // Set up AppState listener to manage auto refresh as recommended by Supabase docs
+    console.log('AuthContext: Setting up AppState listener for token auto-refresh');
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      console.log(`AuthContext: AppState changed to ${nextAppState}`);
+      
+      if (nextAppState === 'active') {
+        console.log('AuthContext: App is active, starting auto refresh');
+        supabase.auth.startAutoRefresh();
+      } else {
+        console.log('AuthContext: App is inactive/background, stopping auto refresh');
+        supabase.auth.stopAutoRefresh();
+      }
+    });
+    
+    // Start auto refresh immediately since the app is active when mounting this component
+    console.log('AuthContext: Initial app state is active, starting auto refresh');
+    supabase.auth.startAutoRefresh();
+
     return () => {
       console.log('AuthContext: Cleaning up auth listener');
       clearTimeout(loadingTimeout);
       if (authListener && authListener.subscription) {
         authListener.subscription.unsubscribe();
       }
+      
+      // Clean up AppState listener
+      console.log('AuthContext: Cleaning up AppState listener');
+      appStateSubscription.remove();
+      
+      // Stop auto refresh when unmounting
+      console.log('AuthContext: Stopping auto refresh during cleanup');
+      supabase.auth.stopAutoRefresh();
     };
   }, []);
 
