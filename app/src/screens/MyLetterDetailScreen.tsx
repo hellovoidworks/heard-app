@@ -132,7 +132,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const fetchThreads = async () => {
-    if (!letterId) return;
+    if (!letterId || !user) return;
     
     try {
       // Fetch all replies for this letter
@@ -146,6 +146,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           content,
           created_at,
           reply_to_id,
+          reply_to_user_id,
           updated_at
         `)
         .eq('letter_id', letterId)
@@ -157,26 +158,41 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
       
       if (repliesData && repliesData.length > 0) { 
-        // Group replies by author_id
-        const repliesByAuthor = repliesData.reduce((acc, reply) => {
-          const authorId = reply.author_id;
-          if (!acc[authorId]) {
-            acc[authorId] = [];
+        // Create a map to track unique conversations by participant
+        const conversationsByParticipant: { [participantId: string]: ReplyWithDetails[] } = {};
+        
+        // Group replies into conversations between the letter author (current user) and each participant
+        repliesData.forEach(reply => {
+          let participantId: string;
+          
+          // Determine the conversation participant (the person who's not the current user)
+          if (reply.author_id === user.id) {
+            // If current user wrote this reply, the participant is who they replied to
+            participantId = reply.reply_to_user_id;
+          } else {
+            // If someone else wrote this reply to the current user, the participant is the author
+            participantId = reply.author_id;
           }
-          acc[authorId].push(reply);
-          return acc;
-        }, {} as { [key: string]: ReplyWithDetails[] });
+          
+          // Only include replies that are part of a conversation with the current user
+          if (reply.author_id === user.id || reply.reply_to_user_id === user.id) {
+            if (!conversationsByParticipant[participantId]) {
+              conversationsByParticipant[participantId] = [];
+            }
+            conversationsByParticipant[participantId].push(reply);
+          }
+        });
 
-        // Create a thread summary for each author
-        const processedThreads: Thread[] = Object.entries(repliesByAuthor).map(([authorId, authorReplies]) => {
-          const latestReply = authorReplies[authorReplies.length - 1]; // Last one is latest due to ascending order
+        // Create a thread summary for each conversation participant
+        const processedThreads: Thread[] = Object.entries(conversationsByParticipant).map(([participantId, participantReplies]) => {
+          const latestReply = participantReplies[participantReplies.length - 1]; // Last one is latest due to ascending order
           return {
-            id: `${letterId}-${authorId}`, // Unique key for the list item
-            replierId: authorId,
+            id: `${letterId}-${participantId}`, // Unique key for the list item
+            replierId: participantId,
             latestReplyDate: latestReply.created_at,
             latestReplyContent: latestReply.content,
-            replyCount: authorReplies.length,
-            replierName: latestReply.display_name || 'User', // Use display name from latest reply
+            replyCount: participantReplies.length,
+            replierName: participantReplies.find(r => r.author_id === participantId)?.display_name || 'User', // Use display name from participant's reply
           };
         });
 
