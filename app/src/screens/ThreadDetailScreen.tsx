@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
 import { 
   Text, 
@@ -33,97 +33,70 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { user, profile } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  const fetchLetterAndReplies = async () => {
+  const fetchLetterAndReplies = useCallback(async () => {
+    if (!user || !letterId || !otherParticipantId) return;
+
+    setLoading(true);
+    setError(null);
+    setLetter(null);
+    setReplies([]);
+
     try {
-      setLoading(true);
+      console.log(`[ThreadDetailScreen] Calling get_thread_details with letterId: ${letterId}, userId: ${user.id}, otherParticipantId: ${otherParticipantId}`);
       
-      // Ensure we have all necessary IDs
-      if (!user || !letterId || !otherParticipantId) {
-        console.warn('Missing user, letterId, or otherParticipantId');
+      const { data, error: rpcError } = await supabase.rpc('get_thread_details', {
+        p_letter_id: letterId,
+        p_user_id: user.id,
+        p_other_participant_id: otherParticipantId
+      });
+
+      if (rpcError) {
+        console.error('Error calling get_thread_details:', rpcError);
+        setError(rpcError.message);
         setLoading(false);
         return;
       }
 
-      // Get the original letter
-      const { data: letterData, error: letterError } = await supabase
-        .from('letters')
-        .select(`
-          *,
-          category:categories(*),
-          author:user_profiles!letters_author_id_fkey(*)
-        `)
-        .eq('id', letterId)
-        .single();
+      if (!data) {
+        console.error('No data returned from get_thread_details');
+        setError('Could not load thread details.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('[ThreadDetailScreen] Received data from get_thread_details:', JSON.stringify(data, null, 2));
 
-      if (letterError) {
-        console.error('Error fetching letter:', letterError);
+      const fetchedLetter = data.letter;
+      const fetchedReplies = data.replies;
+
+      if (!fetchedLetter) {
+        console.error('Letter data missing in get_thread_details response');
+        setError('Could not load the letter.');
+        setLoading(false);
         return;
       }
 
-      if (letterData) {
-        setLetter(letterData as LetterWithDetails);
-        
-        // Fetch user's reaction for this letter
-        const { data: reactionData, error: reactionError } = await supabase
-          .from('reactions')
-          .select('reaction_type')
-          .eq('letter_id', letterId)
-          .eq('user_id', user.id)
-          .single();
-          
-        if (reactionError && reactionError.code !== 'PGRST116') { // Ignore not found error
-          console.error('Error fetching user reaction:', reactionError);
-        }
-        
-        if (reactionData) {
-          setUserReaction(reactionData.reaction_type);
-        }
+      console.log('[ThreadDetailScreen] Fetched Letter Data:', fetchedLetter);
+      console.log('[ThreadDetailScreen] Fetched Replies Data:', fetchedReplies);
 
-        // Fetch replies EXCHANGED between the current user and the other participant for this letter
-        const { data: repliesData, error: repliesError } = await supabase
-          .from('replies') 
-          .select('*') // Select necessary columns
-          .eq('letter_id', letterId)
-          .or( // Filter for replies between the two participants
-            `and(author_id.eq.${user.id},reply_to_user_id.eq.${otherParticipantId})`,
-            `and(author_id.eq.${otherParticipantId},reply_to_user_id.eq.${user.id})`
-          )
-          .order('created_at', { ascending: true });
-
-        if (repliesError) {
-          console.error('Error fetching replies:', repliesError);
-          setReplies([]); // Clear replies on error
-          return;
-        }
-
-        if (repliesData) {
-          // Data is already filtered by the query, no need for client-side filtering
-          setReplies(repliesData as ReplyWithDetails[]); 
-          
-          // Identify unread replies *from the other participant* in this specific thread
-          // (Logic remains the same, but operates on the pre-filtered repliesData)
-          const unreadReplyIds = repliesData 
-            .filter(reply => reply.author_id === otherParticipantId) // Only consider replies from the other participant in the fetched set
-            .map(reply => reply.id);
-            
-          if (unreadReplyIds.length > 0) {
-            await markRepliesAsRead(unreadReplyIds);
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error:', error);
+      setLetter(fetchedLetter);
+      setReplies(fetchedReplies || []); 
+      
+    } catch (e: any) {
+      console.error('Unexpected error fetching thread details:', e);
+      setError(e.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
-  
+  }, [letterId, user, otherParticipantId, supabase]);
+
   const markRepliesAsRead = async (replyIds: string[]) => {
     if (!user) return;
     
@@ -150,33 +123,47 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleSendReply = async () => {
-    console.log('>>> handleSendReply called. otherParticipantId:', otherParticipantId); // Add logging here
+    console.log('>>> handleSendReply called. Letter Author ID:', letter?.author_id, 'Current User ID:', user?.id, 'Other Participant ID:', otherParticipantId); 
+
     if (!user || !profile || !replyText.trim() || !letter || !otherParticipantId) {
       console.warn('>>> handleSendReply aborted. Missing data:', { userId: user?.id, profileExists: !!profile, replyText: replyText.trim(), letterId: letter?.id, otherParticipantId });
-      return; // Add otherParticipantId check
+      return; 
+    }
+    
+    let recipientUserId: string | null = null;
+
+    if (user.id === letter.author_id) {
+      recipientUserId = otherParticipantId;
+      console.log('>>> Current user is the letter author. Replying to otherParticipantId:', recipientUserId);
+    } 
+    else {
+      recipientUserId = letter.author_id;
+      console.log('>>> Current user is NOT the letter author. Replying to letter author:', recipientUserId);
+    }
+
+    if (!recipientUserId) {
+        console.error('>>> Could not determine recipientUserId. Aborting reply.');
+        setSendingReply(false); 
+        return;
     }
     
     try {
       setSendingReply(true);
-      
-      // Determine the recipient of the reply
-      // In this context (ThreadDetailScreen), the reply is always to the 'otherParticipant'
-      const recipientUserId = otherParticipantId;
 
       const replyPayload = {
         letter_id: letter.id,
         author_id: user.id,
-        display_name: profile.username, // Use profile.username
+        display_name: profile.username, 
         content: replyText,
-        reply_to_id: null,
-        reply_to_user_id: recipientUserId
+        reply_to_id: null, 
+        reply_to_user_id: recipientUserId 
       };
       
-      console.log('>>> Sending Reply Payload:', JSON.stringify(replyPayload, null, 2)); // Add logging
+      console.log('>>> Sending Reply Payload:', JSON.stringify(replyPayload, null, 2)); 
 
       const { data, error } = await supabase
         .from('replies')
-        .insert([replyPayload]) // Use the payload object
+        .insert([replyPayload]) 
         .select()
         .single();
         
@@ -186,17 +173,16 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
       
       if (data) {
-        // Add the new reply to the list
-        setReplies([...replies, data as ReplyWithDetails]);
-        setReplyText('');
+        setReplies([...replies, data as ReplyWithDetails]); 
+        setReplyText(''); 
         
-        // Scroll to bottom after sending
         setTimeout(() => {
           scrollViewRef.current?.scrollToEnd({ animated: true });
         }, 100);
+
       }
     } catch (error) {
-      console.error('Error sending reply:', error);
+      console.error('Error sending reply catch block:', error);
     } finally {
       setSendingReply(false);
     }
@@ -204,14 +190,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchLetterAndReplies();
-  }, [letterId, otherParticipantId, user]); // Add otherParticipantId dependency
+  }, [letterId, otherParticipantId, user]); 
 
   const handleRefresh = () => {
     setRefreshing(true);
     fetchLetterAndReplies();
   };
 
-  // Scroll to bottom when thread loads
   useEffect(() => {
     if (!loading && replies.length > 0) {
       setTimeout(() => {
@@ -220,16 +205,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   }, [loading, replies.length]);
 
-  // Determine if the user can reply (if the latest message is not from the current user)
   const canReply = useMemo(() => {
     if (!user) return false;
     
-    // If there are no replies yet, the user can reply if they didn't author the letter
     if (replies.length === 0) {
       return letter?.author_id !== user.id;
     }
     
-    // Otherwise, check if the latest reply is from another user
     const latestReply = replies[replies.length - 1];
     return latestReply.author_id !== user.id;
   }, [user, letter, replies]);
@@ -453,20 +435,6 @@ const styles = StyleSheet.create({
   },
   sendButtonContent: {
     paddingVertical: 4,
-  },
-  reactionContainer: {
-    marginHorizontal: 16,
-    marginTop: -8,
-    marginBottom: 8,
-    padding: 8,
-    borderRadius: 8,
-    elevation: 1,
-    alignSelf: 'flex-end',
-    maxWidth: '70%',
-  },
-  reactionText: {
-    fontSize: 14,
-    textAlign: 'right',
   },
 });
 
