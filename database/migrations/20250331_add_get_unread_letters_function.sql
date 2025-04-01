@@ -82,51 +82,7 @@ BEGIN
   )
   SELECT * FROM preferred_new_letters;
   
-  -- If we didn't get enough letters, add some from preferred categories that have been received but not read
-  IF (SELECT COUNT(*) FROM temp_result_letters) < p_limit THEN
-    INSERT INTO temp_result_letters
-    WITH preferred_received_letters AS (
-      SELECT 
-        l.id,
-        l.title,
-        l.content,
-        l.created_at,
-        l.author_id,
-        l.category_id,
-        l.mood_emoji,
-        c.name AS category_name,
-        c.color AS category_color,
-        l.display_name,
-        jsonb_build_object(
-        'id', up.id,
-        'username', up.username,
-        'avatar_url', up.avatar_url,
-        'notification_preferences', up.notification_preferences,
-        'created_at', up.created_at,
-        'updated_at', up.updated_at,
-        'birthdate', up.birthdate,
-        'onboarding_step', up.onboarding_step,
-        'onboarding_completed', up.onboarding_completed,
-        'stars', up.stars
-      ) AS author,
-        FALSE AS is_read,
-        (base_order + 500 + ROW_NUMBER() OVER (ORDER BY l.created_at DESC))::INTEGER AS display_order
-      FROM public.letters l
-      JOIN public.categories c ON l.category_id = c.id
-      JOIN public.user_profiles up ON l.author_id = up.id
-      JOIN temp_preferred_categories pc ON l.category_id = pc.category_id
-      JOIN temp_received_letters rcv ON l.id = rcv.letter_id
-      WHERE 
-        l.author_id != p_user_id
-        AND NOT EXISTS (SELECT 1 FROM temp_read_letters rl WHERE rl.letter_id = l.id)
-        AND NOT EXISTS (SELECT 1 FROM temp_result_letters trl WHERE trl.id = l.id)
-      ORDER BY l.created_at DESC
-      LIMIT (p_limit - (SELECT COUNT(*) FROM temp_result_letters))
-    )
-    SELECT * FROM preferred_received_letters;
-  END IF;
-  
-  -- If we still don't have enough letters, add some from any category that haven't been read
+  -- If we still don't have enough letters, add some from any category that haven't been read OR RECEIVED
   IF (SELECT COUNT(*) FROM temp_result_letters) < p_limit THEN
     INSERT INTO temp_result_letters
     WITH any_category_letters AS (
@@ -161,6 +117,7 @@ BEGIN
       WHERE 
         l.author_id != p_user_id
         AND NOT EXISTS (SELECT 1 FROM temp_read_letters rl WHERE rl.letter_id = l.id)
+        AND NOT EXISTS (SELECT 1 FROM temp_received_letters rcv WHERE rcv.letter_id = l.id)
         AND NOT EXISTS (SELECT 1 FROM temp_result_letters trl WHERE trl.id = l.id)
       ORDER BY l.created_at DESC
       LIMIT (p_limit - (SELECT COUNT(*) FROM temp_result_letters))

@@ -495,33 +495,8 @@ const HomeScreen = () => {
         // Save fetched letters to local storage
         await saveLettersToStorage(fetchedLetters);
       } else {
-        console.log('No letters available to display, delivering new letters automatically');
-        // Automatically deliver new letters if none exist
-        const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
-        if (newLetters && newLetters.length > 0) {
-          console.log(`Delivered ${newLetters.length} new letters automatically`);
-          
-          // Add new letters to animating set for animation
-          setAnimatingLetterIds(prev => {
-            const next = new Set(prev);
-            newLetters.forEach((letter: LetterWithDetails) => next.add(letter.id));
-            return next;
-          });
-          
-          const newLettersWithReadStatus = newLetters.map((letter: LetterWithDetails) => ({
-            ...letter,
-            is_read: false
-          }));
-          
-          setLetters(newLettersWithReadStatus);
-          setAnyLettersInWindow(true);
-          
-          // Save the new letters to local storage
-          await saveLettersToStorage(newLettersWithReadStatus);
-        } else {
-          console.log('No new letters available to deliver');
-          setLetters([]);
-        }
+        console.log('No letters returned by getLettersForCurrentWindow. Displaying empty list.');
+        setLetters([]);
       }
     } catch (error) {
       console.error('Error loading initial letters:', error);
