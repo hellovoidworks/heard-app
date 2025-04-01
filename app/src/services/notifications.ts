@@ -29,6 +29,57 @@ export async function checkNotificationPermissions(): Promise<NotificationPermis
   }
 }
 
+const DELIVERY_NOTIFICATION_MORNING_ID = 'daily-delivery-morning';
+const DELIVERY_NOTIFICATION_EVENING_ID = 'daily-delivery-evening';
+
+export async function scheduleDailyDeliveryNotifications() {
+  console.log('[scheduleDailyDeliveryNotifications] Attempting to schedule daily notifications...');
+  try {
+    // Cancel any existing notifications with the same IDs to avoid duplicates
+    await Notifications.cancelScheduledNotificationAsync(DELIVERY_NOTIFICATION_MORNING_ID);
+    console.log(`[scheduleDailyDeliveryNotifications] Cancelled existing notification with ID: ${DELIVERY_NOTIFICATION_MORNING_ID}`);
+    await Notifications.cancelScheduledNotificationAsync(DELIVERY_NOTIFICATION_EVENING_ID);
+    console.log(`[scheduleDailyDeliveryNotifications] Cancelled existing notification with ID: ${DELIVERY_NOTIFICATION_EVENING_ID}`);
+
+    // Define trigger for morning notification (8 AM Local Time) using DailyTriggerInput
+    const morningTrigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 8,
+      minute: 0,
+    };
+    await Notifications.scheduleNotificationAsync({
+      identifier: DELIVERY_NOTIFICATION_MORNING_ID,
+      content: {
+        title: "New mail has arrived!",
+        body: 'Start reading them now.',
+        // data: { type: 'delivery_window' } // Optional data payload
+      },
+      trigger: morningTrigger,
+    });
+    console.log(`[scheduleDailyDeliveryNotifications] Scheduled morning notification (${DELIVERY_NOTIFICATION_MORNING_ID}) for 8:00 AM local time.`);
+
+    // Define trigger for evening notification (8 PM Local Time) using DailyTriggerInput
+    const eveningTrigger: Notifications.DailyTriggerInput = {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour: 20, // 8 PM
+      minute: 0,
+    };
+    await Notifications.scheduleNotificationAsync({
+      identifier: DELIVERY_NOTIFICATION_EVENING_ID,
+      content: {
+        title: "New mail has arrived!",
+        body: 'Start reading them now.',
+        // data: { type: 'delivery_window' } // Optional data payload
+      },
+      trigger: eveningTrigger,
+    });
+    console.log(`[scheduleDailyDeliveryNotifications] Scheduled evening notification (${DELIVERY_NOTIFICATION_EVENING_ID}) for 8:00 PM local time.`);
+
+  } catch (error) {
+    console.error('[scheduleDailyDeliveryNotifications] Failed to schedule daily notifications:', error);
+  }
+}
+
 export async function registerForPushNotificationsAsync() {
   let token;
 
@@ -92,6 +143,9 @@ export async function registerForPushNotificationsAsync() {
     console.log('Push notifications are only configured for iOS in this app');
     return null;
   }
+
+  // Schedule daily notifications
+  await scheduleDailyDeliveryNotifications();
 
   return token;
 }
