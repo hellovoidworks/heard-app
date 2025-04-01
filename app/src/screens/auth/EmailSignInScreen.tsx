@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -19,6 +21,22 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   useEffect(() => {
     validateEmail(email);
   }, [email]);
+  
+  // Reset StatusBar when this screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // This ensures the StatusBar is properly set when the screen is focused
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#121212');
+      }
+      StatusBar.setHidden(false);
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [])
+  );
 
   // Simple email validation function
   const validateEmail = (text: string) => {
@@ -91,8 +109,8 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['top', 'left', 'right']}>
+      {/* StatusBar is now managed by useFocusEffect */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -125,8 +143,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       style={[styles.emailInput, { 
                         backgroundColor: 'transparent', 
                         color: theme.colors.onSurface,
-                        borderBottomColor: email && isValidEmail ? theme.colors.primary : 'transparent',
-                        borderBottomWidth: email && isValidEmail ? 1 : 0,
+                        borderBottomWidth: 0, // Remove border bottom entirely
                       }]}
                       maxLength={100}
                       theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}

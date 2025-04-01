@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, SafeAreaView } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, Title, Divider, IconButton, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -27,6 +29,22 @@ const LoginScreen = ({ navigation }: Props) => {
     
     checkAppleAuthAvailability();
   }, []);
+  
+  // Reset StatusBar when this screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      // This ensures the StatusBar is properly set when the screen is focused
+      StatusBar.setBarStyle('light-content');
+      if (Platform.OS === 'android') {
+        StatusBar.setBackgroundColor('#121212');
+      }
+      StatusBar.setHidden(false);
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [])
+  );
 
   const handleSignInWithApple = async () => {
     try {
@@ -82,8 +100,8 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['top', 'left', 'right']}>
+      {/* StatusBar is now managed by useFocusEffect */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
