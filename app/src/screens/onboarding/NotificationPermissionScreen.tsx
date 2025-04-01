@@ -190,12 +190,14 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
       </View>
       
       <View style={styles.content}>
-        {/* Title and description */}
-        <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Don't miss anything!</Title>
-        
-        <Text style={[styles.description, { color: theme.colors.onBackground }]}>
-          Keep up when you receive new mail or when someone responds to you
-        </Text>
+        <View style={styles.topSection}>
+          {/* Title and description */}
+          <Title style={[styles.title, { color: theme.colors.onBackground, fontSize: 28, fontWeight: 'bold' }]}>Don't miss anything!</Title>
+          
+          <Text style={[styles.description, { color: theme.colors.onBackground }]}>
+            Keep up when you receive new mail or when someone responds to you
+          </Text>
+        </View>
         
         {/* Notification image */}
         <View style={styles.imageContainer}>
@@ -207,7 +209,7 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
         </View>
         
         {/* Buttons at the bottom */}
-        <View style={styles.buttonContainer}>
+        <View style={[styles.buttonContainer, { paddingBottom: insets.bottom > 0 ? insets.bottom : 20 }]}>
           <Button
             mode="contained"
             onPress={handleEnableNotifications}
@@ -262,15 +264,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 24,
   },
+  topSection: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 20,
+  },
   imageContainer: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
+    paddingTop: 20,
   },
   notificationImage: {
-    width: '100%',
-    height: 300,
+    width: 270,
+    height: 270,
   },
   buttonContainer: {
     width: '100%',
