@@ -313,7 +313,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             author_id: user.id,
             display_name: profile.username,
             content: responseText,
-            reply_to_id: null // Direct reply to the letter
+            reply_to_id: null, // Direct reply to the letter
+            reply_to_user_id: letter.author_id // Add the original letter author's ID
           }
         ]);
         

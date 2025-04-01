@@ -84,11 +84,15 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           setUserReaction(reactionData.reaction_type);
         }
 
-        // Fetch ALL replies for the letter first
+        // Fetch replies EXCHANGED between the current user and the other participant for this letter
         const { data: repliesData, error: repliesError } = await supabase
           .from('replies') 
-          .select('*') // Select all columns for simplicity
+          .select('*') // Select necessary columns
           .eq('letter_id', letterId)
+          .or( // Filter for replies between the two participants
+            `and(author_id.eq.${user.id},reply_to_user_id.eq.${otherParticipantId})`,
+            `and(author_id.eq.${otherParticipantId},reply_to_user_id.eq.${user.id})`
+          )
           .order('created_at', { ascending: true });
 
         if (repliesError) {
@@ -98,17 +102,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         }
 
         if (repliesData) {
-          // Filter replies to only include those between the current user and the specific other participant
-          const filteredReplies = repliesData.filter(reply => 
-            reply.author_id === user.id || reply.author_id === otherParticipantId
-          );
-
-          // Display only the filtered replies relevant to this specific conversation pair
-          setReplies(filteredReplies as ReplyWithDetails[]);
+          // Data is already filtered by the query, no need for client-side filtering
+          setReplies(repliesData as ReplyWithDetails[]); 
           
           // Identify unread replies *from the other participant* in this specific thread
-          const unreadReplyIds = filteredReplies 
-            .filter(reply => reply.author_id === otherParticipantId) // Only consider replies from the other participant
+          // (Logic remains the same, but operates on the pre-filtered repliesData)
+          const unreadReplyIds = repliesData 
+            .filter(reply => reply.author_id === otherParticipantId) // Only consider replies from the other participant in the fetched set
             .map(reply => reply.id);
             
           if (unreadReplyIds.length > 0) {
@@ -150,22 +150,33 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleSendReply = async () => {
-    if (!user || !profile || !replyText.trim() || !letter) return;
+    console.log('>>> handleSendReply called. otherParticipantId:', otherParticipantId); // Add logging here
+    if (!user || !profile || !replyText.trim() || !letter || !otherParticipantId) {
+      console.warn('>>> handleSendReply aborted. Missing data:', { userId: user?.id, profileExists: !!profile, replyText: replyText.trim(), letterId: letter?.id, otherParticipantId });
+      return; // Add otherParticipantId check
+    }
     
     try {
       setSendingReply(true);
       
+      // Determine the recipient of the reply
+      // In this context (ThreadDetailScreen), the reply is always to the 'otherParticipant'
+      const recipientUserId = otherParticipantId;
+
+      const replyPayload = {
+        letter_id: letter.id,
+        author_id: user.id,
+        display_name: profile.username, // Use profile.username
+        content: replyText,
+        reply_to_id: null,
+        reply_to_user_id: recipientUserId
+      };
+      
+      console.log('>>> Sending Reply Payload:', JSON.stringify(replyPayload, null, 2)); // Add logging
+
       const { data, error } = await supabase
         .from('replies')
-        .insert([
-          {
-            letter_id: letter.id,
-            author_id: user.id,
-            display_name: profile.username,
-            content: replyText,
-            reply_to_id: null // Direct reply to the letter, not to another reply
-          }
-        ])
+        .insert([replyPayload]) // Use the payload object
         .select()
         .single();
         
