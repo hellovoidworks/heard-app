@@ -5,10 +5,9 @@ import { LetterWithDetails } from '../types/database.types';
 
 interface LetterTitleCardProps {
   letter: LetterWithDetails;
-  userReaction?: string | null;
 }
 
-const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction }) => {
+const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter }) => {
   const categoryColor = letter.category?.color || '#333333';
   // Use category color with opacity 0.2 for background
   const backgroundColor = `${categoryColor}33`; // 20% opacity
@@ -30,6 +29,9 @@ const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction 
             <Text style={styles.moodEmoji}>{letter.mood_emoji || '😊'}</Text>
           </View>
           <View style={styles.letterTitleContainer}>
+            <Text style={styles.authorName}>
+              {letter.display_name || letter.author?.username || 'Unknown User'}
+            </Text>
             <Title style={styles.letterTitle}>{letter.title}</Title>
             <View style={styles.metadataContainer}>
               <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
@@ -37,11 +39,6 @@ const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter, userReaction 
                   {letter.category?.name?.toUpperCase() || ''}
                 </Text>
               </View>
-              {userReaction && (
-                <Text style={styles.reactionText}>
-                  You reacted with {userReaction}
-                </Text>
-              )}
             </View>
           </View>
         </View>
@@ -78,6 +75,14 @@ const styles = StyleSheet.create({
     flex: 1,
     overflow: 'hidden',
   },
+  authorName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    opacity: 0.9,
+    marginBottom: 4,
+    fontFamily: 'SourceCodePro-Regular',
+  },
   letterTitle: {
     fontSize: 16,
     fontWeight: '600',
@@ -107,11 +112,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: 'SourceCodePro-SemiBold',
   },
-  reactionText: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    opacity: 0.9,
-  },
+
 });
 
 export default LetterTitleCard; 

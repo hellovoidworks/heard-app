@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { 
   Text, 
   Card, 
@@ -28,9 +28,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { letterId, otherParticipantId } = route.params; // Get both IDs
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
-  const [userReaction, setUserReaction] = useState<string | null>(null);
+  const [userReaction, setUserReaction] = useState<{emoji: string, date: string} | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +45,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     setError(null);
     setLetter(null);
     setReplies([]);
+    setUserReaction(null);
 
     try {
       console.log(`[ThreadDetailScreen] Calling get_thread_details with letterId: ${letterId}, userId: ${user.id}, otherParticipantId: ${otherParticipantId}`);
@@ -86,16 +86,50 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       console.log('[ThreadDetailScreen] Fetched Replies Data:', fetchedReplies);
 
       setLetter(fetchedLetter);
-      setReplies(fetchedReplies || []); 
+      setReplies(fetchedReplies || []);
+      
+      // Fetch user's reaction to this letter
+      await fetchUserReaction(fetchedLetter.id);
       
     } catch (e: any) {
       console.error('Unexpected error fetching thread details:', e);
       setError(e.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   }, [letterId, user, otherParticipantId, supabase]);
+
+  const fetchUserReaction = async (letterId: string) => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('reactions')
+        .select('reaction_type, created_at')
+        .eq('user_id', user.id)
+        .eq('letter_id', letterId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 is the error code for no rows returned
+        console.error('Error fetching user reaction:', error);
+        return;
+      }
+      
+      if (data) {
+        console.log('[ThreadDetailScreen] User reaction found:', data);
+        const formattedDate = format(new Date(data.created_at), 'MMM d');
+        setUserReaction({
+          emoji: data.reaction_type,
+          date: formattedDate
+        });
+      } else {
+        console.log('[ThreadDetailScreen] No user reaction found');
+        setUserReaction(null);
+      }
+    } catch (error) {
+      console.error('Error fetching user reaction:', error);
+    }
+  };
 
   const markRepliesAsRead = async (replyIds: string[]) => {
     if (!user) return;
@@ -192,10 +226,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     fetchLetterAndReplies();
   }, [letterId, otherParticipantId, user]); 
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchLetterAndReplies();
-  };
+
 
   useEffect(() => {
     if (!loading && replies.length > 0) {
@@ -216,7 +247,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return latestReply.author_id !== user.id;
   }, [user, letter, replies]);
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -241,7 +272,15 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      {letter && <LetterTitleCard letter={letter} userReaction={userReaction} />}
+      {letter && <LetterTitleCard letter={letter} />}
+      
+      {userReaction && (
+        <View style={styles.reactionContainer}>
+          <Text style={[styles.reactionText, { backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16 }]}>
+            You reacted with {userReaction.emoji} on {userReaction.date}
+          </Text>
+        </View>
+      )}
       
       <ScrollView
         ref={scrollViewRef}
@@ -249,28 +288,11 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         contentContainerStyle={{ 
           paddingBottom: canReply ? 8 : Math.max(insets.bottom, 16) 
         }}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
       >
         {/* Original Letter */}
-        <Surface style={[styles.originalLetter, { backgroundColor: theme.colors.surface }]}>
-          <View style={styles.messageHeader}>
-            <Text style={[styles.authorName, { color: theme.colors.primary }]}>
-              {letter.display_name || letter.author?.username || 'Unknown User'}
-            </Text>
-            <Text style={[styles.messageDate, { color: theme.colors.onSurfaceDisabled }]}>
-              {format(new Date(letter.created_at), 'MMM d')}
-            </Text>
-          </View>
-          <Paragraph style={[styles.messageContent, { color: theme.colors.onSurface }]}>
-            {letter.content}
-          </Paragraph>
-        </Surface>
+        <Paragraph style={[styles.originalLetter, { color: theme.colors.onSurface }]}>
+          {letter.content}
+        </Paragraph>
         
         {replies.length > 0 && <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />}
         
@@ -376,10 +398,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   originalLetter: {
-    margin: 16,
-    padding: 16,
-    borderRadius: 8,
-    elevation: 2,
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    fontSize: 16,
+    lineHeight: 24,
   },
   divider: {
     marginHorizontal: 16,
@@ -435,6 +458,18 @@ const styles = StyleSheet.create({
   },
   sendButtonContent: {
     paddingVertical: 4,
+  },
+  reactionContainer: {
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  reactionText: {
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });
 
