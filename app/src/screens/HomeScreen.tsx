@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, StyleSheet, FlatList, Animated, Easing, Alert } from 'react-native';
+import { View, StyleSheet, FlatList, Animated, Easing, Alert, AppState, AppStateStatus } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -12,7 +12,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { 
   getCurrentDeliveryWindow, 
   formatDeliveryWindow, 
-  getTimeUntilNextWindow 
+  getTimeUntilNextWindow,
+  MORNING_HOUR,
+  MORNING_MINUTE_TEST
 } from '../utils/deliveryWindow';
 import { StorageService, STORAGE_KEYS } from '../services/storage';
 
@@ -41,6 +43,8 @@ const HomeScreen = () => {
   const [anyLettersInWindow, setAnyLettersInWindow] = useState(false);
   const buttonScale = useRef(new Animated.Value(1)).current;
   const [animatingLetterIds, setAnimatingLetterIds] = useState<Set<string>>(new Set());
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
@@ -164,6 +168,50 @@ const HomeScreen = () => {
     
     updateWindowAndFetch();
   }, [user]);
+  
+  // Handle app state changes (background/foreground)
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      console.log('APPSTATE DEBUG: App state changed from', appState.current, 'to', nextAppState);
+      
+      // Check if app is coming back to foreground
+      if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
+        console.log('APPSTATE DEBUG: App has come to the foreground!');
+        
+        // Get current time and window
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        const window = getCurrentDeliveryWindow();
+        
+        console.log('APPSTATE DEBUG: Current time:', now.toLocaleString());
+        console.log('APPSTATE DEBUG: Current window:', {
+          start: window.start.toLocaleString(),
+          end: window.end.toLocaleString(),
+          isNewWindow: window.isNewWindow
+        });
+        
+        // Check if we're past the test minute for the current hour
+        const isPastTestMinute = currentHour === MORNING_HOUR && currentMinute >= MORNING_MINUTE_TEST;
+        console.log('APPSTATE DEBUG: Is past test minute?', isPastTestMinute);
+        
+        // If we're past the test minute or in a new window, reload letters
+        if (isPastTestMinute || window.isNewWindow) {
+          console.log('APPSTATE DEBUG: Past test minute or new window, reloading letters');
+          setCurrentWindow(window);
+          loadInitialLetters();
+        }
+      }
+      
+      // Update app state
+      appState.current = nextAppState;
+      setAppStateVisible(nextAppState);
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, []);
 
   /**
    * Saves letters to storage with their delivery window timestamp
@@ -212,7 +260,25 @@ const HomeScreen = () => {
       
       // Get fresh delivery window to ensure we have the latest values
       const deliveryWindow = getCurrentDeliveryWindow();
-      const isCurrentWindow = receivedTime >= deliveryWindow.start && receivedTime < deliveryWindow.end;
+      const now = new Date();
+      
+      // Check if the stored letters are from the current window
+      // AND if we're not past the test minute for the current hour
+      const isCurrentWindow = (
+        receivedTime >= deliveryWindow.start && 
+        receivedTime < deliveryWindow.end &&
+        // Additional check: if we're in the morning hour, make sure we haven't passed the test minute
+        !(now.getHours() === MORNING_HOUR && now.getMinutes() >= MORNING_MINUTE_TEST)
+      );
+      
+      console.log('WINDOW DEBUG: Storage validation:', {
+        now: now.toLocaleString(),
+        currentHour: now.getHours(),
+        currentMinute: now.getMinutes(),
+        morningHour: MORNING_HOUR,
+        morningMinuteTest: MORNING_MINUTE_TEST,
+        isPastTestMinute: now.getHours() === MORNING_HOUR && now.getMinutes() >= MORNING_MINUTE_TEST
+      });
       
       console.log('Loading letters from storage:', {
         userId: user.id,
@@ -270,6 +336,65 @@ const HomeScreen = () => {
   };
 
   /**
+   * Checks if we need to deliver new letters by comparing the latest received letter's timestamp
+   * with the current delivery window
+   */
+  const shouldDeliverNewLetters = async (): Promise<boolean> => {
+    if (!user) {
+      console.log('DELIVERY DEBUG: No user found, cannot deliver letters');
+      return false;
+    }
+    
+    try {
+      console.log('DELIVERY DEBUG: Checking if we should deliver new letters');
+      console.log('DELIVERY DEBUG: Current window:', {
+        start: currentWindow.start.toLocaleString(),
+        end: currentWindow.end.toLocaleString(),
+        isNewWindow: currentWindow.isNewWindow
+      });
+      
+      // Get the latest letter received by this user
+      console.log('DELIVERY DEBUG: Fetching latest letter received by user', user.id);
+      const { data: latestDelivery, error } = await supabase
+        .from('letter_received')
+        .select('received_at, letter_id')
+        .eq('user_id', user.id)
+        .order('received_at', { ascending: false })
+        .limit(1);
+      
+      if (error) {
+        console.error('DELIVERY DEBUG: Error checking latest delivery:', error);
+        return false;
+      }
+      
+      // If no letters have been received yet, we should definitely deliver
+      if (!latestDelivery || latestDelivery.length === 0) {
+        console.log('DELIVERY DEBUG: No previous letters found, should deliver new letters');
+        return true;
+      }
+      
+      // Get the timestamp of the latest received letter
+      const latestDeliveryTime = new Date(latestDelivery[0].received_at);
+      
+      console.log('DELIVERY DEBUG: Latest delivery time:', latestDeliveryTime.toLocaleString());
+      console.log('DELIVERY DEBUG: Latest letter ID:', latestDelivery[0].letter_id);
+      console.log('DELIVERY DEBUG: Current window start:', currentWindow.start.toLocaleString());
+      console.log('DELIVERY DEBUG: Current time:', new Date().toLocaleString());
+      
+      // If the latest letter was received before the current window started,
+      // we need to deliver new letters
+      const shouldDeliver = latestDeliveryTime < currentWindow.start;
+      console.log('DELIVERY DEBUG: Should deliver new letters?', shouldDeliver, 
+        '(latest delivery was', shouldDeliver ? 'before' : 'after', 'current window start)');
+      
+      return shouldDeliver;
+    } catch (error) {
+      console.error('Error in shouldDeliverNewLetters:', error);
+      return false;
+    }
+  };
+
+  /**
    * Gets letters delivered in the current window
    * If no letters have been delivered yet in this window, delivers new ones
    */
@@ -280,28 +405,85 @@ const HomeScreen = () => {
       console.log('DEBUG: getLettersForCurrentWindow - Start');
       
       // First, check if there are any letters already delivered in the current window
-      console.log('DEBUG: Checking for existing deliveries in current window:', 
+      console.log('WINDOW DEBUG: Checking for existing deliveries in current window:', 
         currentWindow.start.toISOString(), 'to', currentWindow.end.toISOString());
+      console.log('WINDOW DEBUG: User ID:', user.id);
       
       const { data: existingDeliveries, error: deliveryError } = await supabase
         .from('letter_received')
-        .select('letter_id, display_order')
+        .select('letter_id, display_order, received_at')
         .eq('user_id', user.id)
         .gte('received_at', currentWindow.start.toISOString())
         .lt('received_at', currentWindow.end.toISOString())
         .order('display_order', { ascending: true });
+        
+      // Add a query to check all letter_received entries for this user
+      const { data: allUserDeliveries, error: allDeliveriesError } = await supabase
+        .from('letter_received')
+        .select('letter_id, received_at')
+        .eq('user_id', user.id)
+        .order('received_at', { ascending: false })
+        .limit(20);
+        
+      console.log('WINDOW DEBUG: All recent deliveries for user:', 
+        allUserDeliveries?.map(d => ({ 
+          letter_id: d.letter_id, 
+          received_at: new Date(d.received_at).toLocaleString() 
+        })));
+      
+      if (allDeliveriesError) {
+        console.error('WINDOW DEBUG: Error checking all deliveries:', allDeliveriesError);
+      }
       
       if (deliveryError) {
         console.error('Error checking for existing deliveries:', deliveryError);
         return [];
       }
       
-      console.log('DEBUG: existingDeliveries query completed', existingDeliveries?.length || 0);
+      console.log('WINDOW DEBUG: existingDeliveries query completed', existingDeliveries?.length || 0);
       
-      // If we already have letters delivered in this window, fetch and return them
       if (existingDeliveries && existingDeliveries.length > 0) {
-        console.log(`Found ${existingDeliveries.length} letters already delivered in this window`);
+        console.log(`WINDOW DEBUG: Found ${existingDeliveries.length} letters already delivered in this window`);
+        console.log('WINDOW DEBUG: First 5 existing deliveries:', 
+          existingDeliveries.slice(0, 5).map(d => ({
+            letter_id: d.letter_id,
+            received_at: new Date(d.received_at).toLocaleString()
+          })));
         setAnyLettersInWindow(true);
+        
+        // Check if these letters were received within the last 2 seconds
+        const now = new Date();
+        const twoSecondsAgo = new Date(now.getTime() - 2 * 1000);
+        const recentDeliveries = existingDeliveries.filter(d => 
+          new Date(d.received_at) > twoSecondsAgo
+        );
+        
+        console.log(`WINDOW DEBUG: Found ${recentDeliveries.length} letters delivered in the last 2 seconds`);
+        console.log('WINDOW DEBUG: Current time:', now.toISOString());
+        console.log('WINDOW DEBUG: Two seconds ago:', twoSecondsAgo.toISOString());
+        
+        // Always check if we should deliver new letters when we're in a new window
+        if (currentWindow.isNewWindow) {
+          console.log('WINDOW DEBUG: We are in a new window, checking if we should deliver new letters');
+          
+          // If we have recent deliveries, we've already delivered for this window
+          if (recentDeliveries.length > 0) {
+            console.log('WINDOW DEBUG: Found recent deliveries, using those instead of fetching new ones');
+          } else {
+            // No recent deliveries, check if we should deliver based on latest received letter
+            console.log('WINDOW DEBUG: No recent deliveries in new window, checking if we should fetch new letters');
+            
+            // Always force delivery in a new window if no recent deliveries
+            console.log('WINDOW DEBUG: Fetching new letters for new window');
+            const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT, true);
+            if (newLetters.length > 0) {
+              console.log(`WINDOW DEBUG: Successfully fetched ${newLetters.length} new letters`);
+              return newLetters;
+            } else {
+              console.log('WINDOW DEBUG: No new letters available to fetch');
+            }
+          }
+        }
         
         // Create a map of letter ID to display order for later sorting
         const letterDisplayOrders = new Map<string, number>();
@@ -359,13 +541,15 @@ const HomeScreen = () => {
         console.log('DEBUG: Returning', lettersWithReadStatus.length, 'letters with read status');
         return lettersWithReadStatus;
       } else {
-        // No letters delivered in this window yet, deliver new ones and store them
-        console.log('No letters delivered in this window yet, fetching new ones');
+        // No letters delivered in this window yet, check if we should deliver new ones
+        console.log('No letters delivered in this window yet, checking if we should deliver new ones');
         setAnyLettersInWindow(false);
         
-        // Check if this is a new window we just entered
-        if (currentWindow.isNewWindow) {
-          console.log('New delivery window detected, delivering fresh letters');
+        // Use our new logic to determine if we should deliver new letters
+        const shouldDeliver = await shouldDeliverNewLetters();
+        
+        if (shouldDeliver) {
+          console.log('New delivery window detected based on latest letter timestamp, delivering fresh letters');
           console.log('DEBUG: Calling getUnreadLettersNotByUser');
           const newLetters = await getUnreadLettersNotByUser(INITIAL_LETTERS_LIMIT);
           console.log('DEBUG: getUnreadLettersNotByUser returned', newLetters?.length || 0, 'letters');
@@ -374,10 +558,8 @@ const HomeScreen = () => {
             is_read: false
           }));
         } else {
-          // If it's not a new window but we don't have letters, it might be due to
-          // the app being force closed or cleared from memory. Let's not deliver
-          // new letters automatically in this case to avoid too many letters.
-          console.log('Not a new window but no letters found, returning empty set');
+          // If we shouldn't deliver new letters, return an empty set
+          console.log('Not a new delivery window based on latest letter timestamp, returning empty set');
           return [];
         }
       }
@@ -394,12 +576,17 @@ const HomeScreen = () => {
    * @param forceDelivery If true, forces delivery even if there are no unread letters available
    */
   const getUnreadLettersNotByUser = async (limit: number = INITIAL_LETTERS_LIMIT, forceDelivery: boolean = false) => {
-    console.log('DEBUG: getUnreadLettersNotByUser - Start', limit, forceDelivery ? '(forced)' : '');
+    console.log('FETCH DEBUG: getUnreadLettersNotByUser - Start', limit, forceDelivery ? '(forced)' : '');
+    console.log('FETCH DEBUG: Current time:', new Date().toLocaleString());
     
-    if (!user) return [];
+    if (!user) {
+      console.log('FETCH DEBUG: No user found, cannot fetch letters');
+      return [];
+    }
     
     try {
       // Call the optimized database function to get unread letters
+      console.log('FETCH DEBUG: Calling database function with user_id:', user.id, 'and limit:', limit);
       const { data, error } = await supabase
         .rpc('get_unread_letters_not_by_user', {
           p_user_id: user.id,
@@ -407,12 +594,15 @@ const HomeScreen = () => {
         });
       
       if (error) {
-        console.error('Error calling get_unread_letters_not_by_user:', error);
+        console.error('FETCH DEBUG: Error calling get_unread_letters_not_by_user:', error);
         return [];
       }
       
       if (!data || data.length === 0) {
-        console.log('No unread letters available');
+        console.log('FETCH DEBUG: No unread letters available');
+        if (forceDelivery) {
+          console.log('FETCH DEBUG: Force delivery requested but no letters available');
+        }
         return [];
       }
       
@@ -435,10 +625,12 @@ const HomeScreen = () => {
         display_order: letter.display_order
       }));
       
-      console.log(`DEBUG: getUnreadLettersNotByUser - Returning ${resultLetters.length} letters`);
+      console.log(`FETCH DEBUG: getUnreadLettersNotByUser - Returning ${resultLetters.length} letters`);
+      console.log('FETCH DEBUG: Letter IDs:', resultLetters.map(letter => letter.id).join(', '));
       
       // The database function already handles tracking letters as received
       if (resultLetters.length > 0) {
+        console.log('FETCH DEBUG: Setting anyLettersInWindow to true');
         setAnyLettersInWindow(true);
       }
       
@@ -954,7 +1146,7 @@ const HomeScreen = () => {
             textColor="#FFFFFF"
           >
             {(profile?.stars ?? 0) < 1 ? 
-              "WRITE OR REPLY TO GET STARS ★" : 
+              <>WRITE OR REPLY TO GET <Ionicons name="star" size={16} color="#888888" /></> : 
               <>GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" /></>
             }
           </Button>

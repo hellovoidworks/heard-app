@@ -2,23 +2,21 @@ import { addDays, setHours, setMinutes, setSeconds, setMilliseconds } from 'date
 
 /**
  * Utility for calculating letter delivery windows
- * Letters are delivered at 8am and 8:30pm LOCAL TIME each day
+ * Letters are delivered at 1am and 8pm LOCAL TIME each day
  */
 
 // Define delivery hours in LOCAL TIME
-const MORNING_HOUR = 8;  // 8am local time
-const EVENING_HOUR = 20; // 8pm local time
-const EVENING_MINUTE_TEST = 56; // TEMPORARY: For testing 8:56pm transition
+export const MORNING_HOUR = 3;  // 3am local time for testing
+export const MORNING_MINUTE_TEST = 5; // For testing 3:05am transition
+export const EVENING_HOUR = 20; // 8pm local time
 
 /**
  * Create a date at a specific local hour with zeroed minutes/seconds
- * TEMPORARY: Added minute override for testing evening transition
+ * Set minutes to MORNING_MINUTE_TEST if it's the morning hour test
  */
 const createLocalTime = (date: Date, hour: number): Date => {
   const newDate = new Date(date);
-  // TEMPORARY: Set minutes to EVENING_MINUTE_TEST if it's the evening hour
-  const targetMinute = (hour === EVENING_HOUR) ? EVENING_MINUTE_TEST : 0;
-  // Corrected order: setMinutes takes targetMinute, setSeconds takes 0
+  const targetMinute = (hour === MORNING_HOUR) ? MORNING_MINUTE_TEST : 0;
   return setHours(setMinutes(setSeconds(setMilliseconds(newDate, 0), 0), targetMinute), hour);
 };
 
@@ -30,46 +28,67 @@ export const getCurrentDeliveryWindow = (): { start: Date, end: Date, isNewWindo
   // Get current time
   const now = new Date();
   const currentHour = now.getHours();
-  const currentMinute = now.getMinutes(); // TEMPORARY: Get minutes for testing
+  const currentMinute = now.getMinutes();
 
   // Variables to hold the window boundaries
   let windowStart: Date;
   let windowEnd: Date;
   let isNewWindow = false;
 
-  // TEMPORARY: Check against 8:56 PM for testing evening transition
-  const isPastEveningTestTime = currentHour > EVENING_HOUR || (currentHour === EVENING_HOUR && currentMinute >= EVENING_MINUTE_TEST);
+
+
+  // Check against 1:57 AM for testing morning transition
+  const isPastMorningTestTime = currentHour > MORNING_HOUR || (currentHour === MORNING_HOUR && currentMinute >= MORNING_MINUTE_TEST);
 
   // Determine which window we're in based on current local hour
-  if (isPastEveningTestTime) {
-    // After 8:56pm local time - evening window until 8am tomorrow
-    windowStart = createLocalTime(now, EVENING_HOUR); // Creates 20:56:00
+  if (currentHour >= EVENING_HOUR) {
+    // After 8pm local time - Evening window until 8am tomorrow
+    windowStart = createLocalTime(now, EVENING_HOUR); // Creates 20:00:00 today
 
     // Morning end is tomorrow
     const tomorrow = addDays(now, 1);
-    windowEnd = createLocalTime(tomorrow, MORNING_HOUR);
-  } 
-  else if (currentHour >= MORNING_HOUR) {
-    // Between 8am and 8:56pm local time - morning window
-    windowStart = createLocalTime(now, MORNING_HOUR); // Creates 08:00:00
-    windowEnd = createLocalTime(now, EVENING_HOUR);   // Creates 20:56:00
-  } 
+    windowEnd = createLocalTime(tomorrow, MORNING_HOUR); // Creates 08:00:00 tomorrow
+  }
+  else if (isPastMorningTestTime) {
+    // Between 2:02am and 8pm local time - Morning window
+    windowStart = createLocalTime(now, MORNING_HOUR); // Creates 02:02:00 today
+    windowEnd = createLocalTime(now, EVENING_HOUR);   // Creates 20:00:00 today
+  }
   else {
-    // Before 8am local time - still in previous day's evening window
-    // Note: The *previous* evening window also started at 8:56 PM yesterday
+    // Before 2:02am local time - still in previous day's evening window
+    // Note: The *previous* evening window started at 8 PM yesterday
     const yesterday = addDays(now, -1);
-    windowStart = createLocalTime(yesterday, EVENING_HOUR); // Creates yesterday 20:56:00
-    windowEnd = createLocalTime(now, MORNING_HOUR); // Creates 08:00:00
+    windowStart = createLocalTime(yesterday, EVENING_HOUR); // Creates yesterday 20:00:00
+    windowEnd = createLocalTime(now, MORNING_HOUR); // Creates 08:00:00 today
   }
   
-  // Check if we just entered this window (within the last 5 minutes)
-  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
-  isNewWindow = windowStart.getTime() > fiveMinutesAgo.getTime();
+  // For morning test window, check if we're within 30 seconds of the test minute
+  if (currentHour === MORNING_HOUR) {
+    const thirtySecondsAgo = new Date(now.getTime() - 30 * 1000);
+    const thirtySecondsAhead = new Date(now.getTime() + 30 * 1000);
+    
+    // Create a date for the exact test time
+    const exactTestTime = new Date(now);
+    exactTestTime.setHours(MORNING_HOUR, MORNING_MINUTE_TEST, 0, 0);
+    
+    // Check if we're within 30 seconds of the exact test time
+    isNewWindow = exactTestTime >= thirtySecondsAgo && exactTestTime <= thirtySecondsAhead;
+    
+    console.log(`WINDOW DEBUG: Exact test time: ${exactTestTime.toLocaleString()} (${exactTestTime.toISOString()})`);
+    console.log(`WINDOW DEBUG: 30s window: ${thirtySecondsAgo.toLocaleString()} to ${thirtySecondsAhead.toLocaleString()}`);
+  } else {
+    // For regular windows, check if we just entered this window (within the last 5 minutes)
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    isNewWindow = windowStart.getTime() > fiveMinutesAgo.getTime();
+  }
   
-  // Log the calculated window for debugging (optional)
-  // console.log(`Current Time: ${now.toLocaleString()}`);
-  // console.log(`Delivery Window: ${windowStart.toLocaleString()} - ${windowEnd.toLocaleString()}`);
-  // console.log(`Is New Window: ${isNewWindow}`);
+  // Log the calculated window for debugging
+  console.log(`WINDOW DEBUG: Current Time: ${now.toLocaleString()} (${now.toISOString()})`);
+  console.log(`WINDOW DEBUG: Current Hour: ${currentHour}, Current Minute: ${currentMinute}`);
+  console.log(`WINDOW DEBUG: Morning Hour: ${MORNING_HOUR}, Morning Minute: ${MORNING_MINUTE_TEST}, Evening Hour: ${EVENING_HOUR}`);
+  console.log(`WINDOW DEBUG: isPastMorningTestTime: ${isPastMorningTestTime}`);
+  console.log(`WINDOW DEBUG: Delivery Window: ${windowStart.toLocaleString()} (${windowStart.toISOString()}) - ${windowEnd.toLocaleString()} (${windowEnd.toISOString()})`);
+  console.log(`WINDOW DEBUG: Is New Window: ${isNewWindow}`);
 
   return { start: windowStart, end: windowEnd, isNewWindow };
 };
@@ -99,24 +118,23 @@ export const formatDeliveryWindow = (start: Date, end: Date): string => {
 export const getTimeUntilNextWindow = (): { hours: number, minutes: number, seconds: number } => {
   const now = new Date();
   const currentHour = now.getHours();
-  const currentMinute = now.getMinutes(); // TEMPORARY: Get minutes
-
+  const currentMinute = now.getMinutes();
   // Determine the next window based on current local time
   let nextWindowTime: Date;
-  const isPastEveningTestTime = currentHour > EVENING_HOUR || (currentHour === EVENING_HOUR && currentMinute >= EVENING_MINUTE_TEST);
+  const isPastMorningTestTime = currentHour > MORNING_HOUR || (currentHour === MORNING_HOUR && currentMinute >= MORNING_MINUTE_TEST);
 
-  if (currentHour < MORNING_HOUR) {
-    // Next window is morning today
-    nextWindowTime = createLocalTime(now, MORNING_HOUR); // 08:00:00
-  }
-  else if (!isPastEveningTestTime) {
-    // Still before 8:56 PM today, next window is evening today
-    nextWindowTime = createLocalTime(now, EVENING_HOUR); // 20:56:00
-  }
-  else {
-    // After 8:56 PM today, next window is morning tomorrow
+  if (currentHour >= EVENING_HOUR) {
+    // After 8 PM today, next window is morning tomorrow
     const tomorrow = addDays(now, 1);
     nextWindowTime = createLocalTime(tomorrow, MORNING_HOUR); // Tomorrow 08:00:00
+  }
+  else if (isPastMorningTestTime) {
+    // Between 2:02 AM and 8 PM today, next window is evening today
+    nextWindowTime = createLocalTime(now, EVENING_HOUR); // Today 20:00:00
+  }
+  else {
+    // Before 8 AM today, next window is morning today
+    nextWindowTime = createLocalTime(now, MORNING_HOUR); // Today 08:00:00
   }
 
   // Calculate time difference
