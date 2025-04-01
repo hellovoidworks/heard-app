@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, Platform, Alert, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, Platform, Alert, Image, TouchableOpacity, Animated } from 'react-native';
 import { Button, Text, Title, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
@@ -16,6 +16,33 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(false);
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+  
+  // Setup the bouncing animation
+  useEffect(() => {
+    const startBounceAnimation = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(bounceAnim, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(bounceAnim, {
+            toValue: 0,
+            duration: 800,
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
+    };
+    
+    startBounceAnimation();
+    
+    return () => {
+      bounceAnim.stopAnimation();
+    };
+  }, []);
 
   const handleEnableNotifications = async () => {
     setLoading(true);
@@ -206,6 +233,22 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
             style={styles.notificationImage} 
             resizeMode="contain"
           />
+          
+          {/* Bouncing hand emoji */}
+          <View style={styles.handContainer}>
+            <Animated.Text 
+              style={[styles.handEmoji, {
+                transform: [{
+                  translateY: bounceAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, -15]
+                  })
+                }]
+              }]}
+            >
+              👆
+            </Animated.Text>
+          </View>
         </View>
         
         {/* Buttons at the bottom */}
@@ -274,11 +317,22 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     width: '100%',
-    paddingTop: 20,
+    paddingTop: 0,
+    marginTop: -20,
   },
   notificationImage: {
     width: 270,
     height: 270,
+  },
+  handContainer: {
+    position: 'relative',
+    width: '100%',
+    alignItems: 'center',
+    marginTop: -30,
+  },
+  handEmoji: {
+    fontSize: 36,
+    marginLeft: 63, // Offset to the right from center
   },
   buttonContainer: {
     width: '100%',
