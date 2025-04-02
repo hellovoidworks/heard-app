@@ -312,6 +312,11 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Replies */}
         {replies.map((reply) => {
           const isFromCurrentUser = user && reply.author_id === user.id;
+          const isFromLetterAuthor = reply.author_id === letter.author_id;
+          
+          // Use the letter's display_name for the letter author's replies
+          // Otherwise use the reply's display_name for other participants
+          const displayName = isFromLetterAuthor ? letter.display_name : reply.display_name;
           
           return (
             <Surface 
@@ -329,7 +334,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   styles.authorName,
                   { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.primary }
                 ]}>
-                  {reply.display_name}
+                  {displayName}
                 </Text>
                 <Text style={[
                   styles.messageDate,

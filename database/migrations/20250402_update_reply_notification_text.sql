@@ -32,8 +32,25 @@ BEGIN
       notification_title := 'New Reaction';
       notification_body := sender_name || ' reacted to your letter "' || COALESCE(letter_title, 'Untitled') || '"';
     WHEN 'reply' THEN
-      notification_title := 'New Reply';
-      notification_body := sender_name || ' sent you a reply 👀';
+      DECLARE
+        letter_display_name TEXT;
+        letter_author_id UUID;
+      BEGIN
+        -- Get the letter author ID and display_name
+        SELECT author_id, display_name INTO letter_author_id, letter_display_name 
+        FROM letters 
+        WHERE id = NEW.letter_id;
+        
+        notification_title := 'New Reply';
+        
+        -- Use the letter's display_name if the reply is from the letter author,
+        -- otherwise use the sender's username
+        IF NEW.sender_id = letter_author_id THEN
+          notification_body := letter_display_name || ' sent you a reply 👀';
+        ELSE
+          notification_body := sender_name || ' sent you a reply 👀';
+        END IF;
+      END;
     WHEN 'letter' THEN
       notification_title := 'New Letter';
       notification_body := 'You received a new letter from ' || sender_name;
