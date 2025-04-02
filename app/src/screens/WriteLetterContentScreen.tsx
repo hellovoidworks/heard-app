@@ -73,33 +73,32 @@ const WriteLetterContentScreen = () => {
             dense={true}
             multiline={true}
             numberOfLines={2}
-            inputStyle={styles.titleInput}
+            inputStyle={[styles.titleInput, { height: 60 }]}
           />
           
           <View style={styles.divider} />
           
           <View style={styles.letterContainer}>
             <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your letter</Text>
-            <ScrollView style={styles.contentScrollView}>
-              <TextInput
-                value={content}
-                onChangeText={setContent}
-                placeholder="Write about your worries and issues or use a prompt for some inspiration.."
-                placeholderTextColor={theme.colors.onSurfaceDisabled}
-                multiline
-                style={[styles.contentInput, { 
-                  backgroundColor: 'transparent', 
-                  color: theme.colors.onSurface,
-                  textAlignVertical: 'top'
-                }]}
-                maxLength={5000}
-                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
-                selectionColor="white"
-                underlineColor="transparent"
-                activeUnderlineColor="transparent"
-                mode="flat"
-              />
-            </ScrollView>
+            <TextInput
+              value={content}
+              onChangeText={setContent}
+              placeholder="Write about your worries and issues or use a prompt for some inspiration.."
+              placeholderTextColor={theme.colors.onSurfaceDisabled}
+              multiline
+              style={[styles.contentInput, { 
+                backgroundColor: 'transparent', 
+                color: theme.colors.onSurface,
+                textAlignVertical: 'top',
+                height: '98%' // Fill the available space
+              }]}
+              maxLength={5000}
+              theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+              selectionColor="white"
+              underlineColor="transparent"
+              activeUnderlineColor="transparent"
+              mode="flat"
+            />
           </View>
         </View>
         
@@ -148,9 +147,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginBottom: 8,
   },
-  contentScrollView: {
-    flex: 1,
-  },
+
   divider: {
     height: 1,
     backgroundColor: '#333',
@@ -170,7 +167,7 @@ const styles = StyleSheet.create({
   contentInput: {
     fontSize: 16,
     paddingHorizontal: 0,
-    minHeight: '100%',
+    flex: 1,
   },
   buttonContainer: {
     padding: 16,
