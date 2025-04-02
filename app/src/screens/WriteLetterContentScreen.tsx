@@ -72,7 +72,7 @@ const WriteLetterContentScreen = () => {
             mode="flat"
             dense={true}
             multiline={true}
-            inputStyle={[styles.titleInput, { height: 38 }]}
+            inputStyle={[styles.titleInput]}
           />
           
           <View style={styles.divider} />
