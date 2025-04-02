@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, FlatList, SafeAreaView } from 'react-native';
-import { Button, Text, Title, Chip, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
+import { View, StyleSheet, ScrollView, Alert, SafeAreaView } from 'react-native';
+import { Button, Text, Title, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
@@ -8,15 +8,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePreload } from '../../contexts/PreloadContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fontNames } from '../../utils/fonts';
+import CategorySelector, { Category } from '../../components/CategorySelector';
 
 type Props = NativeStackScreenProps<OnboardingStackParamList, 'CategoryPreferences'>;
 
-interface Category {
-  id: string;
-  name: string;
-  description: string;
-  color: string;
-}
+// Using the Category interface imported from CategorySelector
 
 const CategoryPreferencesScreen = ({ navigation }: Props) => {
   const { user } = useAuth();
@@ -156,35 +152,7 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
     navigation.goBack();
   };
 
-  const renderCategoryItem = ({ item }: { item: Category }) => {
-    // Create a lighter version of the category color for the border
-    const color = item.color || theme.colors.primary;
-    const isSelected = selectedCategories.includes(item.id);
-    
-    return (
-      <Chip
-        selected={isSelected}
-        onPress={() => toggleCategory(item.id)}
-        selectedColor="#FFFFFF"
-        showSelectedCheck={false}
-        textStyle={{ 
-          color: isSelected ? '#FFFFFF' : theme.colors.onSurface,
-          fontFamily: fontNames.sourceCodeProSemiBold,
-          textTransform: 'uppercase',
-          fontSize: 14
-        }}
-        mode={isSelected ? 'flat' : 'outlined'}
-        style={[
-          styles.chip,
-          isSelected 
-            ? { backgroundColor: color } 
-            : { borderColor: color + '80' } // Add 50% transparency to the color
-        ]}
-      >
-        {item.name.toUpperCase()}
-      </Chip>
-    );
-  };
+  // Removed renderCategoryItem as it's now handled by the CategorySelector component
 
   if (loading) {
     return (
@@ -218,43 +186,15 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
           Choose at least 3 categories that interest you. We'll use these to personalize your experience.
         </Text>
         
-        <View style={styles.categoriesContainer}>
-          {categories.map(category => {
-            // Create a lighter version of the category color for the border
-            const color = category.color || theme.colors.primary;
-            const isSelected = selectedCategories.includes(category.id);
-            
-            return (
-              <Chip
-                key={category.id}
-                selected={isSelected}
-                onPress={() => toggleCategory(category.id)}
-                selectedColor="#FFFFFF"
-                showSelectedCheck={false}
-                textStyle={{ 
-                  color: isSelected ? '#FFFFFF' : theme.colors.onSurface,
-                  fontFamily: fontNames.sourceCodeProSemiBold,
-                  textTransform: 'uppercase',
-                  fontSize: 14
-                }}
-                mode={isSelected ? 'flat' : 'outlined'}
-                style={[
-                  styles.chip,
-                  isSelected 
-                    ? { backgroundColor: color } 
-                    : { borderColor: color + '80' } // Add 50% transparency to the color
-                ]}
-              >
-                {category.name.toUpperCase()}
-              </Chip>
-            );
-          })}
-        </View>
-        
-        <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
-          {selectedCategories.length} of {categories.length} selected
-          {selectedCategories.length < 3 && ' (minimum 3)'}
-        </Text>
+        <CategorySelector
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectionChange={setSelectedCategories}
+          selectionMode="multiple"
+          minRequired={3}
+          showSelectionCount={true}
+          containerStyle={styles.categoriesContainer}
+        />
       </ScrollView>
       
       <View style={[
@@ -318,15 +258,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  chip: {
-    margin: 5,
-    borderRadius: 20,
-  },
-  selectionCount: {
-    textAlign: 'center',
-    marginTop: 10,
-    color: '#666',
-  },
+  // Removed chip and selectionCount styles as they're now handled by the CategorySelector component
   footer: {
     position: 'absolute',
     bottom: 0,

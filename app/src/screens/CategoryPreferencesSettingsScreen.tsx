@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
-import { Button, Text, Title, Chip, ActivityIndicator, Appbar, useTheme } from 'react-native-paper';
+import { Button, Text, Title, ActivityIndicator, Appbar, useTheme } from 'react-native-paper';
+import CategorySelector, { Category } from '../components/CategorySelector';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
-interface Category {
-  id: string;
-  name: string;
-  description: string | null;
-}
+// Using the Category interface imported from CategorySelector
 
 const CategoryPreferencesSettingsScreen = () => {
   const { user } = useAuth();
@@ -174,21 +171,15 @@ const CategoryPreferencesSettingsScreen = () => {
           Select categories that interest you. We'll use these to personalize your letters.
         </Text>
         
-        <View style={styles.categoriesContainer}>
-          {categories.map(category => (
-            <Chip
-              key={category.id}
-              selected={selectedCategories.includes(category.id)}
-              onPress={() => toggleCategory(category.id)}
-              style={styles.chip}
-              selectedColor={theme.colors.primary}
-              mode={selectedCategories.includes(category.id) ? 'flat' : 'outlined'}
-              textStyle={{ color: selectedCategories.includes(category.id) ? theme.colors.onPrimary : theme.colors.onSurface }}
-            >
-              {category.name}
-            </Chip>
-          ))}
-        </View>
+        <CategorySelector
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onSelectionChange={setSelectedCategories}
+          selectionMode="multiple"
+          minRequired={3}
+          showSelectionCount={true}
+          containerStyle={styles.categoriesContainer}
+        />
         
         <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
           {selectedCategories.length} of {categories.length} selected

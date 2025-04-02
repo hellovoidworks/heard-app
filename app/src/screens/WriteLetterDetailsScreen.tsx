@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText } from 'react-native';
-import { TextInput, Button, Text, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
+import { TextInput, Button, Text, Divider, ActivityIndicator, useTheme, Surface } from 'react-native-paper';
+import CategorySelector from '../components/CategorySelector';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -190,34 +191,20 @@ const WriteLetterDetailsScreen = () => {
           </View>
           
           <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
-          {loadingCategories ? (
-            <ActivityIndicator animating={true} style={styles.loading} color={theme.colors.primary} />
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoriesContainer}
-            >
-              {categories.map((category) => (
-                <Chip
-                  key={category.id}
-                  selected={selectedCategory?.id === category.id}
-                  onPress={() => handleCategorySelect(category)}
-                  style={[
-                    styles.categoryChip,
-                    { backgroundColor: theme.colors.surface },
-                    selectedCategory?.id === category.id && { backgroundColor: theme.colors.primary }
-                  ]}
-                  textStyle={[
-                    { color: theme.colors.onSurface },
-                    selectedCategory?.id === category.id && { color: theme.colors.onPrimary }
-                  ]}
-                >
-                  {category.name}
-                </Chip>
-              ))}
-            </ScrollView>
-          )}
+          <CategorySelector
+            categories={categories}
+            selectedCategories={selectedCategory ? [selectedCategory.id] : []}
+            onSelectionChange={(selected: string[]) => {
+              if (selected.length > 0) {
+                const category = categories.find(c => c.id === selected[0]);
+                if (category) handleCategorySelect(category);
+              }
+            }}
+            loading={loadingCategories}
+            selectionMode="single"
+            horizontal={false}
+            containerStyle={styles.categoriesContainer}
+          />
           
           <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
           <TextInput
@@ -326,7 +313,9 @@ const styles = StyleSheet.create({
   },
   categoriesContainer: {
     flexDirection: 'row',
-    marginBottom: 8,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 16,
   },
   categoryChip: {
     marginRight: 8,
