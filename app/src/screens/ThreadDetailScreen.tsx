@@ -336,13 +336,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               <View style={styles.messageHeader}>
                 <Text style={[
                   styles.authorName,
-                  { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.primary }
+                  { color: '#FFFFFF', opacity: 0.5 }
                 ]}>
                   {displayName}
                 </Text>
                 <Text style={[
                   styles.messageDate,
-                  { color: isFromCurrentUser ? theme.colors.onPrimary : theme.colors.onSurfaceDisabled }
+                  { color: '#FFFFFF', opacity: 0.5 }
                 ]}>
                   {format(new Date(reply.created_at), 'MMM d')}
                 </Text>
