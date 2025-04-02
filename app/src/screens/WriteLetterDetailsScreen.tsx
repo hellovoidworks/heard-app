@@ -17,26 +17,16 @@ type WriteLetterDetailsParams = {
 
 // Mood options with emojis and labels
 const MOOD_OPTIONS = [
-  { emoji: '😌', label: 'Calm' },
-  { emoji: '🙌', label: 'Excited' },
-  { emoji: '👌', label: 'Okay' },
-  { emoji: '💗', label: 'Grateful' },
-  { emoji: '😄', label: 'Happy' },
   { emoji: '🥱', label: 'Bored' },
-  { emoji: '😢', label: 'Lonely' },
-  { emoji: '😕', label: 'Confused' },
-  { emoji: '😖', label: 'Stressed' },
+  { emoji: '👌', label: 'Okay' },
+  { emoji: '😁', label: 'Happy' },
+  { emoji: '😡', label: 'Angry' },
   { emoji: '😈', label: 'Playful' },
   { emoji: '😟', label: 'Worried' },
-  { emoji: '😴', label: 'Tired' },
-  { emoji: '😥', label: 'Sad' },
-  { emoji: '😶', label: 'Numb' },
-  { emoji: '💔', label: 'Heartbroken' },
-  { emoji: '😫', label: 'Upset' },
-  { emoji: '😠', label: 'Angry' },
-  { emoji: '😮', label: 'Surprised' },
-  { emoji: '😨', label: 'Scared' },
-  { emoji: '🫠', label: 'Overwhelmed' },
+  { emoji: '😪', label: 'Lonely' },
+  { emoji: '😕', label: 'Confused' },
+  { emoji: '😖', label: 'Stressed' },
+  { emoji: '😢', label: 'Sad' },
 ];
 
 const WriteLetterDetailsScreen = () => {
