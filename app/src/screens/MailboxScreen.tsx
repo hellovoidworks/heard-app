@@ -31,7 +31,7 @@ const MailboxScreen = () => {
                 styles.tabText, 
                 activeTab === 'correspondence' ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
               ]}>
-                My Responses
+                Inbox
               </Text>
               {unreadCount > 0 && (
                 <View style={[styles.unreadBadge, activeTab === 'correspondence' ? { backgroundColor: '#FFFFFF' } : { backgroundColor: 'red' }]}>

@@ -408,7 +408,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                   title: '',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
-                  headerBackTitle: 'My Responses'
+                  headerBackTitle: 'Inbox'
                 })} 
               />
               <Stack.Screen 
