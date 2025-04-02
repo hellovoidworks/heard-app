@@ -6,7 +6,6 @@ import { removePushToken } from '../services/notifications';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
-import { TestPushNotification } from '../components/TestPushNotification';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -133,13 +132,6 @@ const ProfileScreen = () => {
 
       <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
-      {/* Test Push Notification Component */}
-      <View style={styles.testSection}>
-        <TestPushNotification />
-      </View>
-
-      <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
       <View style={styles.footer}>
         <Button 
           mode="outlined" 
@@ -190,9 +182,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginVertical: 8,
-  },
-  testSection: {
-    padding: 20,
   },
   footer: {
     padding: 20,

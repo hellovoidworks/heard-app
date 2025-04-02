@@ -21,6 +21,7 @@ import { format } from 'date-fns';
 import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LetterTitleCard from '../components/LetterTitleCard';
+import ReactionDisplay from '../components/ReactionDisplay';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
@@ -296,9 +297,12 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* User Reaction */}
         {userReaction && (
           <View style={styles.reactionContainer}>
-            <Text style={[styles.reactionText, { backgroundColor: theme.colors.surfaceVariant, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 16 }]}>
-              You reacted with {userReaction.emoji} on {userReaction.date}
-            </Text>
+            <ReactionDisplay
+              username=""
+              emoji={userReaction.emoji}
+              date={userReaction.date}
+              isCurrentUser={true}
+            />
           </View>
         )}
         

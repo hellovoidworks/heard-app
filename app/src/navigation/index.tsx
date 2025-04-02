@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { NavigationContainer, DarkTheme } from '@react-navigation/native';
+import React, { useEffect, forwardRef } from 'react';
+import { NavigationContainer, DarkTheme, NavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
@@ -297,7 +297,7 @@ const MainNavigator = () => {
 };
 
 // App root navigator
-const AppNavigator = () => {
+const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, ref) => {
   const { user, loading, isOnboardingComplete } = useAuth();
 
   console.log('AppNavigator rendering with state:', { 
@@ -357,6 +357,7 @@ const AppNavigator = () => {
 
   return (
     <NavigationContainer 
+      ref={ref}
       theme={{
         ...DarkTheme,
         colors: {
@@ -514,6 +515,6 @@ const AppNavigator = () => {
       </Stack.Navigator>
     </NavigationContainer>
   );
-};
+});
 
 export default AppNavigator; 

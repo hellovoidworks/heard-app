@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import LetterTitleCard from '../components/LetterTitleCard';
+import ReactionDisplay from '../components/ReactionDisplay';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
@@ -27,7 +28,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [reactionStats, setReactionStats] = useState<{emoji: string, count: number}[]>([]);
+  const [reactionStats, setReactionStats] = useState<{emoji: string, username: string, date: string}[]>([]);
   const [replyCount, setReplyCount] = useState(0);
   const [readCount, setReadCount] = useState(0);
   const [threads, setThreads] = useState<Thread[]>([]);
@@ -76,30 +77,37 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!letterId) return;
     
     try {
-      // Fetch reaction stats
+      // Define the type for the reaction data
+      type ReactionWithUser = {
+        reaction_type: string;
+        created_at: string;
+        user_profiles: { username: string } | null;
+      };
+
+      // Fetch reaction stats with user information
       const { data: reactionsData, error: reactionsError } = await supabase
         .from('reactions')
-        .select('reaction_type, user_id')
-        .eq('letter_id', letterId);
+        .select(`
+          reaction_type, 
+          created_at,
+          user_profiles!reactions_user_id_fkey(username)
+        `)
+        .eq('letter_id', letterId)
+        .order('created_at', { ascending: false }) as { data: ReactionWithUser[] | null, error: any };
         
       if (reactionsError) {
         console.error('Error fetching reactions:', reactionsError);
-      } else if (reactionsData) {
-        // Process reactions to get counts
-        const reactionCounts: {[key: string]: number} = {};
-        
-        reactionsData.forEach(reaction => {
-          // Count total reactions by type
-          reactionCounts[reaction.reaction_type] = (reactionCounts[reaction.reaction_type] || 0) + 1;
-        });
-        
-        // Format for display
-        const formattedReactions = Object.entries(reactionCounts).map(([emoji, count]) => ({
-          emoji,
-          count
-        })).sort((a, b) => b.count - a.count);
+      } else if (reactionsData && reactionsData.length > 0) {
+        // Format reactions for display with usernames
+        const formattedReactions = reactionsData.map(reaction => ({
+          emoji: reaction.reaction_type,
+          username: reaction.user_profiles?.username || 'Anonymous',
+          date: format(new Date(reaction.created_at), 'MMM d')
+        }));
         
         setReactionStats(formattedReactions);
+      } else {
+        setReactionStats([]);
       }
       
       // Fetch reply count
@@ -271,6 +279,20 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         }
       >
         <LetterTitleCard letter={letter} />
+        
+        {reactionStats.length > 0 && (
+          <View style={styles.reactionsContainer}>
+            {reactionStats.map((reaction, index) => (
+              <ReactionDisplay
+                key={index}
+                username={reaction.username}
+                emoji={reaction.emoji}
+                date={reaction.date}
+                isCurrentUser={false}
+              />
+            ))}
+          </View>
+        )}
 
         <View style={styles.letterContent}>
           <View style={styles.authorInfo}>
@@ -341,23 +363,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
           )}
           
-          {reactionStats.length > 0 && (
-            <View style={styles.reactionsContainer}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
-                Reactions
-              </Text>
-              <View style={styles.reactionsList}>
-                {reactionStats.map((reaction, index) => (
-                  <View key={index} style={styles.reactionItem}>
-                    <Text style={styles.reactionEmoji}>{reaction.emoji}</Text>
-                    <Text style={[styles.reactionCount, { color: theme.colors.onSurfaceVariant }]}>
-                      {reaction.count}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -440,7 +446,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   reactionsContainer: {
-    marginTop: 8,
+    marginHorizontal: 16,
+    marginTop: 4,
+    marginBottom: 16,
+    backgroundColor: 'rgba(0,0,0,0.03)',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 16,
@@ -448,25 +460,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   reactionsList: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
   },
   reactionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 16,
     marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 4,
   },
   reactionEmoji: {
-    fontSize: 16,
-    marginRight: 6,
+    fontSize: 18,
+    marginRight: 8,
   },
-  reactionCount: {
+  reactionText: {
     fontSize: 14,
+    fontStyle: 'italic',
   },
   threadsContainer: {
     marginTop: 16,

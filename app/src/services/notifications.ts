@@ -422,3 +422,46 @@ export async function updateAppBadgeCount(count: number) {
     console.error('[updateAppBadgeCount] Error setting app badge count:', error);
   }
 }
+
+/**
+ * Schedule a local notification for testing navigation
+ * @param title The notification title
+ * @param body The notification body text
+ * @param type The notification type ('letter', 'reply', or 'reaction')
+ * @param letterId The ID of the letter
+ * @param senderId The ID of the sender (for reply notifications)
+ */
+export async function scheduleLocalNotificationWithNavigation(
+  title: string,
+  body: string,
+  type: 'letter' | 'reply' | 'reaction',
+  letterId: string,
+  senderId?: string
+) {
+  try {
+    console.log(`Scheduling local notification with type: ${type}, letterId: ${letterId}${senderId ? `, senderId: ${senderId}` : ''}`);
+    
+    // Create the notification content
+    const content: Notifications.NotificationContentInput = {
+      title,
+      body,
+      data: {
+        type,
+        letter_id: letterId,
+        sender_id: senderId || null
+      }
+    };
+    
+    // Schedule the notification to appear immediately
+    const identifier = await Notifications.scheduleNotificationAsync({
+      content,
+      trigger: null, // null trigger means show immediately
+    });
+    
+    console.log(`Local notification scheduled with identifier: ${identifier}`);
+    return { success: true, identifier };
+  } catch (error) {
+    console.error('Error scheduling local notification:', error);
+    return { success: false, error };
+  }
+}

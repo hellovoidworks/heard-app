@@ -4,6 +4,7 @@ import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } fr
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
 import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken, testSavePushToken } from '../../services/notifications';
+import { TestPushNotification } from '../../components/TestPushNotification';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
@@ -330,6 +331,13 @@ Details: ${result.details || 'No details provided'}`
         >
           Test Direct Token Save
         </Button>
+        
+        {/* Notification Navigation Testing */}
+        <Text style={[styles.devSubtitle, { color: theme.colors.error, marginTop: 20 }]}>Test Notification Navigation</Text>
+        <Text style={[styles.devDescription, { color: theme.colors.onSurfaceVariant }]}>
+          Send test notifications and tap them to verify navigation to the correct screens
+        </Text>
+        <TestPushNotification />
       </View>
     </ScrollView>
   );
@@ -347,6 +355,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginVertical: 8,
+  },
+  devSubtitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  devDescription: {
+    fontSize: 12,
+    marginBottom: 8,
   },
   testButton: {
     marginTop: 8,

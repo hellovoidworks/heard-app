@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import * as Notifications from 'expo-notifications';
+import { NavigationContainerRef } from '@react-navigation/native';
+import { RootStackParamList } from './src/navigation/types';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { CategoryProvider } from './src/contexts/CategoryContext';
@@ -15,6 +18,58 @@ console.log('=== App initialization started ===');
 
 // Expo notifications are automatically initialized in the notifications.ts file
 console.log('Expo notifications configured');
+
+// Create a ref for navigation
+const navigationRef = React.createRef<NavigationContainerRef<RootStackParamList>>();
+
+// Last notification response handler
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
+
+// Function to navigate based on notification data
+function navigateToNotification(data: any) {
+  if (!navigationRef.current || !data) return;
+  
+  console.log('Navigating based on notification data:', data);
+  
+  try {
+    const type = data.type;
+    const letterId = data.letter_id;
+    const senderId = data.sender_id;
+    
+    if (!letterId) {
+      console.log('No letter ID in notification data');
+      return;
+    }
+    
+    switch (type) {
+      case 'reply':
+        // Navigate to the thread detail screen
+        navigationRef.current?.navigate('ThreadDetail', { 
+          letterId: letterId,
+          otherParticipantId: senderId
+        });
+        break;
+      case 'letter':
+        // Navigate to the letter detail screen
+        navigationRef.current?.navigate('LetterDetail', { letterId: letterId });
+        break;
+      case 'reaction':
+        // For reactions, navigate to MyLetterDetailScreen since reactions are for letters authored by the user
+        navigationRef.current?.navigate('MyLetterDetail', { letterId: letterId });
+        break;
+      default:
+        console.log('Unknown notification type:', type);
+    }
+  } catch (error) {
+    console.error('Error navigating to notification:', error);
+  }
+}
 
 // Keep splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +100,23 @@ export default function App() {
   
   useEffect(() => {
     console.log('=== App useEffect running ===');
+    
+    // Set up notification response handler
+    const notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log('Notification response received:', response);
+      const data = response.notification.request.content.data;
+      navigateToNotification(data);
+    });
+    
+    // Check if app was opened from a notification
+    Notifications.getLastNotificationResponseAsync().then(response => {
+      if (response) {
+        console.log('App opened from notification:', response);
+        const data = response.notification.request.content.data;
+        // Small delay to ensure navigation is ready
+        setTimeout(() => navigateToNotification(data), 1000);
+      }
+    });
     
     // Handle deep linking for magic link authentication
     const handleDeepLink = async (url: string) => {
@@ -226,6 +298,7 @@ export default function App() {
       console.log('Cleaning up App component listeners');
       subscription.remove();
       authListener?.subscription?.unsubscribe();
+      notificationResponseSubscription.remove();
     };
   }, []);
 
@@ -254,7 +327,7 @@ export default function App() {
         <AuthProvider key={`auth-provider-${forceReset}`}>
           <CategoryProvider>
             <PreloadProvider>
-              <AppNavigator />
+              <AppNavigator ref={navigationRef} />
             </PreloadProvider>
           </CategoryProvider>
         </AuthProvider>

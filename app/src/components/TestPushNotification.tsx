@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { testSavePushToken, sendPushNotification } from '../services/notifications';
+import { testSavePushToken, sendPushNotification, scheduleLocalNotificationWithNavigation } from '../services/notifications';
 import { supabase } from '../services/supabase';
 import * as Notifications from 'expo-notifications';
 
@@ -13,6 +13,36 @@ export const TestPushNotification = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
+
+  // Test letters for navigation testing
+  const [testLetters, setTestLetters] = useState<Array<{id: string, title: string}>>([]);
+  
+  // Fetch some letters to use for testing navigation
+  useEffect(() => {
+    if (user) {
+      const fetchTestLetters = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('letters')
+            .select('id, title')
+            .limit(3);
+          
+          if (error) {
+            console.error('Error fetching test letters:', error);
+            return;
+          }
+          
+          if (data && data.length > 0) {
+            setTestLetters(data);
+          }
+        } catch (error) {
+          console.error('Exception fetching test letters:', error);
+        }
+      };
+      
+      fetchTestLetters();
+    }
+  }, [user]);
 
   // Schedule a local notification for immediate delivery
   const scheduleLocalNotification = async () => {
@@ -31,6 +61,55 @@ export const TestPushNotification = () => {
       return true;
     } catch (error) {
       console.error('Error scheduling local notification:', error);
+      return false;
+    }
+  };
+  
+  // Schedule a navigation-aware notification
+  const scheduleNavigationNotification = async (type: 'letter' | 'reply' | 'reaction') => {
+    if (!user || testLetters.length === 0) {
+      setResult('Error: No user or test letters available');
+      return false;
+    }
+    
+    try {
+      const testLetter = testLetters[0];
+      let title = '';
+      let body = '';
+      
+      switch (type) {
+        case 'letter':
+          title = 'New Letter';
+          body = `You received a new letter: "${testLetter.title}"`;  
+          break;
+        case 'reply':
+          title = 'New Reply';
+          body = 'Someone sent you a reply 👀';
+          break;
+        case 'reaction':
+          title = 'New Reaction';
+          body = `Someone reacted to your letter "${testLetter.title}"`;
+          break;
+      }
+      
+      const result = await scheduleLocalNotificationWithNavigation(
+        title,
+        body,
+        type,
+        testLetter.id,
+        user.id // Using current user as sender for testing
+      );
+      
+      if (result.success) {
+        setResult(`Navigation notification (${type}) scheduled successfully. Tap it to test navigation!`);
+        return true;
+      } else {
+        setResult(`Error scheduling navigation notification: ${result.error}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error scheduling navigation notification:', error);
+      setResult(`Error: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   };
@@ -175,6 +254,41 @@ export const TestPushNotification = () => {
         </TouchableOpacity>
       </View>
       
+      {/* Navigation Test Buttons */}
+      <Text style={styles.sectionTitle}>Test Notification Navigation</Text>
+      <Text style={styles.sectionDescription}>Tap a notification to navigate to the relevant screen</Text>
+      <Text style={styles.sectionDescription}>Letter → LetterDetail | Reply → ThreadDetail | Reaction → MyLetterDetail</Text>
+      
+      <View style={styles.navigationButtonContainer}>
+        <TouchableOpacity 
+          style={[styles.navButton, { backgroundColor: '#4CAF50' }]} 
+          onPress={() => scheduleNavigationNotification('letter')}
+          disabled={loading || !user || testLetters.length === 0}
+        >
+          <Text style={styles.buttonText}>Letter</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navButton, { backgroundColor: '#2196F3' }]} 
+          onPress={() => scheduleNavigationNotification('reply')}
+          disabled={loading || !user || testLetters.length === 0}
+        >
+          <Text style={styles.buttonText}>Reply</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={[styles.navButton, { backgroundColor: '#FF9800' }]} 
+          onPress={() => scheduleNavigationNotification('reaction')}
+          disabled={loading || !user || testLetters.length === 0}
+        >
+          <Text style={styles.buttonText}>Reaction</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {testLetters.length === 0 && user && (
+        <Text style={styles.warningText}>No test letters available. Navigation tests will not work.</Text>
+      )}
+      
       {loading && <ActivityIndicator style={styles.loader} />}
       
       {result && (
@@ -198,12 +312,35 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 12,
   },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 20,
+    marginBottom: 4,
+  },
+  sectionDescription: {
+    fontSize: 12,
+    marginBottom: 8,
+    color: '#666',
+  },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
+  navigationButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
   button: {
     backgroundColor: '#161616',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    flex: 1,
+    marginHorizontal: 4,
+  },
+  navButton: {
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 6,
@@ -214,6 +351,12 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontWeight: '500',
+  },
+  warningText: {
+    color: '#f44336',
+    fontSize: 12,
+    marginTop: 4,
+    marginBottom: 8,
   },
   loader: {
     marginTop: 12,
