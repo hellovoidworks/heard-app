@@ -161,13 +161,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: 16,
+    paddingTop: 8,
   },
   horizontalLabel: {
     fontSize: 18,
     fontWeight: 'bold',
     marginRight: 8,
-    marginTop: 10,
-    paddingTop: 0,
+    paddingTop: 8,
   },
   inputWrapper: {
     flex: 1,
