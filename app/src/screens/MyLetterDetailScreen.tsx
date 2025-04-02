@@ -295,14 +295,6 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         )}
 
         <View style={styles.letterContent}>
-          <View style={styles.authorInfo}>
-            <Text style={[styles.authorName, { color: theme.colors.primary }]}>
-              By you
-            </Text>
-            <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
-              {format(new Date(letter.created_at), 'MMM d, yyyy')}
-            </Text>
-          </View>
 
           <Paragraph style={[styles.content, { color: theme.colors.onSurface }]}>
             {letter.content}

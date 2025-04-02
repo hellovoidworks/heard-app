@@ -24,7 +24,7 @@ const ReactionDisplay: React.FC<ReactionDisplayProps> = ({
           styles.reactionText, 
           { 
             backgroundColor: theme.colors.surfaceVariant,
-            color: 'white'
+            color: theme.colors.onSurfaceVariant
           }
         ]}
       >
