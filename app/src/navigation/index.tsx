@@ -153,9 +153,9 @@ const MainNavigator = () => {
             <Text style={{
               color: props.state.index === 0 ? '#FFFFFF' : '#666666',
               fontSize: 16,
-              fontWeight: 'bold',
+              fontWeight: 'normal',
               textTransform: 'uppercase',
-              fontFamily: fontNames.sourceCodeProBold,
+              fontFamily: fontNames.sourceCodeProRegular,
             }}>
               HOME
             </Text>
@@ -193,9 +193,9 @@ const MainNavigator = () => {
             <Text style={{
               color: props.state.index === 1 ? '#FFFFFF' : '#666666',
               fontSize: 16,
-              fontWeight: 'bold',
+              fontWeight: 'normal',
               textTransform: 'uppercase',
-              fontFamily: fontNames.sourceCodeProBold,
+              fontFamily: fontNames.sourceCodeProRegular,
             }}>
               MAILBOX
             </Text>
@@ -416,7 +416,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 component={WriteLetterContentScreen} 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
-                  title: 'Write Letter',
+                  title: 'Write Mail',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',
@@ -436,7 +436,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 component={WriteLetterContentScreen} 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
-                  title: 'Write Letter',
+                  title: 'Write Mail',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',

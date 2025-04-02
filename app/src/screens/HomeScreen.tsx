@@ -1081,8 +1081,8 @@ const HomeScreen = () => {
             textColor="#FFFFFF"
           >
             {(profile?.stars ?? 0) < 1 ? 
-              <>WRITE OR REPLY TO GET <Ionicons name="star" size={16} color="#888888" /></> : 
-              <>GET NEW MAIL 1 <Ionicons name="star" size={16} color="#FFD700" /></>
+              <>Write or reply to get <Ionicons name="star" size={16} color="#888888" /></> : 
+              <>Get new mail{'    '}1 <Ionicons name="star" size={16} color="#FFD700" /></>
             }
           </Button>
         </Animated.View>

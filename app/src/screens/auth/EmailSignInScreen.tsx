@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
+import { fontNames } from '../../utils/fonts';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'EmailSignIn'>;
 
@@ -224,7 +225,8 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 28,
-    fontWeight: '900', // Increased from 'bold' to make it bolder
+    fontWeight: 'bold', // Changed to match AgeVerificationScreen
+    fontFamily: fontNames.interBold, // Changed to interBold to match the fontWeight
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 30,
