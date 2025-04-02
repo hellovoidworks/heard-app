@@ -578,9 +578,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <Button
               mode="outlined"
               onPress={handleDiscard}
-              icon="close"
-              style={[styles.actionButton, { borderColor: theme.colors.error }]}
-              textColor={theme.colors.error}
+              style={[styles.actionButton, { borderColor: 'white', flex: 1 }]}
+              textColor="white"
             >
               Discard
             </Button>
@@ -588,17 +587,21 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               mode="outlined"
               onPress={() => setReactionModalVisible(true)}
               icon="emoticon-happy-outline"
-              style={styles.actionButton}
+              style={[styles.actionButton, { borderColor: theme.colors.primary, flex: 1 }]}
+              textColor={theme.colors.primary}
             >
               React
             </Button>
             <Button
               mode="contained"
               onPress={handleOpenResponseModal}
-              icon="reply"
-              style={styles.actionButton}
+              style={[styles.actionButton, { flex: 1.2 }]}
             >
-              Reply
+              Reply +2{' '}
+              <Text style={{ 
+                color: '#FFD700',
+                fontSize: 16
+              }}>★</Text>
             </Button>
           </View>
         </View>
