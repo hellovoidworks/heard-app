@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Text, TextInput, useTheme } from 'react-native-paper';
+import { Text, TextInput as PaperTextInput, useTheme } from 'react-native-paper';
 
 interface LabeledTextInputProps {
   label: string;
@@ -45,7 +45,7 @@ const LabeledTextInput = ({
         {label}{required ? ' (Required)' : ''}
       </Text>
       
-      <TextInput
+      <PaperTextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -63,6 +63,7 @@ const LabeledTextInput = ({
         ]}
         maxLength={maxLength}
         theme={{ colors: { text: theme.colors.onSurface } }}
+        mode="outlined"
       />
       
       {hint ? (

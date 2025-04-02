@@ -207,34 +207,14 @@ const WriteLetterDetailsScreen = () => {
             containerStyle={styles.categoriesContainer}
           />
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name (Required)</Text>
-          <TextInput
+          <LabeledTextInput
+            label="Display Name"
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Enter a display name for this letter"
-            placeholderTextColor={theme.colors.onSurfaceDisabled}
-            style={[styles.displayNameInput, { 
-              backgroundColor: theme.colors.surface,
-              color: theme.colors.onSurface
-            }]}
-            maxLength={50}
-            theme={{ colors: { text: theme.colors.onSurface } }}
-          />
-          <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
-            This name will be shown publicly with your letter
-          </Text>
-          
-          {/* Let's try the LabeledTextInput again with a different key */}
-          <LabeledTextInput
-            key="displayNameInput"
-            label="Display Name (Test)"
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder="Test display name input"
             maxLength={50}
             required={true}
-            hint="This is a test of the LabeledTextInput component"
-            containerStyle={{ marginTop: 16 }}
+            hint="This name will be shown publicly with your letter"
           />
         </ScrollView>
         
