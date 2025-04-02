@@ -7,27 +7,18 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
+import { useFonts } from 'expo-font';
+import { Inter_700Bold, Inter_500Medium } from '@expo-google-fonts/inter';
 
 type WriteLetterDetailsParams = {
   title: string;
   content: string;
+  moodEmoji: string;
   categoryId?: string;
   category?: any;
 };
 
-// Mood options with emojis and labels
-const MOOD_OPTIONS = [
-  { emoji: '🥱', label: 'Bored' },
-  { emoji: '👌', label: 'Okay' },
-  { emoji: '😁', label: 'Happy' },
-  { emoji: '😡', label: 'Angry' },
-  { emoji: '😈', label: 'Playful' },
-  { emoji: '😟', label: 'Worried' },
-  { emoji: '😪', label: 'Lonely' },
-  { emoji: '😕', label: 'Confused' },
-  { emoji: '😖', label: 'Stressed' },
-  { emoji: '😢', label: 'Sad' },
-];
+
 
 const WriteLetterDetailsScreen = () => {
   const { user, profile, updateStars } = useAuth();
@@ -36,17 +27,24 @@ const WriteLetterDetailsScreen = () => {
   const theme = useTheme();
   const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory } = useCategories();
   
+  // Load Inter font
+  const [fontsLoaded] = useFonts({
+    Inter_700Bold,
+    Inter_500Medium
+  });
+  
   // Required params from previous screen
-  const title = route.params?.title || '';
+  const generatedTitle = route.params?.title || ''; // This is auto-generated from content in first screen
   const content = route.params?.content || '';
+  const moodEmoji = route.params?.moodEmoji || '';
   
   // Get the category from route params if available
   const initialCategory = route.params?.category || null;
   
-  // Always start with blank display name to force user to enter it each time
+  // Always start with blank display name and subject to force user to enter them each time
   const [displayName, setDisplayName] = useState('');
+  const [subjectTitle, setSubjectTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [moodEmoji, setMoodEmoji] = useState('');
 
   // Clear selected category when screen loads
   useEffect(() => {
@@ -80,10 +78,7 @@ const WriteLetterDetailsScreen = () => {
       return;
     }
 
-    if (!moodEmoji) {
-      Alert.alert('Error', 'Please select a mood for your letter.');
-      return;
-    }
+
 
     try {
       setIsSubmitting(true);
@@ -93,12 +88,12 @@ const WriteLetterDetailsScreen = () => {
         .from('letters')
         .insert([
           {
-            title,
+            title: subjectTitle || generatedTitle,
             content,
             author_id: user.id,
             display_name: displayName.trim(),
             category_id: selectedCategory.id,
-            mood_emoji: moodEmoji || null,
+            mood_emoji: moodEmoji,
           },
         ])
         .select()
@@ -134,57 +129,6 @@ const WriteLetterDetailsScreen = () => {
     setSelectedCategory(category);
   };
 
-  const emojiScaleAnims = useRef<{[key: string]: Animated.Value}>({}).current;
-  
-  // Initialize animation values for each emoji
-  useEffect(() => {
-    MOOD_OPTIONS.forEach(option => {
-      if (!emojiScaleAnims[option.emoji]) {
-        emojiScaleAnims[option.emoji] = new Animated.Value(1);
-      }
-    });
-  }, []);
-
-  const handleEmojiSelect = (emoji: string) => {
-    // Animate the selected emoji
-    if (emoji !== moodEmoji) {
-      // First reset any previously selected emoji
-      if (moodEmoji && emojiScaleAnims[moodEmoji]) {
-        Animated.timing(emojiScaleAnims[moodEmoji], {
-          toValue: 1,
-          duration: 150,
-          useNativeDriver: true
-        }).start();
-      }
-      
-      // Then animate the newly selected emoji
-      if (emojiScaleAnims[emoji]) {
-        // Create a sequence of animations: scale up, then down
-        Animated.sequence([
-          Animated.timing(emojiScaleAnims[emoji], {
-            toValue: 1.3,
-            duration: 150,
-            useNativeDriver: true
-          }),
-          Animated.timing(emojiScaleAnims[emoji], {
-            toValue: 1,
-            duration: 100,
-            useNativeDriver: true
-          })
-        ]).start();
-      }
-    }
-    
-    // Select the emoji or deselect if already selected
-    setMoodEmoji(emoji === moodEmoji ? '' : emoji);
-  };
-
-  // Create rows of 5 emojis each for the grid layout
-  const moodRows = [];
-  for (let i = 0; i < MOOD_OPTIONS.length; i += 5) {
-    moodRows.push(MOOD_OPTIONS.slice(i, i + 5));
-  }
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <KeyboardAvoidingView
@@ -196,39 +140,42 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
+          <LabeledTextInput
+            label="Subject"
+            value={subjectTitle}
+            onChangeText={setSubjectTitle}
+            placeholder="Your subject header appears to the public"
+            maxLength={100}
+            layout="horizontal"
+            labelWidth="22%"
+            mode="flat"
+            dense={true}
+            multiline={true}
+            numberOfLines={2}
+            inputStyle={styles.titleInput}
+            labelStyle={{ fontFamily: 'Inter_700Bold', fontSize: 16 }}
+          />
           
-          <View style={styles.moodGrid}>
-            {moodRows.map((row, rowIndex) => (
-              <View key={`row-${rowIndex}`} style={styles.moodRow}>
-                {row.map((option) => (
-                  <View key={option.label} style={styles.moodOptionContainer}>
-                    <TouchableOpacity
-                      style={[
-                        styles.moodOption,
-                        moodEmoji === option.emoji && [styles.selectedMoodOption, { borderColor: 'white' }]
-                      ]}
-                      onPress={() => handleEmojiSelect(option.emoji)}
-                    >
-                      <Animated.Text 
-                        style={[
-                          styles.emojiText,
-                          { transform: [{ scale: emojiScaleAnims[option.emoji] || new Animated.Value(1) }] }
-                        ]}
-                      >
-                        {option.emoji}
-                      </Animated.Text>
-                    </TouchableOpacity>
-                    <RNText style={[styles.moodLabel, { color: theme.colors.onSurface }]}>
-                      {option.label}
-                    </RNText>
-                  </View>
-                ))}
-              </View>
-            ))}
-          </View>
+          <View style={styles.divider} />
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
+          <LabeledTextInput
+            label="From"
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Enter a name"
+            maxLength={50}
+            required={false}
+            hint="This name will be shown publicly together with your mail"
+            layout="horizontal"
+            labelWidth="22%"
+            mode="flat"
+            dense={true}
+            labelStyle={{ fontFamily: 'Inter_700Bold', fontSize: 16 }}
+          />
+          
+          <View style={styles.divider} />
+          
+          <Text style={[styles.label, { color: theme.colors.onBackground, fontFamily: 'Inter_700Bold' }]}>Category</Text>
           <CategorySelector
             categories={categories}
             selectedCategories={selectedCategory ? [selectedCategory.id] : []}
@@ -243,20 +190,6 @@ const WriteLetterDetailsScreen = () => {
             horizontal={false}
             containerStyle={styles.categoriesContainer}
           />
-          
-          <LabeledTextInput
-            label="From"
-            value={displayName}
-            onChangeText={setDisplayName}
-            placeholder="Enter a name"
-            maxLength={50}
-            required={false}
-            hint="This name will be shown publicly together with your letter"
-            layout="horizontal"
-            labelWidth="22%"
-            mode="flat"
-            dense={true}
-          />
         </ScrollView>
         
         <View style={[styles.buttonContainer, { 
@@ -268,16 +201,16 @@ const WriteLetterDetailsScreen = () => {
             onPress={handleSubmit}
             style={styles.submitButton}
             loading={isSubmitting}
-            disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji}
+            disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim()}
           >
             <Text style={{ 
-              color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
+              color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() 
                 ? theme.colors.onSurfaceDisabled 
                 : 'white'
             }}>
               Send Mail + 5{' '}
               <Text style={{ 
-                color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
+                color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() 
                   ? theme.colors.onSurfaceDisabled 
                   : '#FFD700',
                 fontSize: 18
@@ -309,42 +242,26 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 8,
   },
-  moodGrid: {
-    marginBottom: 24,
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+    marginVertical: 16,
   },
-  moodRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  moodOptionContainer: {
-    alignItems: 'center',
-    width: '20%', // 5 items per row = 20% each
-  },
-  moodOption: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: '#333333',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedMoodOption: {
-    borderWidth: 2,
-  },
-  emojiText: {
-    fontSize: 24,
-  },
-  moodLabel: {
-    fontSize: 10,
-    textAlign: 'center',
-    marginTop: 4,
+  titleInput: {
+    fontSize: 16,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    minHeight: 40,
   },
   label: {
     fontSize: 16,
     fontWeight: '500',
-    marginBottom: 12,
-    marginTop: 16,
+    marginBottom: 8,
+    marginTop: 8,
+  },
+  labelContainer: {
+    marginBottom: 0,
+    marginTop: 8,
   },
   categoriesContainer: {
     flexDirection: 'row',
