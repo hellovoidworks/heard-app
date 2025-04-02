@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
-import { Button, Text, useTheme } from 'react-native-paper';
+import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import LabeledTextInput from '../components/LabeledTextInput';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
@@ -79,17 +79,27 @@ const WriteLetterContentScreen = () => {
           <View style={styles.divider} />
           
           <View style={styles.letterContainer}>
-            <LabeledTextInput
-              label="Your letter"
-              value={content}
-              onChangeText={setContent}
-              placeholder="Write about your worries and issues or use a prompt for some inspiration.."
-              maxLength={5000}
-              multiline={true}
-              mode="flat"
-              inputStyle={styles.contentInput}
-              containerStyle={{ flex: 1 }}
-            />
+            <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your letter</Text>
+            <ScrollView style={styles.contentScrollView}>
+              <TextInput
+                value={content}
+                onChangeText={setContent}
+                placeholder="Write about your worries and issues or use a prompt for some inspiration.."
+                placeholderTextColor={theme.colors.onSurfaceDisabled}
+                multiline
+                style={[styles.contentInput, { 
+                  backgroundColor: 'transparent', 
+                  color: theme.colors.onSurface,
+                  textAlignVertical: 'top'
+                }]}
+                maxLength={5000}
+                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                selectionColor="white"
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+                mode="flat"
+              />
+            </ScrollView>
           </View>
         </View>
         
