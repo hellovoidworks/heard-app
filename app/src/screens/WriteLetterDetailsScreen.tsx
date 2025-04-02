@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText, Animated } from 'react-native';
 import { TextInput, Button, Text, Divider, ActivityIndicator, useTheme, Surface } from 'react-native-paper';
 import CategorySelector from '../components/CategorySelector';
 import LabeledTextInput from '../components/LabeledTextInput';
@@ -134,7 +134,47 @@ const WriteLetterDetailsScreen = () => {
     setSelectedCategory(category);
   };
 
+  const emojiScaleAnims = useRef<{[key: string]: Animated.Value}>({}).current;
+  
+  // Initialize animation values for each emoji
+  useEffect(() => {
+    MOOD_OPTIONS.forEach(option => {
+      if (!emojiScaleAnims[option.emoji]) {
+        emojiScaleAnims[option.emoji] = new Animated.Value(1);
+      }
+    });
+  }, []);
+
   const handleEmojiSelect = (emoji: string) => {
+    // Animate the selected emoji
+    if (emoji !== moodEmoji) {
+      // First reset any previously selected emoji
+      if (moodEmoji && emojiScaleAnims[moodEmoji]) {
+        Animated.timing(emojiScaleAnims[moodEmoji], {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true
+        }).start();
+      }
+      
+      // Then animate the newly selected emoji
+      if (emojiScaleAnims[emoji]) {
+        // Create a sequence of animations: scale up, then down
+        Animated.sequence([
+          Animated.timing(emojiScaleAnims[emoji], {
+            toValue: 1.3,
+            duration: 150,
+            useNativeDriver: true
+          }),
+          Animated.timing(emojiScaleAnims[emoji], {
+            toValue: 1,
+            duration: 100,
+            useNativeDriver: true
+          })
+        ]).start();
+      }
+    }
+    
     // Select the emoji or deselect if already selected
     setMoodEmoji(emoji === moodEmoji ? '' : emoji);
   };
@@ -170,7 +210,14 @@ const WriteLetterDetailsScreen = () => {
                       ]}
                       onPress={() => handleEmojiSelect(option.emoji)}
                     >
-                      <Text style={styles.emojiText}>{option.emoji}</Text>
+                      <Animated.Text 
+                        style={[
+                          styles.emojiText,
+                          { transform: [{ scale: emojiScaleAnims[option.emoji] || new Animated.Value(1) }] }
+                        ]}
+                      >
+                        {option.emoji}
+                      </Animated.Text>
                     </TouchableOpacity>
                     <RNText style={[styles.moodLabel, { color: theme.colors.onSurface }]}>
                       {option.label}
