@@ -578,8 +578,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             <Button
               mode="outlined"
               onPress={handleDiscard}
-              style={[styles.actionButton, { borderColor: 'white', flex: 1 }]}
-              textColor="white"
+              style={[styles.actionButton, { borderColor: '#888888', flex: 1 }]}
+              textColor="#888888"
             >
               Discard
             </Button>
@@ -587,8 +587,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               mode="outlined"
               onPress={() => setReactionModalVisible(true)}
               icon="emoticon-happy-outline"
-              style={[styles.actionButton, { borderColor: theme.colors.primary, flex: 1 }]}
-              textColor={theme.colors.primary}
+              style={[styles.actionButton, { borderColor: 'white', flex: 1 }]}
+              textColor="white"
             >
               React
             </Button>
