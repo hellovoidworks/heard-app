@@ -264,6 +264,9 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
           <Ionicons name="arrow-back" size={24} color={theme.colors.onBackground} />
         </TouchableOpacity>
+        
+        <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>My Mail</Text>
+        
         <View style={styles.headerButtons}>
           <TouchableOpacity onPress={handleDeleteLetter} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
@@ -384,6 +387,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    flex: 1,
+    textAlign: 'center',
+  },
   closeButton: {
     padding: 8,
   },
@@ -401,7 +410,7 @@ const styles = StyleSheet.create({
   },
   letterContent: {
     marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: 8,
   },
   authorInfo: {
     flexDirection: 'row',
@@ -418,6 +427,7 @@ const styles = StyleSheet.create({
   content: {
     fontSize: 16,
     lineHeight: 24,
+    marginTop: 0,
     marginBottom: 24,
   },
   statsContainer: {
