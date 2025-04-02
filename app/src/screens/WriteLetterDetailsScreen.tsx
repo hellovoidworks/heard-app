@@ -213,10 +213,10 @@ const WriteLetterDetailsScreen = () => {
             onChangeText={setDisplayName}
             placeholder="Enter a name"
             maxLength={50}
-            required={true}
+            required={false}
             hint="This name will be shown publicly together with your letter"
             layout="horizontal"
-            labelWidth="30%"
+            labelWidth="22%"
             mode="flat"
             dense={true}
           />
