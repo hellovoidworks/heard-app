@@ -208,13 +208,13 @@ const WriteLetterDetailsScreen = () => {
           />
           
           <LabeledTextInput
-            label="Display Name"
+            label="From"
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Enter a display name for this letter"
+            placeholder="Enter a name"
             maxLength={50}
             required={true}
-            hint="This name will be shown publicly with your letter"
+            hint="This name will be shown publicly together with your letter"
             layout="horizontal"
             labelWidth="30%"
             mode="flat"
