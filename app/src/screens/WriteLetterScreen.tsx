@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity } from 'react-native';
 import { TextInput, Button, Text, Headline, Subheading, Divider, ActivityIndicator, Chip, useTheme, Surface } from 'react-native-paper';
+import LabeledTextInput from '../components/LabeledTextInput';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -204,52 +205,36 @@ const WriteLetterScreen = () => {
           </ScrollView>
         )}
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Title</Text>
-        <TextInput
+        <LabeledTextInput
+          label="Title"
           value={title}
           onChangeText={setTitle}
           placeholder="Enter a title for your letter"
-          placeholderTextColor={theme.colors.onSurfaceDisabled}
-          style={[styles.titleInput, { 
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface
-          }]}
           maxLength={100}
-          theme={{ colors: { text: theme.colors.onSurface } }}
+          inputStyle={styles.titleInput}
         />
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your Letter</Text>
-        <TextInput
+        <LabeledTextInput
+          label="Your Letter"
           value={content}
           onChangeText={setContent}
           placeholder="Write your letter here..."
-          placeholderTextColor={theme.colors.onSurfaceDisabled}
-          multiline
+          multiline={true}
           numberOfLines={10}
-          style={[styles.contentInput, { 
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface
-          }]}
           maxLength={5000}
-          theme={{ colors: { text: theme.colors.onSurface } }}
+          inputStyle={styles.contentInput}
         />
         
-        <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name (Required)</Text>
-        <TextInput
+        <LabeledTextInput
+          label="Display Name"
           value={displayName}
           onChangeText={setDisplayName}
           placeholder="Enter a display name for this letter"
-          placeholderTextColor={theme.colors.onSurfaceDisabled}
-          style={[styles.displayNameInput, { 
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.onSurface
-          }]}
           maxLength={50}
-          theme={{ colors: { text: theme.colors.onSurface } }}
+          required={true}
+          hint="This name will be shown publicly with your letter"
+          inputStyle={styles.displayNameInput}
         />
-        <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
-          This name will be shown publicly with your letter
-        </Text>
         
         <Button
           mode="contained"

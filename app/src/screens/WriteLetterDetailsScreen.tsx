@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText } from 'react-native';
 import { TextInput, Button, Text, Divider, ActivityIndicator, useTheme, Surface } from 'react-native-paper';
 import CategorySelector from '../components/CategorySelector';
+import LabeledTextInput from '../components/LabeledTextInput';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -206,22 +207,16 @@ const WriteLetterDetailsScreen = () => {
             containerStyle={styles.categoriesContainer}
           />
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Display Name</Text>
-          <TextInput
+          <LabeledTextInput
+            label="Display Name"
             value={displayName}
             onChangeText={setDisplayName}
             placeholder="Enter a display name for this letter"
-            placeholderTextColor={theme.colors.onSurfaceDisabled}
-            style={[styles.displayNameInput, { 
-              backgroundColor: theme.colors.surface,
-              color: theme.colors.onSurface
-            }]}
             maxLength={50}
-            theme={{ colors: { text: theme.colors.onSurface } }}
+            required={true}
+            hint="This name will be shown publicly with your letter"
+            inputStyle={styles.displayNameInput}
           />
-          <Text style={[styles.displayNameHint, { color: theme.colors.onSurfaceDisabled }]}>
-            This name will be shown publicly with your letter
-          </Text>
         </ScrollView>
         
         <View style={[styles.buttonContainer, { 
