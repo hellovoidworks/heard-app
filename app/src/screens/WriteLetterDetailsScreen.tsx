@@ -215,6 +215,10 @@ const WriteLetterDetailsScreen = () => {
             maxLength={50}
             required={true}
             hint="This name will be shown publicly with your letter"
+            layout="horizontal"
+            labelWidth="30%"
+            mode="flat"
+            dense={true}
           />
         </ScrollView>
         
