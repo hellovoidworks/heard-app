@@ -329,7 +329,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 styles.messageBubble,
                 { backgroundColor: theme.colors.surface },
                 isFromCurrentUser ? 
-                  [styles.sentBubble, { backgroundColor: theme.colors.primary }] : 
+                  [styles.sentBubble, { backgroundColor: `${theme.colors.primary}40` }] : 
                   [styles.receivedBubble, { backgroundColor: theme.colors.surfaceVariant }]
               ]}
             >
