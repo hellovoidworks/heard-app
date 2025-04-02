@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput } from 'react-native';
+import AnimatedEmoji from '../components/AnimatedEmoji';
 import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -43,12 +44,6 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
   const [showEmoji, setShowEmoji] = useState(false);
   const [selectedEmoji, setSelectedEmoji] = useState('');
-  const [currentAnimation, setCurrentAnimation] = useState<string>('shake');
-  const shakeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const bounceAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(0)).current;
   const [hideBottomNav, setHideBottomNav] = useState(false);
   const [textRevealed, setTextRevealed] = useState(false);
   const [isAnimating, setIsAnimating] = useState(true); // Start animating immediately
@@ -238,162 +233,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Show emoji immediately when adding a reaction
       setShowEmoji(true);
       
-      // Reset all animations
-      shakeAnim.setValue(0);
-      scaleAnim.setValue(0);
-      bounceAnim.setValue(0);
-      rotateAnim.setValue(0);
-      pulseAnim.setValue(0);
-      
-      // Choose a random animation
-      const animations = ['shake', 'bounce', 'spin', 'pulse', 'pop'];
-      const randomAnimation = animations[Math.floor(Math.random() * animations.length)];
-      setCurrentAnimation(randomAnimation);
-      
-      console.log(`Playing ${randomAnimation} animation for emoji reaction`);
-      
-      // Run the selected animation
-      switch (randomAnimation) {
-        case 'shake':
-          // Shaking animation
-          Animated.parallel([
-            // Quick pop-in scale animation
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            // Shaking animation sequence
-            Animated.sequence([
-              Animated.delay(100),
-              Animated.loop(
-                Animated.sequence([
-                  Animated.timing(shakeAnim, {
-                    toValue: 1,
-                    duration: 50,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(shakeAnim, {
-                    toValue: -1,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(shakeAnim, {
-                    toValue: 1,
-                    duration: 100,
-                    useNativeDriver: true,
-                  }),
-                  Animated.timing(shakeAnim, {
-                    toValue: 0,
-                    duration: 50,
-                    useNativeDriver: true,
-                  }),
-                ]),
-                { iterations: 2 }
-              )
-            ])
-          ]).start();
-          break;
-          
-        case 'bounce':
-          // Bouncing animation
-          Animated.sequence([
-            // Initial scale up
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            // Bounce sequence
-            Animated.parallel([
-              // Vertical bounce
-              Animated.sequence([
-                // First bounce up
-                Animated.timing(bounceAnim, {
-                  toValue: 1,
-                  duration: 150,
-                  useNativeDriver: true,
-                }),
-                // Down and up with spring physics
-                Animated.spring(bounceAnim, {
-                  toValue: 0,
-                  friction: 3,
-                  tension: 40,
-                  useNativeDriver: true,
-                })
-              ])
-            ])
-          ]).start();
-          break;
-          
-        case 'spin':
-          // Spinning animation
-          Animated.sequence([
-            // Initial scale up
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: 200,
-              useNativeDriver: true,
-            }),
-            // Spin around
-            Animated.timing(rotateAnim, {
-              toValue: 1,
-              duration: 600,
-              useNativeDriver: true,
-            })
-          ]).start();
-          break;
-          
-        case 'pulse':
-          // Pulsing animation
-          Animated.sequence([
-            // Initial appear
-            Animated.timing(scaleAnim, {
-              toValue: 1,
-              duration: 150,
-              useNativeDriver: true,
-            }),
-            // Pulse sequence
-            Animated.loop(
-              Animated.sequence([
-                // Pulse out
-                Animated.timing(pulseAnim, {
-                  toValue: 1,
-                  duration: 150,
-                  useNativeDriver: true,
-                }),
-                // Pulse in
-                Animated.timing(pulseAnim, {
-                  toValue: 0,
-                  duration: 150,
-                  useNativeDriver: true,
-                })
-              ]),
-              { iterations: 2 }
-            )
-          ]).start();
-          break;
-          
-        case 'pop':
-          // Pop animation
-          Animated.sequence([
-            // Quick pop in
-            Animated.spring(scaleAnim, {
-              toValue: 1.05, // Reduced by 25% from 1.4
-              friction: 3,
-              tension: 40,
-              useNativeDriver: true,
-            }),
-            // Settle to normal size
-            Animated.spring(scaleAnim, {
-              toValue: 0.9, // Reduced by 25% from 1.0
-              friction: 3,
-              tension: 40,
-              useNativeDriver: true,
-            })
-          ]).start();
-          break;
-      }
+      // Show emoji with animation
       
       // Add a new reaction
       const { error } = await supabase
@@ -418,14 +258,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Refresh reactions to update UI
       await fetchReactions();
       
-      // Close the letter after a delay (approx 0.75 seconds)
-      setTimeout(() => {
-        if (onClose) {
-          onClose();
-        } else {
-          navigation.goBack();
-        }
-      }, 750);
+      // The letter will be closed by the AnimatedEmoji component's onAnimationComplete callback
       
     } catch (error) {
       console.error('Error handling reaction:', error);
@@ -770,87 +603,19 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         </View>
       )}
 
-      {showEmoji && (
-        <View style={styles.emojiDisplayContainer}>
-          <View style={styles.emojiOverlay} />
-          <Animated.Text 
-            style={[
-              styles.largeEmoji,
-              {
-                transform: [
-                  // Base scale transform for all animations
-                  {
-                    scale: scaleAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.3, 0.9] // Reduced by 25% from 1.2
-                    })
-                  },
-                  // Animation-specific transforms
-                  ...(currentAnimation === 'shake' ? [
-                    // X-position transform (side to side shake)
-                    {
-                      translateX: shakeAnim.interpolate({
-                        inputRange: [-1, 0, 1],
-                        outputRange: [-20, 0, 20] // Shake left and right
-                      })
-                    },
-                    // Small rotation for more dynamic shake
-                    {
-                      rotate: shakeAnim.interpolate({
-                        inputRange: [-1, 0, 1],
-                        outputRange: ['-10deg', '0deg', '10deg']
-                      })
-                    }
-                  ] : []),
-                  
-                  ...(currentAnimation === 'bounce' ? [
-                    // Y-position transform (up and down bounce)
-                    {
-                      translateY: bounceAnim.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0, -60, -30] // Bounce up and down
-                      })
-                    },
-                    // Extra scale for bounce
-                    {
-                      scale: bounceAnim.interpolate({
-                        inputRange: [0, 0.5, 1],
-                        outputRange: [0.9, 1.05, 0.9] // Reduced by 25% from [1.2, 1.4, 1.2]
-                      })
-                    }
-                  ] : []),
-                  
-                  ...(currentAnimation === 'spin' ? [
-                    // Rotation transform
-                    {
-                      rotate: rotateAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['0deg', '360deg'] // Full rotation
-                      })
-                    }
-                  ] : []),
-                  
-                  ...(currentAnimation === 'pulse' ? [
-                    // Pulsing scale
-                    {
-                      scale: pulseAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0.9, 1.13] // Reduced by 25% from [1.2, 1.5]
-                      })
-                    }
-                  ] : []),
-                  
-                  ...(currentAnimation === 'pop' ? [
-                    // Pop is handled by the base scale animation
-                  ] : [])
-                ]
-              }
-            ]}
-          >
-            {selectedEmoji}
-          </Animated.Text>
-        </View>
-      )}
+      <AnimatedEmoji
+        emoji={selectedEmoji}
+        visible={showEmoji}
+        animation="random"
+        onAnimationComplete={() => {
+          // Close the letter after animation completes
+          if (onClose) {
+            onClose();
+          } else {
+            navigation.goBack();
+          }
+        }}
+      />
 
       {renderReactionModal()}
       {renderResponseModal()}
@@ -985,32 +750,7 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     borderRadius: 0,
   },
-  emojiDisplayContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 999,
-  },
-  emojiOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  largeEmoji: {
-    fontSize: 90, // Reduced by 25% from 120
-    marginBottom: 20,
-    zIndex: 1000,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 5, // Add shadow for better visibility
-  },
+
 });
 
 export default LetterDetailScreen; 
