@@ -194,7 +194,7 @@ const WriteLetterDetailsScreen = () => {
         
         <View style={[styles.buttonContainer, { 
           backgroundColor: theme.colors.background,
-          borderTopColor: theme.colors.outline 
+          borderTopWidth: 0
         }]}>
           <Button
             mode="contained"
@@ -285,7 +285,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     padding: 16,
     paddingBottom: Platform.OS === 'ios' ? 0 : 16,
-    borderTopWidth: 1,
   },
   submitButton: {
     padding: 8,
