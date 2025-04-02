@@ -519,14 +519,6 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <LetterTitleCard letter={letter} />
 
         <View style={styles.letterContent}>
-          <View style={styles.authorInfo}>
-            <Text style={[styles.authorName, { color: theme.colors.primary }]}>
-              {letter.display_name || letter.author?.username || 'Unknown User'}
-            </Text>
-            <Text style={[styles.date, { color: theme.colors.onSurfaceDisabled }]}>
-              {format(new Date(letter.created_at), 'MMM d, yyyy')}
-            </Text>
-          </View>
 
           <TouchableOpacity 
             activeOpacity={0.9} 
