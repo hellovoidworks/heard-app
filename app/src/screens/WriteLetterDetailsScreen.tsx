@@ -7,6 +7,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
+import { useFonts, Inter_700Bold } from '@expo-google-fonts/inter';
 
 type WriteLetterDetailsParams = {
   title: string;
@@ -35,6 +36,11 @@ const WriteLetterDetailsScreen = () => {
   const route = useRoute<RouteProp<Record<string, WriteLetterDetailsParams>, string>>();
   const theme = useTheme();
   const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory } = useCategories();
+  
+  // Load Inter font
+  const [fontsLoaded] = useFonts({
+    Inter_700Bold
+  });
   
   // Required params from previous screen
   const title = route.params?.title || '';
@@ -196,7 +202,7 @@ const WriteLetterDetailsScreen = () => {
           style={styles.scrollView} 
           contentContainerStyle={styles.contentContainer}
         >
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Select Your Mood</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground, fontFamily: 'Inter_700Bold', fontSize: 16 }]}>Your Mood</Text>
           
           <View style={styles.moodGrid}>
             {moodRows.map((row, rowIndex) => (
@@ -228,7 +234,7 @@ const WriteLetterDetailsScreen = () => {
             ))}
           </View>
           
-          <Text style={[styles.label, { color: theme.colors.onBackground }]}>Category</Text>
+          <Text style={[styles.label, { color: theme.colors.onBackground, fontFamily: 'Inter_700Bold', fontSize: 16 }]}>Select Category</Text>
           <CategorySelector
             categories={categories}
             selectedCategories={selectedCategory ? [selectedCategory.id] : []}
@@ -248,14 +254,15 @@ const WriteLetterDetailsScreen = () => {
             label="From"
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Enter a name"
+            placeholder="Enter an anonymous name"
             maxLength={50}
             required={false}
-            hint="This name will be shown publicly together with your letter"
+            hint="This name will be shown with your mail"
             layout="horizontal"
             labelWidth="22%"
             mode="flat"
             dense={true}
+            labelStyle={{ fontFamily: 'Inter_700Bold', fontSize: 16 }}
           />
         </ScrollView>
         

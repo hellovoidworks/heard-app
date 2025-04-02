@@ -88,11 +88,21 @@ const WriteLetterContentScreen = () => {
               fontFamily: 'Inter_500Medium',
               fontSize: 16,
               fontWeight: '500'
-            }]}>Your mail</Text>
+            }]}>Your Mail</Text>
             <TextInput
               value={content}
               onChangeText={setContent}
-              placeholder="Write about your worries and issues or use a prompt for some inspiration.."
+              placeholder={`This is a safe space for honest expression and getting your questions answered.  
+
+What's on your mind? How was your day? 
+
+What advice are you seeking right now?
+
+What worries are keeping you up at night?
+ 
+What confessions are you holding onto?
+ 
+What are you currently looking for?`}
               placeholderTextColor={theme.colors.onSurfaceDisabled}
               multiline
               style={[styles.contentInput, { 
