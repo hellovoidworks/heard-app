@@ -65,21 +65,20 @@ const WriteLetterContentScreen = () => {
             label="Subject"
             value={title}
             onChangeText={setTitle}
-            placeholder="Your subject header appears to the public (optional)"
+            placeholder="Enter mail title here"
             maxLength={100}
             layout="horizontal"
             labelWidth="22%"
             mode="flat"
             dense={true}
             multiline={true}
-            numberOfLines={2}
-            inputStyle={[styles.titleInput, { height: '98%' }]}
+            inputStyle={[styles.titleInput, { height: 38 }]}
           />
           
           <View style={styles.divider} />
           
           <View style={styles.letterContainer}>
-            <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your letter</Text>
+            <Text style={[styles.label, { color: theme.colors.onBackground }]}>Your mail</Text>
             <TextInput
               value={content}
               onChangeText={setContent}
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
   label: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 8,
   },
