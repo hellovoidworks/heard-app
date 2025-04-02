@@ -457,12 +457,12 @@ const styles = StyleSheet.create({
     marginLeft: 8, // Space between title and category
   },
   categoryNameText: {
-    fontSize: 9,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontWeight: '600',
     color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
+    fontFamily: 'SourceCodePro-SemiBold',
+    opacity: 0.9,
+    textAlign: 'center',
   },
   emptyContainer: {
     flex: 1,

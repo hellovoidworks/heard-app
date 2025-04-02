@@ -76,12 +76,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   authorName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontWeight: '500',
     color: '#FFFFFF',
     opacity: 0.9,
     marginBottom: 4,
-    fontFamily: 'SourceCodePro-Regular',
+    fontFamily: 'Inter_500Medium',
   },
   letterTitle: {
     fontSize: 16,
