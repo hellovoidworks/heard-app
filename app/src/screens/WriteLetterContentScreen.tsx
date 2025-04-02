@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useFonts, Inter_500Medium } from '@expo-google-fonts/inter';
+import { useFonts, Inter_500Medium, Inter_700Bold } from '@expo-google-fonts/inter';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, SafeAreaView } from 'react-native';
 import { Button, Text, TextInput, useTheme } from 'react-native-paper';
 import LabeledTextInput from '../components/LabeledTextInput';
@@ -15,6 +15,7 @@ type WriteLetterContentParams = {
 const WriteLetterContentScreen = () => {
   const [fontsLoaded] = useFonts({
     Inter_500Medium,
+    Inter_700Bold,
   });
   const { profile } = useAuth();
   const navigation = useNavigation<any>();
@@ -67,7 +68,7 @@ const WriteLetterContentScreen = () => {
         <View style={styles.contentContainer}>
           <LabeledTextInput
             label="Subject"
-            labelStyle={{ fontFamily: 'Inter_500Medium', fontSize: 16 }}
+            labelStyle={{ fontFamily: 'Inter_700Bold', fontSize: 16 }}
             value={title}
             onChangeText={setTitle}
             placeholder="Enter mail title here"
@@ -85,9 +86,8 @@ const WriteLetterContentScreen = () => {
           <View style={styles.letterContainer}>
             <Text style={[styles.label, { 
               color: theme.colors.onBackground,
-              fontFamily: 'Inter_500Medium',
-              fontSize: 16,
-              fontWeight: '500'
+              fontFamily: 'Inter_700Bold',
+              fontSize: 16
             }]}>Your Mail</Text>
             <TextInput
               value={content}
