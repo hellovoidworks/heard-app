@@ -35,7 +35,7 @@ const WriteLetterDetailsScreen = () => {
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<Record<string, WriteLetterDetailsParams>, string>>();
   const theme = useTheme();
-  const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory } = useCategories();
+  const { categories, loading: loadingCategories, selectedCategory, setSelectedCategory, refreshCategories } = useCategories();
   
   // Load Inter font
   const [fontsLoaded] = useFonts({
@@ -54,7 +54,15 @@ const WriteLetterDetailsScreen = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [moodEmoji, setMoodEmoji] = useState('');
 
-  // Clear selected category when screen loads
+  // Ensure categories are loaded when the screen mounts, but only if they're not already available
+  useEffect(() => {
+    // Only refresh categories if the list is empty and we're not already loading
+    if (categories.length === 0 && !loadingCategories) {
+      refreshCategories();
+    }
+  }, [categories.length, loadingCategories, refreshCategories]);
+  
+  // Handle selected category initialization
   useEffect(() => {
     // Clear any previously selected category
     setSelectedCategory(null);
@@ -301,6 +309,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   keyboardAvoidingView: {
     flex: 1,
   },
