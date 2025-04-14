@@ -146,22 +146,29 @@ const EmailSignInScreen = ({ navigation }: Props) => {
                       autoCapitalize="none"
                       keyboardType="email-address"
                       autoFocus
+                      blurOnSubmit={false}
                     />
                   </View>
                 </View>
                 
                 <View style={styles.divider} />
                 
-                <Button
-                  mode="contained"
+                <TouchableOpacity
+                  activeOpacity={0.8}
                   onPress={handleSendMagicLink}
-                  style={[styles.button, { marginTop: 24 }]}
-                  loading={loading}
                   disabled={loading || !email.trim() || !isValidEmail}
-                  labelStyle={styles.buttonLabelStyle}
+                  style={{ width: '100%', marginTop: 24 }}
                 >
-                  Send Magic Link
-                </Button>
+                  <Button
+                    mode="contained"
+                    style={styles.button}
+                    loading={loading}
+                    disabled={loading || !email.trim() || !isValidEmail}
+                    labelStyle={styles.buttonLabelStyle}
+                  >
+                    Send Magic Link
+                  </Button>
+                </TouchableOpacity>
               </>
             ) : (
               <View style={styles.magicLinkSentContainer}>
@@ -221,7 +228,8 @@ const styles = StyleSheet.create({
   emailIcon: {
     fontSize: 48,
     textAlign: 'center',
-    marginBottom: 8, // Reduced from 16 to move title higher
+    marginTop: -20, // Added negative margin to reduce top spacing
+    marginBottom: 8,
   },
   title: {
     fontSize: 28,
