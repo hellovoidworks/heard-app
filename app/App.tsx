@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
-import { NavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainerRef, CommonActions } from '@react-navigation/native';
 import { RootStackParamList } from './src/navigation/types';
 import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
@@ -42,7 +42,8 @@ function navigateToNotification(data: any) {
     const letterId = data.letter_id;
     const senderId = data.sender_id;
     
-    if (!letterId) {
+    // For new_mail notifications, we don't need a letter ID
+    if (!letterId && type !== 'new_mail') {
       console.log('No letter ID in notification data');
       return;
     }
@@ -62,6 +63,19 @@ function navigateToNotification(data: any) {
       case 'reaction':
         // For reactions, navigate to MyLetterDetailScreen since reactions are for letters authored by the user
         navigationRef.current?.navigate('MyLetterDetail', { letterId: letterId });
+        break;
+      case 'new_mail':
+        // Navigate to the home screen for new mail notifications
+        console.log('Navigating to home screen for new mail notification');
+        // Reset the navigation state to ensure we're on the Home tab
+        navigationRef.current?.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [
+              { name: 'Main' }
+            ],
+          })
+        );
         break;
       default:
         console.log('Unknown notification type:', type);

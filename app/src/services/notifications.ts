@@ -52,7 +52,7 @@ export async function scheduleDailyDeliveryNotifications() {
       content: {
         title: "New mail has arrived!",
         body: 'Start reading them now.',
-        // data: { type: 'delivery_window' } // Optional data payload
+        data: { type: 'new_mail' } // Add data payload for navigation
       },
       trigger: morningTrigger,
     });
@@ -69,7 +69,7 @@ export async function scheduleDailyDeliveryNotifications() {
       content: {
         title: "New mail has arrived!",
         body: 'Start reading them now.',
-        // data: { type: 'delivery_window' } // Optional data payload
+        data: { type: 'new_mail' } // Add data payload for navigation
       },
       trigger: eveningTrigger,
     });
@@ -434,8 +434,8 @@ export async function updateAppBadgeCount(count: number) {
 export async function scheduleLocalNotificationWithNavigation(
   title: string,
   body: string,
-  type: 'letter' | 'reply' | 'reaction',
-  letterId: string,
+  type: 'letter' | 'reply' | 'reaction' | 'new_mail',
+  letterId?: string,
   senderId?: string
 ) {
   try {
