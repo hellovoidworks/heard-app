@@ -16,6 +16,7 @@ import {
   MORNING_HOUR,
   MORNING_MINUTE_TEST
 } from '../utils/deliveryWindow';
+import { fontNames } from '../utils/fonts';
 import { StorageService, STORAGE_KEYS } from '../services/storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -874,7 +875,7 @@ const HomeScreen = () => {
 
     return (
       <View style={styles.countdownContainer}>
-        <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
+        <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: fontNames.interMedium }]}>
           New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
         </Text>
       </View>
@@ -1063,7 +1064,7 @@ const HomeScreen = () => {
     return (
       <View style={styles.footerContainer}>
         <View style={styles.countdownContainer}>
-          <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: 'SourceCodePro-Regular' }]}>
+          <Text style={[styles.countdownText, { color: '#FFFFFF', fontFamily: fontNames.interMedium }]}>
             New mail in {timeUntilNext.hours}h:{timeUntilNext.minutes}m:{timeUntilNext.seconds}s
           </Text>
         </View>
@@ -1204,13 +1205,13 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   letterTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 6,
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 16,
-    letterSpacing: -1,
+    fontFamily: fontNames.interSemiBold,
+    lineHeight: 18,
+    letterSpacing: 0,
   },
   letterContent: {
     fontSize: 14,
@@ -1230,7 +1231,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
-    fontFamily: 'SourceCodePro-SemiBold',
+    fontFamily: fontNames.interSemiBold,
   },
   redactedContent: {
     marginTop: -2,
@@ -1253,7 +1254,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
+    fontFamily: fontNames.interSemiBold,
   },
   footerContainer: {
     position: 'absolute',

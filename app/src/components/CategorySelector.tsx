@@ -108,7 +108,7 @@ const CategorySelector = ({
               showSelectedCheck={false}
               textStyle={{ 
                 color: isSelected ? '#FFFFFF' : theme.colors.onSurface,
-                fontFamily: fontNames.sourceCodeProSemiBold,
+                fontFamily: fontNames.interSemiBold,
                 textTransform: 'uppercase',
                 fontSize: 14
               }}

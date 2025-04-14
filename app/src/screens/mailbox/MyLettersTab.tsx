@@ -8,6 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { fontNames } from '../../utils/fonts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -277,12 +278,12 @@ const styles = StyleSheet.create({
     fontSize: 28,
   },
   letterTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 16,
-    letterSpacing: -1,
+    fontFamily: fontNames.interSemiBold,
+    lineHeight: 18,
+    letterSpacing: 0,
     marginBottom: 6,
   },
   letterContent: {
@@ -304,13 +305,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
-    fontFamily: 'SourceCodePro-SemiBold',
+    fontFamily: fontNames.interSemiBold,
   },
 
   dateText: {
     fontSize: 11,
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-Regular',
+    fontFamily: fontNames.interRegular,
     opacity: 0.8,
     textAlign: 'right',
     marginBottom: 4,
@@ -340,7 +341,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     marginLeft: 4,
-    fontFamily: 'SourceCodePro-Regular',
+    fontFamily: fontNames.interRegular,
   },
 });
 

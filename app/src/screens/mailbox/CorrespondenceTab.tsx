@@ -7,6 +7,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
+import { fontNames } from '../../utils/fonts';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -427,13 +428,13 @@ const styles = StyleSheet.create({
     paddingBottom: 2, // Slight adjustment for visual centering
   },
   letterTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 0, // Remove bottom margin
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 16,
-    letterSpacing: -1,
+    fontFamily: fontNames.interSemiBold,
+    lineHeight: 18,
+    letterSpacing: 0,
   },
   letterContent: {
     fontSize: 13,
@@ -460,7 +461,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
+    fontFamily: fontNames.interSemiBold,
     opacity: 0.9,
     textAlign: 'center',
   },

@@ -8,7 +8,7 @@ const fontConfig = {
   titleFontFamily: fontNames.interSemiBold,
   bodyFontFamily: fontNames.interRegular,
   labelFontFamily: fontNames.interMedium,
-  monospace: fontNames.sourceCodeProRegular,
+  monospace: fontNames.interRegular,
 };
 
 export const darkTheme = {

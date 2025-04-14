@@ -11,17 +11,6 @@ import {
 } from '@expo-google-fonts/inter';
 
 import {
-  SourceCodePro_200ExtraLight,
-  SourceCodePro_300Light,
-  SourceCodePro_400Regular,
-  SourceCodePro_500Medium,
-  SourceCodePro_600SemiBold,
-  SourceCodePro_700Bold,
-  SourceCodePro_800ExtraBold,
-  SourceCodePro_900Black,
-} from '@expo-google-fonts/source-code-pro';
-
-import {
   FlowCircular_400Regular
 } from '@expo-google-fonts/flow-circular';
 
@@ -37,16 +26,6 @@ export const fontsToLoad = {
   Inter_700Bold,
   Inter_800ExtraBold,
   Inter_900Black,
-  
-  // Source Code Pro fonts
-  SourceCodePro_200ExtraLight,
-  SourceCodePro_300Light,
-  SourceCodePro_400Regular,
-  SourceCodePro_500Medium,
-  SourceCodePro_600SemiBold,
-  SourceCodePro_700Bold,
-  SourceCodePro_800ExtraBold,
-  SourceCodePro_900Black,
   
   // Flow Circular font
   FlowCircular_400Regular,
@@ -64,16 +43,6 @@ export const fontNames = {
   interBold: 'Inter_700Bold',
   interExtraBold: 'Inter_800ExtraBold',
   interBlack: 'Inter_900Black',
-  
-  // Source Code Pro font family
-  sourceCodeProExtraLight: 'SourceCodePro_200ExtraLight',
-  sourceCodeProLight: 'SourceCodePro_300Light',
-  sourceCodeProRegular: 'SourceCodePro_400Regular',
-  sourceCodeProMedium: 'SourceCodePro_500Medium',
-  sourceCodeProSemiBold: 'SourceCodePro_600SemiBold',
-  sourceCodeProBold: 'SourceCodePro_700Bold',
-  sourceCodeProExtraBold: 'SourceCodePro_800ExtraBold',
-  sourceCodeProBlack: 'SourceCodePro_900Black',
   
   // Flow Circular font family
   flowCircularRegular: 'FlowCircular_400Regular',

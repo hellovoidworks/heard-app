@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Card, Title, Text } from 'react-native-paper';
 import { LetterWithDetails } from '../types/database.types';
+import { fontNames } from '../utils/fonts';
 
 interface LetterTitleCardProps {
   letter: LetterWithDetails;
@@ -84,13 +85,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   letterTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 8,
     color: '#FFFFFF',
-    fontFamily: 'SourceCodePro-SemiBold',
-    lineHeight: 22,
-    letterSpacing: -1,
+    fontFamily: fontNames.interSemiBold,
+    lineHeight: 18,
+    letterSpacing: 0,
   },
   metadataContainer: {
     flexDirection: 'row',
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     opacity: 0.9,
     textAlign: 'center',
-    fontFamily: 'SourceCodePro-SemiBold',
+    fontFamily: fontNames.interSemiBold,
   },
 
 });
