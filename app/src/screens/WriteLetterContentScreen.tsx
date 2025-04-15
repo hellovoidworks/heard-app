@@ -63,7 +63,7 @@ const WriteLetterContentScreen = () => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={100}
+        keyboardVerticalOffset={120}
       >
         <View style={styles.contentContainer}>
           <LabeledTextInput
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 32,
     borderTopWidth: 1,
     borderTopColor: '#333',
   },

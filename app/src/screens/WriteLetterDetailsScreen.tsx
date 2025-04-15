@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 0 : 16,
+    paddingBottom: Platform.OS === 'ios' ? 24 : 32,
   },
   submitButton: {
     padding: 8,
