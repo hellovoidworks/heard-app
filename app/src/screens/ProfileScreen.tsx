@@ -1,12 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Alert, TextInput as RNTextInput } from 'react-native';
-import { Text, Button, TextInput, Divider, List, useTheme } from 'react-native-paper';
+import { Text, Button, Divider, List, useTheme } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
 import { removePushToken } from '../services/notifications';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
+import UsernameInput from '../components/UsernameInput';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -15,6 +16,7 @@ const ProfileScreen = () => {
   const [editing, setEditing] = useState(false);
   const [username, setUsername] = useState(profile?.username || '');
   const [loading, setLoading] = useState(false);
+  const [usernameError, setUsernameError] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -81,18 +83,62 @@ const ProfileScreen = () => {
   };
 
   const handleSaveProfile = async () => {
+    // Reset any previous errors
+    setUsernameError(null);
+    
+    // Basic validation
     if (!username.trim()) {
-      Alert.alert('Error', 'Username cannot be empty');
+      setUsernameError('Username cannot be empty');
+      return;
+    }
+    
+    if (username.length < 3) {
+      setUsernameError('Username must be at least 3 characters');
       return;
     }
 
-    setLoading(true);
+    // Only check for uniqueness if username has changed
+    if (profile && username !== profile.username) {
+      setLoading(true);
+      try {
+        // Check if username is unique using our database function
+        const { data, error } = await supabase.rpc('is_username_available', {
+          check_username: username,
+          current_user_id: user?.id
+        });
+        
+        if (error) {
+          console.error('Error checking username availability:', error);
+          setUsernameError('Error checking username availability');
+          setLoading(false);
+          return;
+        }
+        
+        if (data === false) {
+          setUsernameError('Username already taken. Please choose a different username.');
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Exception checking username availability:', error);
+        setUsernameError('Error checking username availability');
+        setLoading(false);
+        return;
+      }
+    }
+
+    // If we get here, the username is valid and unique (or unchanged)
     try {
       const { error } = await updateProfile({ username });
       if (error) {
-        Alert.alert('Error', error.message);
+        if (error.message.includes('already taken')) {
+          setUsernameError('Username already taken. Please choose a different username.');
+        } else {
+          Alert.alert('Error', error.message);
+        }
       } else {
         setEditing(false);
+        Alert.alert('Success', 'Your username has been updated successfully');
       }
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -107,12 +153,14 @@ const ProfileScreen = () => {
       <View style={styles.header}>
         {editing ? (
           <View style={styles.editForm}>
-            <TextInput
-              label="Username"
+            <UsernameInput
               value={username}
-              onChangeText={setUsername}
-              style={styles.input}
-              theme={{ colors: { text: theme.colors.onSurface } }}
+              onChangeText={(text) => {
+                setUsername(text);
+                setUsernameError(null); // Clear error when user types
+              }}
+              label="Username"
+              error={usernameError || undefined}
             />
             <View style={styles.buttonRow}>
               <Button 
