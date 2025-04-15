@@ -248,14 +248,25 @@ const StarRewardAnimation: React.FC = () => {
       }),
     ]).start();
     
-    // Auto-dismiss after animation completes (reduced from 3000ms to 2000ms)
+    // Auto-dismiss after animation completes
     dismissTimerRef.current = setTimeout(() => {
-      setVisible(false);
-    }, 2000);
+      console.log('StarRewardAnimation: Auto-dismiss timer completed, hiding animation');
+      // First fade out the backdrop
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        // Then set visible to false to completely remove the component
+        setVisible(false);
+        console.log('StarRewardAnimation: Visibility set to false');
+      });
+    }, 1800); // Reduced from 2000ms to 1800ms for quicker dismissal
   };
   
-  // Handle manual dismiss
+  // Handle manual dismiss (when user taps on the screen)
   const handleDismiss = () => {
+    console.log('StarRewardAnimation: Manual dismiss triggered');
     if (dismissTimerRef.current) {
       clearTimeout(dismissTimerRef.current);
     }
@@ -266,7 +277,9 @@ const StarRewardAnimation: React.FC = () => {
       duration: 200,
       useNativeDriver: true,
     }).start(() => {
+      // Ensure the component is fully removed
       setVisible(false);
+      console.log('StarRewardAnimation: Manually dismissed and hidden');
     });
   };
   
@@ -281,8 +294,8 @@ const StarRewardAnimation: React.FC = () => {
   
   return visible ? (
     <TouchableWithoutFeedback onPress={handleDismiss}>
-      <View style={styles.container}>
-        {/* Background dim */}
+      <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+        {/* Background dim - now animated with the same opacity */}
         <View style={styles.backdrop} />
         
         {/* Flying stars */}
@@ -329,7 +342,7 @@ const StarRewardAnimation: React.FC = () => {
             ))}
           </View>
         </Animated.View>
-      </View>
+      </Animated.View>
     </TouchableWithoutFeedback>
   ) : null;
 };
@@ -349,7 +362,8 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)', // Slightly darker for better visibility
+    position: 'absolute',
   },
   starContainer: {
     position: 'absolute',
