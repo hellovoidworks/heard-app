@@ -77,31 +77,28 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!letterId) return;
     
     try {
-      // Define the type for the reaction data
-      type ReactionWithUser = {
+      // Define the type for the reaction data returned by our custom function
+      type ReactionWithUsername = {
         reaction_type: string;
         created_at: string;
-        user_profiles: { username: string } | null;
+        username: string;
       };
 
-      // Fetch reaction stats with user information
+      // Use our custom SQL function to fetch reactions with usernames in a single query
       const { data: reactionsData, error: reactionsError } = await supabase
-        .from('reactions')
-        .select(`
-          reaction_type, 
-          created_at,
-          user_profiles!reactions_user_id_fkey(username)
-        `)
-        .eq('letter_id', letterId)
-        .order('created_at', { ascending: false }) as { data: ReactionWithUser[] | null, error: any };
+        .rpc('get_letter_reactions_with_usernames', { letter_id_param: letterId }) as { 
+          data: ReactionWithUsername[] | null, 
+          error: any 
+        };
         
       if (reactionsError) {
         console.error('Error fetching reactions:', reactionsError);
+        setReactionStats([]);
       } else if (reactionsData && reactionsData.length > 0) {
-        // Format reactions for display with usernames
+        // Format reactions for display
         const formattedReactions = reactionsData.map(reaction => ({
           emoji: reaction.reaction_type,
-          username: reaction.user_profiles?.username || 'Anonymous',
+          username: reaction.username || 'Anonymous',
           date: format(new Date(reaction.created_at), 'MMM d')
         }));
         
