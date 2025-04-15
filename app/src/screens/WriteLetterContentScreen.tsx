@@ -109,7 +109,7 @@ What are you currently looking for?`}
                 backgroundColor: 'transparent', 
                 color: theme.colors.onSurface,
                 textAlignVertical: 'top',
-                height: '98%' // Fill the available space
+                flex: 1 // Use flex instead of percentage height
               }]}
               maxLength={5000}
               theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
