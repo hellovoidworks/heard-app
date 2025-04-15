@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText, Animated } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput, Button, Text, Divider, ActivityIndicator, useTheme, Surface } from 'react-native-paper';
 import CategorySelector from '../components/CategorySelector';
 import LabeledTextInput from '../components/LabeledTextInput';
@@ -8,6 +9,7 @@ import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
 import { useFonts, Inter_700Bold } from '@expo-google-fonts/inter';
+import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
 type WriteLetterDetailsParams = {
   title: string;
@@ -123,12 +125,26 @@ const WriteLetterDetailsScreen = () => {
       }
 
       // Award 5 stars for submitting a letter
+      console.log('WriteLetterDetailsScreen: About to update stars for sending letter');
       const { error: starError } = await updateStars(5);
       if (starError) {
         console.error('Error updating stars:', starError);
         // Don't block navigation if star update fails
+      } else {
+        try {
+          // Store the reward amount in AsyncStorage so we can trigger the animation AFTER navigation
+          await AsyncStorage.setItem('@heard_app/pending_star_reward', '5');
+          console.log('WriteLetterDetailsScreen: Stored pending reward of 5 stars in AsyncStorage');
+          console.log('WriteLetterDetailsScreen: Will show animation after navigation completes');
+          
+          // Don't emit the event here - it will be triggered in HomeScreen when it comes into focus
+        } catch (error) {
+          console.error('Error storing pending reward:', error);
+        }
       }
 
+      // Navigate immediately - the animation will be shown after navigation
+      console.log('WriteLetterDetailsScreen: Navigating to Home screen');
       // On success, navigate to the Main stack with Home tab
       navigation.navigate('Main');
     } catch (error: any) {
