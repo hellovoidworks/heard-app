@@ -53,11 +53,41 @@ const HomeScreen = () => {
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 1;
   
+  // Track if animation has already been triggered by STARS_UPDATED event
+  const [animationTriggered, setAnimationTriggered] = useState(false);
+  
+  // Listen for STARS_UPDATED events to prevent duplicate animations
+  useEffect(() => {
+    const handleStarsUpdated = () => {
+      console.log('HomeScreen: STARS_UPDATED event received, marking animation as triggered');
+      setAnimationTriggered(true);
+      
+      // Reset the flag after a delay
+      setTimeout(() => {
+        setAnimationTriggered(false);
+      }, 2000); // Reset after 2 seconds
+    };
+    
+    eventEmitter.on(EVENTS.STARS_UPDATED, handleStarsUpdated);
+    
+    return () => {
+      eventEmitter.off(EVENTS.STARS_UPDATED, handleStarsUpdated);
+    };
+  }, []);
+  
   // Check for pending star rewards when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
       const checkPendingStarRewards = async () => {
         try {
+          // If animation was already triggered by STARS_UPDATED, don't trigger again
+          if (animationTriggered) {
+            console.log('HomeScreen: Animation already triggered by STARS_UPDATED event, skipping');
+            // Still clear any pending rewards to prevent future duplicate animations
+            await AsyncStorage.removeItem('@heard_app/pending_star_reward');
+            return;
+          }
+          
           // Check if there are any pending star rewards
           const pendingRewardStr = await AsyncStorage.getItem('@heard_app/pending_star_reward');
           
@@ -87,7 +117,7 @@ const HomeScreen = () => {
       return () => {
         // Cleanup if needed
       };
-    }, [])
+    }, [animationTriggered])
   );
 
   // Create a map to store animation values for each letter
