@@ -284,9 +284,11 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>My Mail</Text>
         
         <View style={styles.headerButtons}>
+          {/* Trash icon hidden for now
           <TouchableOpacity onPress={handleDeleteLetter} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
           </TouchableOpacity>
+          */}
         </View>
       </View>
       
