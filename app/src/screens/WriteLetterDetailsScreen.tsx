@@ -130,18 +130,10 @@ const WriteLetterDetailsScreen = () => {
       if (starError) {
         console.error('Error updating stars:', starError);
         // Don't block navigation if star update fails
-      } else {
-        try {
-          // Store the reward amount in AsyncStorage so we can trigger the animation AFTER navigation
-          await AsyncStorage.setItem('@heard_app/pending_star_reward', '5');
-          console.log('WriteLetterDetailsScreen: Stored pending reward of 5 stars in AsyncStorage');
-          console.log('WriteLetterDetailsScreen: Will show animation after navigation completes');
-          
-          // Don't emit the event here - it will be triggered in HomeScreen when it comes into focus
-        } catch (error) {
-          console.error('Error storing pending reward:', error);
-        }
       }
+      
+      // Note: We no longer need to store the pending reward in AsyncStorage
+      // because the STAR_REWARD_EARNED event is now emitted directly in AuthContext
 
       // Navigate immediately - the animation will be shown after navigation
       console.log('WriteLetterDetailsScreen: Navigating to Home screen');
