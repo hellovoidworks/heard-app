@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated, Easing } from 'react-native';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
@@ -49,6 +49,13 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [isAnimating, setIsAnimating] = useState(true); // Start animating immediately
   const [showFullText, setShowFullText] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  
+  // Animation values for discard effect
+  const [isDiscarding, setIsDiscarding] = useState(false);
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
 
   const fetchLetter = async () => {
     try {
@@ -350,11 +357,47 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleDiscard = () => {
-    if (onClose) {
-      onClose();
-    } else {
-      navigation.goBack();
-    }
+    setIsDiscarding(true);
+    setHideBottomNav(true);
+    
+    // Create a sequence of animations for the discard effect
+    Animated.sequence([
+      // First crumple the paper (scale down and rotate slightly)
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 300,
+          useNativeDriver: true,
+          easing: Easing.out(Easing.back(2))
+        }),
+        Animated.timing(rotateAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true
+        })
+      ]),
+      // Then toss it away (move down and fade out)
+      Animated.parallel([
+        Animated.timing(translateYAnim, {
+          toValue: 1000,
+          duration: 500,
+          useNativeDriver: true,
+          easing: Easing.cubic
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true
+        })
+      ])
+    ]).start(() => {
+      // Only navigate back after animation completes
+      if (onClose) {
+        onClose();
+      } else {
+        navigation.goBack();
+      }
+    });
   };
 
   const renderReactionModal = () => {
@@ -502,20 +545,39 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   
   const isAuthoredByUser = user && letter.author_id === user.id;
 
+  // Create the rotation interpolation for a more natural paper crumple effect
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '-10deg']
+  });
+  
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <ScrollView
-        ref={scrollViewRef}
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
-            onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
+      <Animated.View
+        style={[
+          { flex: 1 },
+          isDiscarding && {
+            transform: [
+              { scale: scaleAnim },
+              { rotate: rotate },
+              { translateY: translateYAnim }
+            ],
+            opacity: opacityAnim
+          }
+        ]}
       >
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refreshing} 
+              onRefresh={handleRefresh}
+              tintColor={theme.colors.primary}
+            />
+          }
+        >
         <LetterTitleCard letter={letter} />
 
         <View style={styles.letterContent}>
@@ -611,6 +673,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {renderReactionModal()}
       {renderResponseModal()}
+      </Animated.View>
     </SafeAreaView>
   );
 };
