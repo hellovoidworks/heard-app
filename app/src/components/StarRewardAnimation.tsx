@@ -216,25 +216,25 @@ const StarRewardAnimation: React.FC = () => {
     
     // Animate the center reward text
     Animated.sequence([
-      // Wait a bit for star explosion to start
-      Animated.delay(100),
-      // Fade in and bounce up
+      // Wait a bit for star explosion to start - reduced from 100ms to 50ms
+      Animated.delay(50),
+      // Fade in and bounce up - faster animation
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
-          duration: 300,
+          duration: 150, // Reduced from 300ms to 150ms for faster fade-in
           useNativeDriver: true,
         }),
         Animated.spring(bounceAnim, {
           toValue: -50,
-          friction: 7,
-          tension: 40,
+          friction: 6, // Reduced friction for faster spring animation
+          tension: 50, // Increased tension for faster spring animation
           useNativeDriver: true,
         }),
         Animated.spring(scaleAnim, {
           toValue: 1,
-          friction: 7,
-          tension: 40,
+          friction: 6, // Reduced friction for faster spring animation
+          tension: 50, // Increased tension for faster spring animation
           useNativeDriver: true,
         }),
       ]),
