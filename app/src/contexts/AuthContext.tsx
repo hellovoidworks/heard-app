@@ -3,6 +3,7 @@ import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 import { AppState, AppStateStatus } from 'react-native';
+import { generateUniqueRandomUsername, isUsernameUnique } from '../utils/usernameGenerator';
 
 console.log('=== AuthContext module initialized ===');
 
@@ -136,9 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               if (profileError.code === 'PGRST116') {
                 console.log('AuthContext: No profile found for active session, creating one');
                 
-                // Create profile with default values
-                const email = data.session.user.email || 'user';
-                const username = email.split('@')[0];
+                // Generate a unique random username
+                const username = await generateUniqueRandomUsername(supabase) || `User${Math.floor(Math.random() * 10000)}`;
+                console.log('AuthContext: Generated random username:', username);
                 
                 const { error: createError } = await supabase
                   .from('user_profiles')
@@ -325,10 +326,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profileError.code === 'PGRST116') {
           console.log('AuthContext: No profile found, creating one');
           
-          // Get user details to create a username
-          const { data } = await supabase.auth.getUser();
-          const email = data?.user?.email || 'user';
-          const username = email.split('@')[0];
+          // Generate a unique random username
+          const username = await generateUniqueRandomUsername(supabase) || `User${Math.floor(Math.random() * 10000)}`;
+          console.log('AuthContext: Generated random username:', username);
           
           const { error: createError } = await supabase
             .from('user_profiles')
@@ -401,9 +401,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (profileError.code === 'PGRST116') {
           console.log('AuthContext: No profile found during manual sign in, creating one');
           
-          // Create profile with default values
-          const email = newUser.email || 'user';
-          const username = email.split('@')[0];
+          // Generate a unique random username
+          const username = await generateUniqueRandomUsername(supabase) || `User${Math.floor(Math.random() * 10000)}`;
+          console.log('AuthContext: Generated random username:', username);
           
           const { error: createError } = await supabase
             .from('user_profiles')
@@ -508,6 +508,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('AuthContext: Updating profile for user:', user.id, 'with params:', params);
       
+      // Check if the new username is unique (unless it's the same as the current username)
+      if (profile && params.username !== profile.username) {
+        const isUnique = await isUsernameUnique(params.username, supabase);
+        if (!isUnique) {
+          console.error('AuthContext: Username already exists:', params.username);
+          return { error: new Error('Username already exists. Please choose a different username.') };
+        }
+      }
+      
       // With the database trigger, we can assume the profile always exists
       const { error } = await supabase
         .from('user_profiles')
@@ -584,8 +593,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProfile(updatedProfile);
       console.log('AuthContext: Updated profile with new star count:', updatedProfile.stars);
       
-      // Emit event for star count change
+      // Emit event for star count change - for the StarIndicator component
       eventEmitter.emit(EVENTS.STARS_UPDATED, updatedProfile.stars);
+      
+      // Also emit the STAR_REWARD_EARNED event with the amount that was just awarded
+      // This will trigger the star reward animation
+      if (amount > 0) {
+        console.log('AuthContext: Emitting STAR_REWARD_EARNED event with amount:', amount);
+        eventEmitter.emit(EVENTS.STAR_REWARD_EARNED, amount);
+      }
       
       return { error: null };
     } catch (error: any) {

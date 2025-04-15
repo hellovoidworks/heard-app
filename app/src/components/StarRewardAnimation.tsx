@@ -111,44 +111,11 @@ const StarRewardAnimation: React.FC = () => {
     initializeLastStarCount();
   }, [profile]);
 
-  // Listen for star award events
+  // Listen for star reward events
   useEffect(() => {
     console.log('StarRewardAnimation: Setting up event listeners');
     
-    const handleStarsUpdated = async (newStarCount: number) => {
-      console.log('StarRewardAnimation: STARS_UPDATED event received with count:', newStarCount);
-      try {
-        // Get the last known star count
-        const lastCountStr = await AsyncStorage.getItem(STORAGE_KEY);
-        const lastCount = lastCountStr ? parseInt(lastCountStr, 10) : 0;
-        console.log('StarRewardAnimation: Last stored count was:', lastCount);
-        
-        // Calculate difference (the reward amount)
-        const starDifference = newStarCount - lastCount;
-        console.log('StarRewardAnimation: Star difference calculated as:', starDifference);
-        
-        // Only show animation if stars were actually gained
-        if (starDifference > 0) {
-          console.log('StarRewardAnimation: Stars increased by', starDifference, '- showing animation');
-          setRewardAmount(starDifference);
-          showAnimation();
-          
-          // Store the new count
-          await AsyncStorage.setItem(STORAGE_KEY, newStarCount.toString());
-          console.log('StarRewardAnimation: Updated stored count to:', newStarCount);
-        } else {
-          console.log('StarRewardAnimation: No increase in stars, not showing animation');
-        }
-      } catch (error) {
-        console.error('Error handling star update in reward animation:', error);
-      }
-    };
-
-    // Subscribe to star update events
-    console.log('StarRewardAnimation: Subscribing to STARS_UPDATED event');
-    eventEmitter.on(EVENTS.STARS_UPDATED, handleStarsUpdated);
-    
-    // Also listen for direct reward event
+    // Listen for direct reward event
     const handleStarRewardEarned = (amount: number) => {
       console.log('StarRewardAnimation: STAR_REWARD_EARNED event received with amount:', amount);
       setRewardAmount(amount);
@@ -158,6 +125,12 @@ const StarRewardAnimation: React.FC = () => {
       // Then call showAnimation to handle the animations
       console.log('StarRewardAnimation: About to show animation for', amount, 'stars');
       showAnimation();
+      
+      // Store the new count if profile exists
+      if (profile?.stars) {
+        AsyncStorage.setItem(STORAGE_KEY, profile.stars.toString())
+          .catch(error => console.error('Error updating stored star count:', error));
+      }
     };
     
     console.log('StarRewardAnimation: Subscribing to STAR_REWARD_EARNED event');
@@ -165,13 +138,12 @@ const StarRewardAnimation: React.FC = () => {
     
     // Clean up
     return () => {
-      eventEmitter.off(EVENTS.STARS_UPDATED, handleStarsUpdated);
       eventEmitter.off(EVENTS.STAR_REWARD_EARNED, handleStarRewardEarned);
       if (dismissTimerRef.current) {
         clearTimeout(dismissTimerRef.current);
       }
     };
-  }, []);
+  }, [profile]);
   
   // Function to show the animation
   const showAnimation = () => {
