@@ -4,6 +4,8 @@ import { supabase } from '../services/supabase';
 import { User } from '@supabase/supabase-js';
 import { AppState, AppStateStatus } from 'react-native';
 import { generateUniqueRandomUsername, isUsernameUnique } from '../utils/usernameGenerator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { updateAppBadgeCount } from '../services/notifications';
 
 console.log('=== AuthContext module initialized ===');
 
@@ -226,8 +228,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setProfile(null);
             setUser(null);
             setIsOnboardingComplete(null);
-            // Clear relevant async storage if needed on sign out
-            // await AsyncStorage.removeItem('some_key');
+            
+            // Clear notification badge and AsyncStorage
+            updateAppBadgeCount(0).catch(err => 
+              console.error('AuthContext: Error clearing badge on sign out:', err)
+            );
+            
+            // Clear relevant AsyncStorage items
+            const keysToRemove = [
+              '@heard_app/last_star_count',
+              '@heard_app/last_star_reward',
+              '@heard_app/pending_star_reward'
+            ];
+            
+            Promise.all(keysToRemove.map(key => AsyncStorage.removeItem(key)))
+              .catch(err => console.error('AuthContext: Error clearing AsyncStorage on sign out:', err));
+              
             return; // No further profile fetching needed on sign out
           case 'PASSWORD_RECOVERY':
             console.log('AuthContext: Password recovery event.');
@@ -459,6 +475,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('AuthContext: Error signing out:', error);
         throw error;
       }
+      
+      // Clear notification badge
+      console.log('AuthContext: Clearing notification badge');
+      await updateAppBadgeCount(0);
+      
+      // Clear relevant AsyncStorage items
+      console.log('AuthContext: Clearing AsyncStorage items');
+      const keysToRemove = [
+        '@heard_app/last_star_count',
+        '@heard_app/last_star_reward',
+        '@heard_app/pending_star_reward'
+      ];
+      
+      await Promise.all(keysToRemove.map(key => AsyncStorage.removeItem(key)));
+      
       console.log('AuthContext: User signed out successfully');
       setUser(null);
       setProfile(null);
