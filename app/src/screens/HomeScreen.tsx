@@ -972,7 +972,7 @@ const HomeScreen = () => {
           onPress={() => handleLetterPress(item)}
         >
           <Card.Content>
-            <View style={styles.threeColumnLayout}>
+            <View style={styles.twoColumnLayout}>
               {/* Left column: Mood emoji */}
               <View style={styles.leftColumn}>
                 <View style={styles.moodEmojiContainer}>
@@ -980,22 +980,30 @@ const HomeScreen = () => {
                 </View>
               </View>
               
-              {/* Center column: Text and redacted preview */}
-              <View style={styles.centerColumn}>
-                <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
-                {isUnread ? (
-                  createRedactedText(item.content)
-                ) : (
-                  <Paragraph style={styles.letterContent}>{item.content}</Paragraph>
-                )}
-              </View>
-              
-              {/* Right column: Category display */}
+              {/* Right column: Content organized in rows */}
               <View style={styles.rightColumn}>
-                <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
-                  <Text style={styles.categoryName}>
-                    {item.category?.name.toUpperCase()}
-                  </Text>
+                {/* Top row: Letter title */}
+                <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
+                
+                {/* Bottom row: Redacted text and category */}
+                <View style={styles.bottomRowLayout}>
+                  {/* Left side: Redacted text */}
+                  <View style={styles.redactedTextContainer}>
+                    {isUnread ? (
+                      createRedactedText(item.content)
+                    ) : (
+                      <Paragraph style={styles.letterContent}>{item.content}</Paragraph>
+                    )}
+                  </View>
+                  
+                  {/* Right side: Category display */}
+                  <View style={styles.categoryWrapper}>
+                    <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
+                      <Text style={styles.categoryName} numberOfLines={2}>
+                        {item.category?.name.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
             </View>
@@ -1216,7 +1224,7 @@ const styles = StyleSheet.create({
   unreadCard: {
     elevation: 4,
   },
-  threeColumnLayout: {
+  twoColumnLayout: {
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
@@ -1224,16 +1232,25 @@ const styles = StyleSheet.create({
     marginRight: 8,
     alignSelf: 'center',
   },
-  centerColumn: {
+  rightColumn: {
     flex: 1,
     overflow: 'hidden',
   },
-  rightColumn: {
-    marginLeft: 8,
-    width: 75,
-    alignSelf: 'flex-end',
+  bottomRowLayout: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginTop: 4,
+  },
+  redactedTextContainer: {
+    flex: 1,
+    overflow: 'hidden',
+    marginRight: 8,
+  },
+  categoryWrapper: {
+    minWidth: 40,
     justifyContent: 'flex-end',
     alignItems: 'flex-end',
+    alignSelf: 'flex-end',
   },
   moodEmojiContainer: {
     width: 48,
@@ -1266,6 +1283,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'flex-end',
   },
   categoryName: {
     fontSize: 10,
@@ -1274,6 +1292,7 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     textAlign: 'center',
     fontFamily: fontNames.interSemiBold,
+    lineHeight: 12,
   },
   redactedContent: {
     marginTop: -2,
