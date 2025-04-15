@@ -494,7 +494,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   backgroundColor: 'transparent', 
                   color: theme.colors.onSurface,
                   textAlignVertical: 'top',
-                  minHeight: 150,
+                  flex: 1, // Use flex instead of fixed minHeight
                   fontSize: 16,
                   paddingHorizontal: 0
                 }]}
