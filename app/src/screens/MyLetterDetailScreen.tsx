@@ -24,24 +24,35 @@ type Thread = {
 };
 
 const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId } = route.params;
-  const [letter, setLetter] = useState<LetterWithDetails | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { letterId, letterData, initialStats } = route.params;
+  const [letter, setLetter] = useState<LetterWithDetails | null>(letterData ? letterData as LetterWithDetails : null);
+  const [loading, setLoading] = useState(!letterData);
   const [refreshing, setRefreshing] = useState(false);
   const [reactionStats, setReactionStats] = useState<{emoji: string, username: string, date: string}[]>([]);
-  const [replyCount, setReplyCount] = useState(0);
-  const [readCount, setReadCount] = useState(0);
+  const [replyCount, setReplyCount] = useState(initialStats?.replyCount || 0);
+  const [readCount, setReadCount] = useState(initialStats?.readCount || 0);
   const [threads, setThreads] = useState<Thread[]>([]);
   const { user } = useAuth();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const [dataSource, setDataSource] = useState<'passed' | 'fetched'>(letterData ? 'passed' : 'fetched');
 
   const fetchLetter = async () => {
     try {
+      // If we already have letter data from navigation params, only fetch stats
+      if (letter && dataSource === 'passed') {
+        console.log('Using passed letter data, only fetching stats');
+        fetchLetterStats();
+        fetchThreads();
+        setLoading(false);
+        setRefreshing(false);
+        return;
+      }
+      
       setLoading(true);
       
       // Fetch the letter details
-      const { data: letterData, error: letterError } = await supabase
+      const { data: fetchedLetterData, error: letterError } = await supabase
         .from('letters')
         .select(`
           *,
@@ -56,8 +67,9 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
 
-      if (letterData) {
-        setLetter(letterData as LetterWithDetails);
+      if (fetchedLetterData) {
+        setLetter(fetchedLetterData as LetterWithDetails);
+        setDataSource('fetched');
         
         // Fetch stats about this letter
         fetchLetterStats();
@@ -77,6 +89,9 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!letterId) return;
     
     try {
+      // If we have initial stats and this is the first load, we can skip some fetches
+      const isInitialLoad = dataSource === 'passed' && !refreshing;
+      
       // Define the type for the reaction data returned by our custom function
       type ReactionWithUsername = {
         reaction_type: string;
@@ -84,7 +99,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         username: string;
       };
 
-      // Use our custom SQL function to fetch reactions with usernames in a single query
+      // Always fetch reactions since they're not passed from the list screen
       const { data: reactionsData, error: reactionsError } = await supabase
         .rpc('get_letter_reactions_with_usernames', { letter_id_param: letterId }) as { 
           data: ReactionWithUsername[] | null, 
@@ -107,28 +122,32 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         setReactionStats([]);
       }
       
-      // Fetch reply count
-      const { data: repliesData, error: repliesError } = await supabase
-        .from('replies')
-        .select('id', { count: 'exact' })
-        .eq('letter_id', letterId);
-        
-      if (repliesError) {
-        console.error('Error fetching replies count:', repliesError);
-      } else {
-        setReplyCount(repliesData?.length || 0);
+      // Only fetch reply count if we don't have initial stats or if refreshing
+      if (!isInitialLoad || initialStats?.replyCount === undefined) {
+        const { data: repliesData, error: repliesError } = await supabase
+          .from('replies')
+          .select('id', { count: 'exact' })
+          .eq('letter_id', letterId);
+          
+        if (repliesError) {
+          console.error('Error fetching replies count:', repliesError);
+        } else {
+          setReplyCount(repliesData?.length || 0);
+        }
       }
       
-      // Fetch read count
-      const { data: readsData, error: readsError } = await supabase
-        .from('letter_reads')
-        .select('id', { count: 'exact' })
-        .eq('letter_id', letterId);
-        
-      if (readsError) {
-        console.error('Error fetching read count:', readsError);
-      } else {
-        setReadCount(readsData?.length || 0);
+      // Only fetch read count if we don't have initial stats or if refreshing
+      if (!isInitialLoad || initialStats?.readCount === undefined) {
+        const { data: readsData, error: readsError } = await supabase
+          .from('letter_reads')
+          .select('id', { count: 'exact' })
+          .eq('letter_id', letterId);
+          
+        if (readsError) {
+          console.error('Error fetching read count:', readsError);
+        } else {
+          setReadCount(readsData?.length || 0);
+        }
       }
       
     } catch (error) {

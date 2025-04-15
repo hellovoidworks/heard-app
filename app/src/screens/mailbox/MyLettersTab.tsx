@@ -112,7 +112,24 @@ const MyLettersTab = () => {
   };
 
   const handleLetterPress = (letter: Letter) => {
-    navigation.navigate('MyLetterDetail', { letterId: letter.id });
+    // Pass the full letter data along with counts to avoid redundant fetching
+    navigation.navigate('MyLetterDetail', { 
+      letterId: letter.id,
+      letterData: {
+        id: letter.id,
+        title: letter.title,
+        content: letter.content,
+        created_at: letter.created_at,
+        category: letter.category,
+        mood_emoji: letter.mood_emoji,
+        author_id: user?.id || '' // Since this is the user's letter
+      },
+      initialStats: {
+        replyCount: letter.reply_count,
+        readCount: letter.view_count,
+        reactionCount: letter.reaction_count
+      }
+    });
   };
 
   const renderLetterItem = ({ item }: { item: Letter }) => {
