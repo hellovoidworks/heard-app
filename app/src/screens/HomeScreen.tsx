@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { View, StyleSheet, FlatList, Animated, Easing, Alert, AppState, AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, Banner, useTheme } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +20,7 @@ import {
 } from '../utils/deliveryWindow';
 import { fontNames } from '../utils/fonts';
 import { StorageService, STORAGE_KEYS } from '../services/storage';
+import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -49,6 +52,43 @@ const HomeScreen = () => {
   // Number of letters to fetch initially and when loading more
   const INITIAL_LETTERS_LIMIT = 5;
   const MORE_LETTERS_LIMIT = 1;
+  
+  // Check for pending star rewards when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const checkPendingStarRewards = async () => {
+        try {
+          // Check if there are any pending star rewards
+          const pendingRewardStr = await AsyncStorage.getItem('@heard_app/pending_star_reward');
+          
+          if (pendingRewardStr) {
+            console.log('HomeScreen: Found pending star reward:', pendingRewardStr);
+            const pendingReward = parseInt(pendingRewardStr, 10);
+            
+            if (pendingReward > 0) {
+              // Clear the pending reward first to prevent duplicate animations
+              await AsyncStorage.removeItem('@heard_app/pending_star_reward');
+              console.log('HomeScreen: Cleared pending star reward');
+              
+              // Wait a short delay to ensure the screen transition is complete
+              setTimeout(() => {
+                console.log('HomeScreen: Triggering star reward animation for', pendingReward, 'stars');
+                eventEmitter.emit(EVENTS.STAR_REWARD_EARNED, pendingReward);
+              }, 500);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking for pending star rewards:', error);
+        }
+      };
+      
+      checkPendingStarRewards();
+      
+      return () => {
+        // Cleanup if needed
+      };
+    }, [])
+  );
 
   // Create a map to store animation values for each letter
   const fadeAnims = useMemo(() => new Map<string, Animated.Value>(), []);

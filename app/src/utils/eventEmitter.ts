@@ -41,7 +41,8 @@ const eventEmitter = new EventEmitter();
 
 // Event types
 export const EVENTS = {
-  STARS_UPDATED: 'STARS_UPDATED'
+  STARS_UPDATED: 'STARS_UPDATED',
+  STAR_REWARD_EARNED: 'STAR_REWARD_EARNED'
 };
 
 export default eventEmitter;

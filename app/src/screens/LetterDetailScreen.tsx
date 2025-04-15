@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated, Easing } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import WordByWordText from '../components/WordByWordText';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
@@ -12,6 +13,7 @@ import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import LetterTitleCard from '../components/LetterTitleCard';
+import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 
@@ -327,10 +329,22 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
 
       // Award 2 stars for replying
+      console.log('LetterDetailScreen: About to update stars for replying');
       const { error: starError } = await updateStars(2);
       if (starError) {
         console.error('Error updating stars:', starError);
         // Don't block navigation if star update fails
+      } else {
+        try {
+          // Store the reward amount in AsyncStorage so we can trigger the animation AFTER navigation
+          await AsyncStorage.setItem('@heard_app/pending_star_reward', '2');
+          console.log('LetterDetailScreen: Stored pending reward of 2 stars in AsyncStorage');
+          console.log('LetterDetailScreen: Will show animation after navigation completes');
+          
+          // Don't emit the event here - we'll do it after navigation in the HomeScreen
+        } catch (error) {
+          console.error('Error storing pending reward:', error);
+        }
       }
       
       // Clear response text and close modal
@@ -340,14 +354,13 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       // Hide bottom navigation buttons
       setHideBottomNav(true);
       
-      // Close the letter after a short delay
-      setTimeout(() => {
-        if (onClose) {
-          onClose();
-        } else {
-          navigation.goBack();
-        }
-      }, 750);
+      // Close the letter immediately since we'll show the animation after navigation
+      console.log('LetterDetailScreen: Closing letter, will show animation after navigation');
+      if (onClose) {
+        onClose();
+      } else {
+        navigation.goBack();
+      }
       
     } catch (error) {
       console.error('Error sending response:', error);

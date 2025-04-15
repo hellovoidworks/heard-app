@@ -7,6 +7,7 @@ import { AuthProvider } from './src/contexts/AuthContext';
 import { CategoryProvider } from './src/contexts/CategoryContext';
 import { PreloadProvider } from './src/contexts/PreloadContext';
 import AppNavigator from './src/navigation';
+import StarRewardAnimation from './src/components/StarRewardAnimation';
 import { supabase } from './src/services/supabase';
 import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
 import { darkTheme } from './src/utils/theme';
@@ -342,6 +343,19 @@ export default function App() {
           <CategoryProvider>
             <PreloadProvider>
               <AppNavigator ref={navigationRef} />
+              {/* Position the star reward animation component with absolute positioning and highest z-index */}
+              <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: 'box-none', // Allow touches to pass through when no animation is showing
+                zIndex: 9999,
+                elevation: 10,
+              }}>
+                <StarRewardAnimation />
+              </View>
             </PreloadProvider>
           </CategoryProvider>
         </AuthProvider>
