@@ -3,12 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark only">
+  <meta name="supported-color-schemes" content="dark only">
   <title>Sign in to Heard</title>
   <style>
+    :root {
+      color-scheme: dark only;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #222222;
-      color: #ffffff;
+      background-color: #222222 !important;
+      color: #ffffff !important;
       margin: 0;
       padding: 0;
     }
@@ -22,7 +27,7 @@
       margin-bottom: 30px;
     }
     .content {
-      background-color: #333333;
+      background-color: #333333 !important;
       border-radius: 8px;
       padding: 30px;
       margin-bottom: 20px;
@@ -63,9 +68,9 @@
     }
   </style>
 </head>
-<body>
-  <div class="container">
-    <div class="content">
+<body bgcolor="#222222" text="#ffffff">
+  <div class="container" style="background-color: #222222 !important;">
+    <div class="content" style="background-color: #333333 !important; color: #ffffff !important;">
       <h1>Sign in to Heard</h1>
       <p>We received a request to sign in to your Heard account. Click the button below to securely sign in.</p>
       <a href="{{ .ConfirmationURL }}" class="button" style="color: #ffffff !important;">Sign In</a>
