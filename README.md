@@ -55,7 +55,7 @@ A mobile application for community letter exchanges, built with Expo and Supabas
 
 1. Generate native iOS files:
    ```bash
-   npx expo prebuild --platform ios
+   npx expo prebuild --platform ios --clean
    ```
 
 2. Open the iOS project in Xcode:
@@ -64,6 +64,16 @@ A mobile application for community letter exchanges, built with Expo and Supabas
    ```
 
 3. Build and run the project in Xcode
+
+Or run in simulator with server:
+```bash
+npx expo run:ios 
+```
+
+Or run in device:
+```bash
+npx expo run:ios --configuration release --device
+```
 
 ## Deep Linking
 
