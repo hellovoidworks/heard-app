@@ -238,8 +238,8 @@ const StarRewardAnimation: React.FC = () => {
           useNativeDriver: true,
         }),
       ]),
-      // Hold the animation (reduced from 2000ms to 1000ms)
-      Animated.delay(1000),
+      // Hold the animation (reduced from 1000ms to 500ms for a quicker display)
+      Animated.delay(500),
       // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -261,7 +261,7 @@ const StarRewardAnimation: React.FC = () => {
         setVisible(false);
         console.log('StarRewardAnimation: Visibility set to false');
       });
-    }, 1800); // Reduced from 2000ms to 1800ms for quicker dismissal
+    }, 1300); // Reduced from 1800ms to 1300ms for much quicker dismissal
   };
   
   // Handle manual dismiss (when user taps on the screen)
