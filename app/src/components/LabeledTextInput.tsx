@@ -171,6 +171,7 @@ const styles = StyleSheet.create({
   },
   inputWrapper: {
     flex: 1,
+    marginTop: -2,
   },
   horizontalInput: {
     fontSize: 16,
