@@ -12,7 +12,7 @@
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      background-color: #222222 !important;
+      background-color: #111111 !important;
       color: #ffffff !important;
       margin: 0;
       padding: 0;
@@ -31,6 +31,7 @@
       border-radius: 8px;
       padding: 30px;
       margin-bottom: 20px;
+      text-align: center;
     }
     h1 {
       color: #ffffff;
@@ -68,16 +69,18 @@
     }
   </style>
 </head>
-<body bgcolor="#222222" text="#ffffff">
-  <div class="container" style="background-color: #222222 !important;">
+<body bgcolor="#111111" text="#ffffff">
+  <div class="container" style="background-color: #111111 !important;">
     <div class="content" style="background-color: #333333 !important; color: #ffffff !important;">
       <div style="text-align: center; margin-bottom: 20px;">
-        <img src="https://lrdylsehrfkkrjzicczz.supabase.co/storage/v1/object/public/heard-assets//icon.png" alt="Heard App Icon" width="80" height="80" style="display: inline-block;">
+        <img src="https://heard-app.s3.us-east-1.amazonaws.com/icon.png" alt="Heard App Icon" width="80" height="80" style="display: inline-block;">
       </div>
-      <h1>Sign in to Heard</h1>
-      <p>We received a request to sign in to your Heard account. Click the button below to securely sign in.</p>
-      <a href="{{ .ConfirmationURL }}" class="button" style="color: #ffffff !important;">Sign In</a>
-      <p style="margin-top: 20px; font-size: 14px;">If you didn't request this email, you can safely ignore it.</p>
+      <h1 style="text-align: center;">Sign in to Heard</h1>
+      <p style="text-align: center;">We received a request to sign in to your Heard account. Click the button below to securely sign in.</p>
+      <div style="text-align: center;">
+        <a href="{{ .ConfirmationURL }}" class="button" style="color: #ffffff !important;">Sign In</a>
+      </div>
+      <p style="margin-top: 20px; font-size: 14px; text-align: center;">If you didn't request this email, you can safely ignore it.</p>
     </div>
     <div class="footer">
       <p>© 2025 Heard App. All rights reserved.</p>
