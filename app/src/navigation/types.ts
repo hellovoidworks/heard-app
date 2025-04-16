@@ -34,6 +34,7 @@ export type RootStackParamList = {
   ThreadDetail: { 
     letterId: string;
     otherParticipantId: string; // Added for pair-based threading
+    presentationMode?: 'modal' | 'push'; // To control how the screen is presented
   };
   WriteLetter: { categoryId?: string; parentId?: string; threadId?: string };
   WriteLetterContent: { title?: string; content?: string };

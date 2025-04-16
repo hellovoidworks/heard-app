@@ -49,21 +49,36 @@ function navigateToNotification(data: any) {
       return;
     }
     
+    // Get the current navigation state to preserve history
+    const currentState = navigationRef.current.getRootState();
+    console.log('Current navigation state:', JSON.stringify(currentState, null, 2));
+    
     switch (type) {
       case 'reply':
-        // Navigate to the thread detail screen
+        // Use modal presentation for reply notifications
         navigationRef.current?.navigate('ThreadDetail', { 
           letterId: letterId,
-          otherParticipantId: senderId
+          otherParticipantId: senderId,
+          presentationMode: 'modal'
         });
         break;
       case 'letter':
-        // Navigate to the letter detail screen
-        navigationRef.current?.navigate('LetterDetail', { letterId: letterId });
+        // Push the LetterDetail screen onto the stack
+        navigationRef.current?.dispatch(
+          CommonActions.navigate({
+            name: 'LetterDetail',
+            params: { letterId: letterId }
+          })
+        );
         break;
       case 'reaction':
-        // For reactions, navigate to MyLetterDetailScreen since reactions are for letters authored by the user
-        navigationRef.current?.navigate('MyLetterDetail', { letterId: letterId });
+        // Push the MyLetterDetail screen onto the stack
+        navigationRef.current?.dispatch(
+          CommonActions.navigate({
+            name: 'MyLetterDetail',
+            params: { letterId: letterId }
+          })
+        );
         break;
       case 'new_mail':
         // Navigate to the home screen for new mail notifications
