@@ -14,6 +14,8 @@ import { darkTheme } from './src/utils/theme';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontsToLoad } from './src/utils/fonts';
+// Import Adjust as shown in the documentation example
+import { Adjust, AdjustConfig } from 'react-native-adjust';
 
 console.log('=== App initialization started ===');
 
@@ -130,6 +132,23 @@ export default function App() {
   
   useEffect(() => {
     console.log('=== App useEffect running ===');
+    
+    // Initialize Adjust SDK exactly as shown in the documentation example
+    try {
+      console.log('Attempting to initialize Adjust SDK...');
+      
+      // Create the config object exactly as shown in the documentation
+      const adjustConfig = new AdjustConfig(
+        'k65lvn10qqdc',
+        AdjustConfig.EnvironmentSandbox
+      );
+      
+      // Initialize the SDK
+      Adjust.initSdk(adjustConfig);
+      console.log('Adjust SDK initialized successfully');
+    } catch (error) {
+      console.error('Error initializing Adjust SDK:', error);
+    }
     
     // Set up notification response handler
     const notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
@@ -326,6 +345,17 @@ export default function App() {
 
     return () => {
       console.log('Cleaning up App component listeners');
+      
+      // Clean up Adjust SDK exactly as shown in the documentation
+      try {
+        console.log('Cleaning up Adjust SDK...');
+        Adjust.componentWillUnmount();
+        console.log('Adjust SDK cleanup completed');
+      } catch (error) {
+        console.error('Error cleaning up Adjust SDK:', error);
+      }
+      
+      // Clean up other listeners
       subscription.remove();
       authListener?.subscription?.unsubscribe();
       notificationResponseSubscription.remove();
