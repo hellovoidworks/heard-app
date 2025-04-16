@@ -3,18 +3,23 @@ import { View, StyleSheet, ScrollView, Alert, Linking, Platform } from 'react-na
 import { Text, Switch, Divider, Button, ActivityIndicator, Banner, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
 import { supabase } from '../../services/supabase';
-import { registerForPushNotificationsAsync, checkNotificationPermissions, savePushToken, testSavePushToken } from '../../services/notifications';
-import { TestPushNotification } from '../../components/TestPushNotification';
+import { 
+  registerForPushNotificationsAsync, 
+  checkNotificationPermissions, 
+  savePushToken,
+  scheduleDailyDeliveryNotifications,
+  cancelDailyDeliveryNotifications 
+} from '../../services/notifications';
 
 const NotificationSettingsScreen = () => {
   const { user, profile } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
   const [replyNotifications, setReplyNotifications] = useState(true);
   const [letterNotifications, setLetterNotifications] = useState(true);
+  const [reactionNotifications, setReactionNotifications] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [systemPermissionsGranted, setSystemPermissionsGranted] = useState(true);
-  const [testingToken, setTestingToken] = useState(false);
   const theme = useTheme();
 
   useEffect(() => {
@@ -74,6 +79,7 @@ const NotificationSettingsScreen = () => {
         setNotificationsEnabled(prefs.enabled || false);
         setReplyNotifications(prefs.replies !== false); // Default to true if not set
         setLetterNotifications(prefs.new_letters !== false); // Default to true if not set
+        setReactionNotifications(prefs.reactions !== false); // Default to true if not set
       }
     } catch (error) {
       console.error('Error:', error);
@@ -82,13 +88,26 @@ const NotificationSettingsScreen = () => {
     }
   };
 
-  const saveNotificationPreferences = async () => {
+  const saveNotificationPreferences = async (newPreferences?: {
+    enabled?: boolean;
+    replies?: boolean;
+    new_letters?: boolean;
+    reactions?: boolean;
+  }) => {
     if (!user) return;
     
     setSaving(true);
     try {
+      // Create current preferences object
+      const preferences = {
+        enabled: newPreferences?.enabled !== undefined ? newPreferences.enabled : notificationsEnabled,
+        replies: newPreferences?.replies !== undefined ? newPreferences.replies : replyNotifications,
+        new_letters: newPreferences?.new_letters !== undefined ? newPreferences.new_letters : letterNotifications,
+        reactions: newPreferences?.reactions !== undefined ? newPreferences.reactions : reactionNotifications
+      };
+      
       // If enabling notifications, ensure we have permission and a token
-      if (notificationsEnabled) {
+      if (preferences.enabled) {
         // First check if we already have permission
         const permissionStatus = await checkNotificationPermissions();
         console.log('Current notification permission status:', permissionStatus);
@@ -129,12 +148,6 @@ const NotificationSettingsScreen = () => {
         checkSystemPermissions();
       }
       
-      const preferences = {
-        enabled: notificationsEnabled,
-        replies: replyNotifications,
-        new_letters: letterNotifications
-      };
-      
       const { error } = await supabase
         .from('user_profiles')
         .update({
@@ -148,7 +161,7 @@ const NotificationSettingsScreen = () => {
         return;
       }
       
-      Alert.alert('Success', 'Notification preferences updated successfully');
+      // Preferences saved successfully
     } catch (error) {
       console.error('Error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
@@ -191,8 +204,11 @@ const NotificationSettingsScreen = () => {
           <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>Enable Notifications</Text>
           <Switch
             value={notificationsEnabled}
-            onValueChange={setNotificationsEnabled}
-            disabled={!systemPermissionsGranted}
+            onValueChange={(value) => {
+              setNotificationsEnabled(value);
+              saveNotificationPreferences({ enabled: value });
+            }}
+            disabled={!systemPermissionsGranted || saving}
             color={theme.colors.primary}
           />
         </View>
@@ -212,18 +228,49 @@ const NotificationSettingsScreen = () => {
               <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>Replies to my letters</Text>
               <Switch
                 value={replyNotifications}
-                onValueChange={setReplyNotifications}
-                disabled={!systemPermissionsGranted}
+                onValueChange={(value) => {
+                  setReplyNotifications(value);
+                  saveNotificationPreferences({ replies: value });
+                }}
+                disabled={!systemPermissionsGranted || saving}
                 color={theme.colors.primary}
               />
             </View>
             
             <View style={styles.switchRow}>
-              <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>New letters in categories I follow</Text>
+              <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>Reactions to my letters</Text>
+              <Switch
+                value={reactionNotifications}
+                onValueChange={(value) => {
+                  setReactionNotifications(value);
+                  saveNotificationPreferences({ reactions: value });
+                }}
+                disabled={!systemPermissionsGranted || saving}
+                color={theme.colors.primary}
+              />
+            </View>
+            
+            <View style={styles.switchRow}>
+              <Text style={[styles.settingTitle, { color: theme.colors.onSurface }]}>New mail arrival</Text>
               <Switch
                 value={letterNotifications}
-                onValueChange={setLetterNotifications}
-                disabled={!systemPermissionsGranted}
+                onValueChange={async (value) => {
+                  setLetterNotifications(value);
+                  // Handle the local notifications for new mail arrival
+                  try {
+                    if (value) {
+                      // Schedule daily notifications if enabled
+                      await scheduleDailyDeliveryNotifications(true, value);
+                    } else {
+                      // Cancel daily notifications if disabled
+                      await cancelDailyDeliveryNotifications();
+                    }
+                  } catch (error) {
+                    console.error('Error managing daily notifications:', error);
+                  }
+                  saveNotificationPreferences({ new_letters: value });
+                }}
+                disabled={!systemPermissionsGranted || saving}
                 color={theme.colors.primary}
               />
             </View>
@@ -233,8 +280,8 @@ const NotificationSettingsScreen = () => {
         </>
       )}
       
-      <View style={styles.buttonContainer}>
-        {!systemPermissionsGranted ? (
+      {!systemPermissionsGranted && (
+        <View style={styles.buttonContainer}>
           <Button
             mode="contained"
             onPress={openSettings}
@@ -242,103 +289,12 @@ const NotificationSettingsScreen = () => {
           >
             Open iOS Settings
           </Button>
-        ) : (
-          <Button
-            mode="contained"
-            onPress={saveNotificationPreferences}
-            loading={saving}
-            disabled={saving}
-            style={styles.saveButton}
-          >
-            Save Preferences
-          </Button>
-        )}
-      </View>
+        </View>
+      )}
       
-      {/* Test Button for Developers */}
-      <View style={styles.devSection}>
-        <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-        <Text style={[styles.devTitle, { color: theme.colors.error }]}>Developer Testing</Text>
-        <Button
-          mode="outlined"
-          onPress={async () => {
-            if (!user) return;
-            
-            // Set a timeout to prevent infinite loading
-            const timeoutId = setTimeout(() => {
-              console.warn('Test token save operation timed out after 15 seconds');
-              Alert.alert(
-                'Operation Timed Out',
-                'The token save operation took too long. Check console logs for details.'
-              );
-              setTestingToken(false);
-            }, 15000); // 15 second timeout
-            
-            setTestingToken(true);
-            console.log('Starting test token save operation...');
-            
-            try {
-              // Log each step of the process
-              console.log('Step 1: Calling testSavePushToken for user:', user.id);
-              const result = await testSavePushToken(user.id);
-              console.log('Step 2: Received result from testSavePushToken:', JSON.stringify(result, null, 2));
-              
-              // Clear the timeout since we got a response
-              clearTimeout(timeoutId);
-              
-              if (result.success) {
-                console.log('Step 3: Test successful');
-                Alert.alert(
-                  'Test Successful', 
-                  `Token saved successfully! ${result.message || ''}
 
-Token: ${result.token || 'N/A'}
-Tokens in DB: ${result.tokensInDatabase || 0}`
-                );
-              } else {
-                console.warn('Step 3: Test failed with error:', result.error);
-                Alert.alert(
-                  'Test Failed', 
-                  `Error: ${result.error}
+      
 
-Details: ${result.details || 'No details provided'}`
-                );
-              }
-            } catch (error) {
-              // Clear the timeout since we got a response (even if it's an error)
-              clearTimeout(timeoutId);
-              
-              console.error('Unhandled exception in test token save:', error);
-              
-              // Try to extract more information from the error
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              const errorStack = error instanceof Error ? error.stack : 'No stack trace available';
-              
-              console.error('Error details:\nMessage:', errorMessage, '\nStack:', errorStack);
-              
-              Alert.alert(
-                'Test Error', 
-                `An unexpected error occurred: ${errorMessage}\n\nCheck the console logs for more details.`
-              );
-            } finally {
-              console.log('Test token save operation completed');
-              setTestingToken(false);
-            }
-          }}
-          style={styles.testButton}
-          disabled={testingToken}
-          loading={testingToken}
-        >
-          Test Direct Token Save
-        </Button>
-        
-        {/* Notification Navigation Testing */}
-        <Text style={[styles.devSubtitle, { color: theme.colors.error, marginTop: 20 }]}>Test Notification Navigation</Text>
-        <Text style={[styles.devDescription, { color: theme.colors.onSurfaceVariant }]}>
-          Send test notifications and tap them to verify navigation to the correct screens
-        </Text>
-        <TestPushNotification />
-      </View>
     </ScrollView>
   );
 };
@@ -347,37 +303,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  devSection: {
-    marginTop: 40,
-    paddingHorizontal: 16,
-  },
-  devTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginVertical: 8,
-  },
-  devSubtitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  devDescription: {
-    fontSize: 12,
-    marginBottom: 8,
-  },
-  testButton: {
-    marginTop: 8,
-  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  banner: {
-    marginBottom: 16,
-  },
-  bannerText: {
-    fontSize: 14,
   },
   section: {
     padding: 16,
@@ -391,25 +320,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
+    marginBottom: 16,
   },
   settingTitle: {
     fontSize: 16,
+    flex: 1,
   },
   settingDescription: {
     fontSize: 14,
-    marginTop: 4,
+    marginTop: -8,
+    marginBottom: 8,
   },
   divider: {
     height: 1,
+    marginVertical: 8,
   },
   buttonContainer: {
     padding: 16,
-    marginTop: 16,
+    marginTop: 8,
   },
   saveButton: {
-    paddingVertical: 8,
+    borderRadius: 8,
   },
+  banner: {
+    marginBottom: 16,
+  },
+  bannerText: {
+    fontSize: 14,
+  },
+
 });
 
 export default NotificationSettingsScreen; 

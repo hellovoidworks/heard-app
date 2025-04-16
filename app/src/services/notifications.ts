@@ -32,7 +32,37 @@ export async function checkNotificationPermissions(): Promise<NotificationPermis
 const DELIVERY_NOTIFICATION_MORNING_ID = 'daily-delivery-morning';
 const DELIVERY_NOTIFICATION_EVENING_ID = 'daily-delivery-evening';
 
-export async function scheduleDailyDeliveryNotifications() {
+/**
+ * Cancels all scheduled daily delivery notifications
+ */
+export async function cancelDailyDeliveryNotifications() {
+  console.log('[cancelDailyDeliveryNotifications] Cancelling daily notifications...');
+  try {
+    await Notifications.cancelScheduledNotificationAsync(DELIVERY_NOTIFICATION_MORNING_ID);
+    console.log(`[cancelDailyDeliveryNotifications] Cancelled notification with ID: ${DELIVERY_NOTIFICATION_MORNING_ID}`);
+    
+    await Notifications.cancelScheduledNotificationAsync(DELIVERY_NOTIFICATION_EVENING_ID);
+    console.log(`[cancelDailyDeliveryNotifications] Cancelled notification with ID: ${DELIVERY_NOTIFICATION_EVENING_ID}`);
+    
+    return true;
+  } catch (error) {
+    console.error('[cancelDailyDeliveryNotifications] Failed to cancel daily notifications:', error);
+    return false;
+  }
+}
+
+/**
+ * Schedules daily delivery notifications for 8 AM and 8 PM
+ * @param checkPreference If true, will check the user's notification preference before scheduling
+ * @param userPreference The user's notification preference for new letters
+ */
+export async function scheduleDailyDeliveryNotifications(checkPreference = false, userPreference = true) {
+  // If we're checking preferences and the user has disabled new letter notifications, cancel any existing ones
+  if (checkPreference && !userPreference) {
+    console.log('[scheduleDailyDeliveryNotifications] User has disabled new mail notifications, cancelling...');
+    return await cancelDailyDeliveryNotifications();
+  }
+  
   console.log('[scheduleDailyDeliveryNotifications] Attempting to schedule daily notifications...');
   try {
     // Cancel any existing notifications with the same IDs to avoid duplicates
@@ -144,7 +174,8 @@ export async function registerForPushNotificationsAsync() {
     return null;
   }
 
-  // Schedule daily notifications
+  // Schedule daily notifications if the user has enabled them
+  // We don't check preferences here because this is called during initial setup
   await scheduleDailyDeliveryNotifications();
 
   return token;

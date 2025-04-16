@@ -5,7 +5,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { registerForPushNotificationsAsync, savePushToken } from '../../services/notifications';
+import { 
+  registerForPushNotificationsAsync, 
+  savePushToken 
+} from '../../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -70,6 +73,9 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
         // Continue with onboarding even if notifications fail
       }
       
+      // Note: Daily notifications are automatically scheduled in registerForPushNotificationsAsync
+      // when the user enables notifications, so we don't need to call it again here
+
       // Update user_profiles table with notification preferences as JSON
       console.log('Updating user_profiles with onboarding completion...');
       const { error: profileError } = await supabase
@@ -79,10 +85,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
           onboarding_completed: true,
           notification_preferences: {
             enabled: token ? true : false,
-            // Future granular settings can be added here
-            new_replies: token ? true : false,
-            new_reactions: token ? true : false,
-            system_announcements: token ? true : false
+            // Use the same keys as the settings screen
+            replies: token ? true : false,
+            reactions: token ? true : false,
+            new_letters: token ? true : false
           },
           updated_at: new Date().toISOString()
         })
@@ -111,9 +117,9 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
               onboarding_completed: true,
               notification_preferences: {
                 enabled: false,
-                new_replies: false,
-                new_reactions: false,
-                system_announcements: false
+                replies: false,
+                reactions: false,
+                new_letters: false
               },
               updated_at: new Date().toISOString()
             })
@@ -148,9 +154,9 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
           onboarding_completed: true,
           notification_preferences: {
             enabled: false,
-            new_replies: false,
-            new_reactions: false,
-            system_announcements: false
+            replies: false,
+            reactions: false,
+            new_letters: false
           },
           updated_at: new Date().toISOString()
         })
