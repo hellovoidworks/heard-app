@@ -2,22 +2,22 @@
 -- First drop the existing function
 DROP FUNCTION IF EXISTS public.get_user_correspondences_by_pair(uuid);
 CREATE OR REPLACE FUNCTION public.get_user_correspondences_by_pair(p_user_id uuid)
- RETURNS TABLE(
-   letter_id uuid, 
-   other_participant_id uuid, 
-   letter_title text, 
-   letter_author_id uuid, 
-   letter_created_at timestamp with time zone, 
-   category_name text, 
-   category_color text, 
-   mood_emoji text, 
-   most_recent_interaction_at timestamp with time zone, 
-   most_recent_interaction_content text, 
-   most_recent_interactor_id uuid, 
-   unread_message_count bigint,
-   letter_display_name text
- )
- LANGUAGE plpgsql
+RETURNS TABLE(
+    letter_id uuid, 
+    other_participant_id uuid, 
+    letter_title text, 
+    letter_author_id uuid, 
+    letter_created_at timestamp with time zone, 
+    category_name text, 
+    category_color text, 
+    mood_emoji text, 
+    most_recent_interaction_at timestamp with time zone, 
+    most_recent_interaction_content text, 
+    most_recent_interactor_id uuid, 
+    unread_message_count bigint,
+    letter_display_name text
+)
+LANGUAGE plpgsql
 AS $function$
 BEGIN
   RETURN QUERY
@@ -63,66 +63,54 @@ BEGIN
     FROM letter_details ld
     JOIN user_replies ur ON ld.letter_id = ur.letter_id
     WHERE ld.letter_author_id = p_user_id -- User wrote the letter
-      AND ur.reply_to_user_id = p_user_id -- Reply was sent to the user
-    
+      AND ur.reply_to_user_id = p_user_id -- And received a reply
+
     UNION
-    
+
     SELECT DISTINCT
       ld.letter_id,
-      ur.reply_to_user_id as other_participant_id -- User sent reply to this person
+      ld.letter_author_id as other_participant_id -- User replied to the author
     FROM letter_details ld
     JOIN user_replies ur ON ld.letter_id = ur.letter_id
-    WHERE ld.letter_author_id != p_user_id -- User did NOT write the letter
-      AND ur.author_id = p_user_id -- User sent the reply
-      
+    WHERE ur.author_id = p_user_id -- User wrote a reply
+      AND ld.letter_author_id != p_user_id -- To someone else's letter
+
     UNION
-    
+
     SELECT DISTINCT
       ld.letter_id,
-      ld.letter_author_id as other_participant_id -- The letter author is the other participant
+      ld.letter_author_id as other_participant_id -- User reacted to the author's letter
     FROM letter_details ld
-    JOIN user_replies ur ON ld.letter_id = ur.letter_id
-    WHERE ld.letter_author_id != p_user_id -- User did NOT write the letter
-      AND ur.reply_to_user_id = p_user_id -- Reply was sent to the user
-      
-    UNION
-    
-    SELECT DISTINCT
-      ur.letter_id,
-      ld.letter_author_id as other_participant_id -- Letter author is the other participant
-    FROM user_reactions ur
-    JOIN letter_details ld ON ur.letter_id = ld.letter_id
-    WHERE ld.letter_author_id != p_user_id -- Other participant is the letter author
+    JOIN user_reactions ureact ON ld.letter_id = ureact.letter_id
+    WHERE ld.letter_author_id != p_user_id -- Ensure it's not the user's own letter
   ),
   pair_interactions AS (
-    -- All interactions (replies and reactions) between the user and other participants
-    -- For each letter, we track the most recent interaction
+    -- Gather interactions strictly BETWEEN the identified pair members for each letter
+    -- Replies BETWEEN the pair
     SELECT
-      r.letter_id,
-      CASE 
-        WHEN r.author_id = p_user_id THEN r.reply_to_user_id
-        ELSE r.author_id
-      END as other_participant_id,
+      rp.letter_id,
+      rp.other_participant_id,
+      r.author_id as interactor_id,
       r.created_at as interaction_at,
-      r.content as interaction_content,
-      r.author_id as interactor_id
-    FROM public.replies r
-    JOIN relevant_pairs rp ON r.letter_id = rp.letter_id
-    WHERE (r.author_id = p_user_id AND r.reply_to_user_id = rp.other_participant_id)
-       OR (r.author_id = rp.other_participant_id AND r.reply_to_user_id = p_user_id)
-    
-    UNION ALL
-    
+      r.content as interaction_content
+    FROM relevant_pairs rp
+    JOIN public.replies r ON rp.letter_id = r.letter_id
+    WHERE (r.author_id = p_user_id AND r.reply_to_user_id = rp.other_participant_id) -- P -> O
+       OR (r.author_id = rp.other_participant_id AND r.reply_to_user_id = p_user_id) -- O -> P
+
+    UNION ALL -- Use UNION ALL as reaction/reply sources are distinct interaction types
+
+    -- Reactions BY p_user_id ON the letter (only relevant if p_user_id is not the author)
     SELECT
-      rc.letter_id,
-      ld.letter_author_id as other_participant_id,
+      rp.letter_id,
+      rp.other_participant_id,
+      p_user_id as interactor_id,
       rc.created_at as interaction_at,
-      rc.reaction_type as interaction_content,
-      rc.user_id as interactor_id
-    FROM public.reactions rc
-    JOIN letter_details ld ON rc.letter_id = ld.letter_id
-    JOIN relevant_pairs rp ON rc.letter_id = rp.letter_id AND ld.letter_author_id = rp.other_participant_id
-    WHERE rc.user_id = p_user_id -- User reacted to the letter
+      'Reacted with ' || rc.reaction_type as interaction_content
+    FROM relevant_pairs rp
+    JOIN public.reactions rc ON rp.letter_id = rc.letter_id
+    JOIN letter_details ld ON rp.letter_id = ld.letter_id
+    WHERE rc.user_id = p_user_id
       AND ld.letter_author_id = rp.other_participant_id -- Make sure user reacted to the OTHER person's letter
   ),
   ranked_pair_interactions AS (
@@ -173,3 +161,8 @@ BEGIN
 
 END;
 $function$;
+
+COMMENT ON FUNCTION public.get_user_correspondences_by_pair(uuid) IS 
+'Fetches pairs of users who have interacted via letters, replies, or reactions, relative to the input user ID. 
+Shows the latest interaction strictly *between* the pair for each letter thread. 
+Includes a count of unread replies from the other participant to the input user for each pair.';
