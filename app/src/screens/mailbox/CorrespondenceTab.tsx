@@ -17,6 +17,7 @@ type Correspondence = {
   other_participant_name?: string;
   letter_title: string;
   letter_author_id: string;
+  letter_display_name?: string;
   most_recent_interaction_at: string;
   most_recent_interaction_content: string;
   most_recent_interactor_id: string;
@@ -290,7 +291,11 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
                 >
                   {item.most_recent_interactor_id === item.other_participant_id ? (
                     <>
-                      <Text style={styles.interactorName}>{item.other_participant_name}: </Text>
+                      <Text style={styles.interactorName}>
+                        {item.most_recent_interactor_id === item.letter_author_id && item.letter_display_name 
+                          ? `${item.letter_display_name}: ` 
+                          : `${item.other_participant_name}: `}
+                      </Text>
                       <Text>{item.most_recent_interaction_content}</Text>
                     </>
                   ) : (
