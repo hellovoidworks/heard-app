@@ -24,3 +24,4 @@ export { default as MailboxScreen } from './MailboxScreen';
 export { default as NotificationSettingsScreen } from './settings/NotificationSettingsScreen'; 
 export { default as CategoryPreferencesSettingsScreen } from './CategoryPreferencesSettingsScreen'; 
 export { default as DeleteAccountScreen } from './AccountSettingsScreen'; 
+export { default as WebViewScreen } from './WebViewScreen';

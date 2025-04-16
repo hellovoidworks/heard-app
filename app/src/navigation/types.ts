@@ -43,6 +43,7 @@ export type RootStackParamList = {
   NotificationSettings: undefined;
   CategoryPreferencesSettings: undefined;
   DeleteAccount: undefined;
+  WebView: { url: string; title: string; };
 };
 
 export type AuthStackParamList = {

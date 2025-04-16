@@ -28,7 +28,8 @@ import {
   MailboxScreen,
   NotificationSettingsScreen,
   CategoryPreferencesSettingsScreen,
-  DeleteAccountScreen
+  DeleteAccountScreen,
+  WebViewScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -511,6 +512,16 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF'
                 }} 
+              />
+              <Stack.Screen 
+                name="WebView" 
+                component={WebViewScreen} 
+                options={({ route }) => ({ 
+                  headerShown: true, 
+                  title: route.params.title,
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                })} 
               />
             </>
           )

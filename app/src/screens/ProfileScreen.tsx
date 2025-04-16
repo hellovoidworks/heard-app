@@ -175,6 +175,30 @@ const ProfileScreen = () => {
         />
       </List.Section>
 
+      <List.Section>
+        <List.Subheader style={{ color: theme.colors.onSurfaceVariant }}>Terms & Privacy</List.Subheader>
+        <List.Item
+          title="Terms"
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="file-document" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
+          onPress={() => navigation.navigate('WebView', { 
+            url: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/', 
+            title: 'Terms' 
+          })}
+        />
+        <List.Item
+          title="Privacy Policy"
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="shield-lock" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
+          onPress={() => navigation.navigate('WebView', { 
+            url: 'https://www.apple.com/legal/privacy/en-ww/', 
+            title: 'Privacy Policy' 
+          })}
+        />
+      </List.Section>
+
       <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
       <View style={styles.footer}>
