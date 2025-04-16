@@ -46,6 +46,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
 
       if (!user) return;
 
+      console.log(`[CorrespondenceTab] Fetching correspondences for user: ${user.id}`);
       const { data, error } = await supabase.rpc(
         'get_user_correspondences_by_pair',
         { p_user_id: user.id }
@@ -55,6 +56,13 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         console.error('Error fetching correspondences:', error);
         setCorrespondences([]);
         return;
+      }
+      
+      // Log the raw data returned from the function
+      console.log(`[CorrespondenceTab] Raw data from SQL function:`, JSON.stringify(data?.slice(0, 2)));
+      if (data && data.length > 0) {
+        // Log the first correspondence to see all available fields
+        console.log(`[CorrespondenceTab] First correspondence fields:`, Object.keys(data[0]).join(', '));
       }
 
       if (!data || data.length === 0) {
@@ -138,6 +146,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
       if (!user) return;
 
       console.log('[CorrespondenceTab] Refreshing in background');
+      console.log(`[CorrespondenceTab] Fetching correspondences for user: ${user.id}`);
       
       const { data, error } = await supabase.rpc(
         'get_user_correspondences_by_pair',
@@ -147,6 +156,13 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
       if (error) {
         console.error('Error fetching correspondences:', error);
         return;
+      }
+      
+      // Log the raw data returned from the function
+      console.log(`[CorrespondenceTab] Background refresh - Raw data from SQL function:`, JSON.stringify(data?.slice(0, 2)));
+      if (data && data.length > 0) {
+        // Log the first correspondence to see all available fields
+        console.log(`[CorrespondenceTab] Background refresh - First correspondence fields:`, Object.keys(data[0]).join(', '));
       }
 
       if (!data || data.length === 0) {
