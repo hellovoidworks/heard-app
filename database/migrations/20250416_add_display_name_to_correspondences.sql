@@ -117,7 +117,7 @@ BEGIN
       rc.letter_id,
       ld.letter_author_id as other_participant_id,
       rc.created_at as interaction_at,
-      rc.emoji as interaction_content,
+      rc.reaction_type as interaction_content,
       rc.user_id as interactor_id
     FROM public.reactions rc
     JOIN letter_details ld ON rc.letter_id = ld.letter_id
