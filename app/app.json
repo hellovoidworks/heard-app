@@ -33,7 +33,12 @@
         ],
         "UIBackgroundModes": ["remote-notification"]
       },
-      "useFrameworks": "static"
+      "useFrameworks": "static",
+      "frameworks": [
+        "AdSupport.framework",
+        "AdServices.framework",
+        "StoreKit.framework"
+      ]
     },
     "android": {
       "adaptiveIcon": {

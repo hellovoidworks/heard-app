@@ -1,4 +1,9 @@
 PODS:
+  - Adjust (5.1.1):
+    - Adjust/Adjust (= 5.1.1)
+  - Adjust/Adjust (5.1.1):
+    - AdjustSignature (= 3.35.2)
+  - AdjustSignature (3.35.2)
   - boost (1.84.0)
   - DoubleConversion (1.1.6)
   - EXApplication (6.0.2):
@@ -1269,6 +1274,9 @@ PODS:
     - React-jsiexecutor
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
+  - react-native-adjust (5.1.0):
+    - Adjust (= 5.1.1)
+    - React-Core
   - react-native-mmkv (3.2.0):
     - DoubleConversion
     - glog
@@ -1988,6 +1996,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-adjust (from `../node_modules/react-native-adjust`)
   - react-native-mmkv (from `../node_modules/react-native-mmkv`)
   - "react-native-netinfo (from `../node_modules/@react-native-community/netinfo`)"
   - react-native-pager-view (from `../node_modules/react-native-pager-view`)
@@ -2033,6 +2042,8 @@ DEPENDENCIES:
 
 SPEC REPOS:
   trunk:
+    - Adjust
+    - AdjustSignature
     - SocketRocket
 
 EXTERNAL SOURCES:
@@ -2145,6 +2156,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-adjust:
+    :path: "../node_modules/react-native-adjust"
   react-native-mmkv:
     :path: "../node_modules/react-native-mmkv"
   react-native-netinfo:
@@ -2231,6 +2244,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/yoga"
 
 SPEC CHECKSUMS:
+  Adjust: 5f5e998cf1446d44d93f91ec8b7b7dd40eaa922d
+  AdjustSignature: 23b9e5d4adcadffc303bb6b410fde617dd88504f
   boost: 7e761d76ca2ce687f7cc98e698152abd03a18f90
   DoubleConversion: cb417026b2400c8f53ae97020b2be961b59470cb
   EXApplication: 27a524f5c3e671c6218220fba04752629466a1a9
@@ -2285,6 +2300,7 @@ SPEC CHECKSUMS:
   React-logger: 5320a2acb25baa566cda59b611231929dd3ed7fc
   React-Mapbuffer: 0d55aa10e3dcbc51121df490f1ffff427d68e6f2
   React-microtasksnativemodule: c2bc0e0f39308276c073feaca6a0dd453d4172c5
+  react-native-adjust: 60fd7e811de33d36923c8c208d60e322a1b1207b
   react-native-mmkv: 55e8a074ae9cb919609755d7271c16b242c2603f
   react-native-netinfo: f0a9899081c185db1de5bb2fdc1c88c202a059ac
   react-native-pager-view: cba0b1eec276fb3d8198f04ffada78b0a1702c0a
