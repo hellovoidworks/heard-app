@@ -98,8 +98,8 @@ const CategoryPreferencesSettingsScreen = () => {
       return;
     }
     
-    if (selectedCategories.length < 3) {
-      Alert.alert('Error', 'Please select at least 3 categories');
+    if (selectedCategories.length < 5) {
+      Alert.alert('Error', 'Please select at least 5 categories');
       return;
     }
     
@@ -159,7 +159,7 @@ const CategoryPreferencesSettingsScreen = () => {
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text style={[styles.description, { color: theme.colors.onSurface }]}>
-          Select categories that interest you. We'll use these to personalize your letters.
+          Select at least 5 categories that interest you. We'll use these to personalize your letters.
         </Text>
         
         <CategorySelector
@@ -167,7 +167,7 @@ const CategoryPreferencesSettingsScreen = () => {
           selectedCategories={selectedCategories}
           onSelectionChange={setSelectedCategories}
           selectionMode="multiple"
-          minRequired={3}
+          minRequired={5}
           showSelectionCount={true}
           containerStyle={styles.categoriesContainer}
         />
@@ -178,7 +178,7 @@ const CategoryPreferencesSettingsScreen = () => {
           onPress={handleSave}
           style={styles.saveButton}
           loading={saving}
-          disabled={saving || selectedCategories.length < 3}
+          disabled={saving || selectedCategories.length < 5}
         >
           Save Preferences
         </Button>

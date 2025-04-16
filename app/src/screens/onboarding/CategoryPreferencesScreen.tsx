@@ -90,8 +90,8 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   };
 
   const handleContinue = async () => {
-    if (selectedCategories.length < 3) {
-      Alert.alert('Please select at least 3 categories');
+    if (selectedCategories.length < 5) {
+      Alert.alert('Please select at least 5 categories');
       return;
     }
 
@@ -183,7 +183,7 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
         ]}
       >
         <Text style={[styles.description, { color: theme.colors.onBackground }]}>
-          Choose at least 3 categories that interest you. We'll use these to personalize your experience.
+          Choose at least 5 categories that interest you. We'll use these to personalize your experience.
         </Text>
         
         <CategorySelector
@@ -191,7 +191,7 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
           selectedCategories={selectedCategories}
           onSelectionChange={setSelectedCategories}
           selectionMode="multiple"
-          minRequired={3}
+          minRequired={5}
           showSelectionCount={true}
           containerStyle={styles.categoriesContainer}
         />
