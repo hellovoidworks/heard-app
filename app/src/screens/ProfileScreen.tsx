@@ -21,11 +21,26 @@ const ProfileScreen = () => {
   const theme = useTheme();
 
   const handleSignOut = async () => {
-    if (user) {
-      // Remove all push tokens when signing out
-      await removePushToken(user.id);
-    }
-    await signOut();
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Sign Out',
+          onPress: async () => {
+            if (user) {
+              // Remove all push tokens when signing out
+              await removePushToken(user.id);
+            }
+            await signOut();
+          },
+        },
+      ]
+    );
   };
 
 
