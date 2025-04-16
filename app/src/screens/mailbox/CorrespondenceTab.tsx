@@ -245,6 +245,13 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
     const backgroundColor = `${categoryColor}33`; // 20% opacity
     // Use a better default emoji and ensure proper rendering
     const moodEmoji = item.mood_emoji ? item.mood_emoji : '📝';
+    
+    // Debug logging for letter display name
+    if (item.most_recent_interactor_id === item.letter_author_id) {
+      console.log(`[CorrespondenceTab] Letter author is interactor. letter_id: ${item.letter_id}`);
+      console.log(`[CorrespondenceTab] letter_display_name: ${item.letter_display_name || 'undefined'}`);
+      console.log(`[CorrespondenceTab] other_participant_name: ${item.other_participant_name}`);
+    }
 
     return (
       <Card
@@ -292,8 +299,8 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
                   {item.most_recent_interactor_id === item.other_participant_id ? (
                     <>
                       <Text style={styles.interactorName}>
-                        {item.most_recent_interactor_id === item.letter_author_id && item.letter_display_name 
-                          ? `${item.letter_display_name}: ` 
+                        {item.most_recent_interactor_id === item.letter_author_id 
+                          ? `${item.letter_display_name || item.other_participant_name}: ` 
                           : `${item.other_participant_name}: `}
                       </Text>
                       <Text>{item.most_recent_interaction_content}</Text>
