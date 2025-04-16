@@ -42,7 +42,7 @@ export type RootStackParamList = {
   Notifications: undefined;
   NotificationSettings: undefined;
   CategoryPreferencesSettings: undefined;
-  AccountSettings: undefined;
+  DeleteAccount: undefined;
 };
 
 export type AuthStackParamList = {

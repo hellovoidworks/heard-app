@@ -147,10 +147,6 @@ const CategoryPreferencesSettingsScreen = () => {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <Appbar.Header>
-          <Appbar.BackAction onPress={() => navigation.goBack()} />
-          <Appbar.Content title="Category Preferences" />
-        </Appbar.Header>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={[styles.loadingText, { color: theme.colors.onSurfaceVariant }]}>Loading...</Text>
@@ -161,11 +157,6 @@ const CategoryPreferencesSettingsScreen = () => {
   
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Appbar.Header>
-        <Appbar.BackAction onPress={() => navigation.goBack()} />
-        <Appbar.Content title="Category Preferences" />
-      </Appbar.Header>
-      
       <ScrollView contentContainerStyle={styles.contentContainer}>
         <Text style={[styles.description, { color: theme.colors.onSurface }]}>
           Select categories that interest you. We'll use these to personalize your letters.
@@ -181,11 +172,7 @@ const CategoryPreferencesSettingsScreen = () => {
           containerStyle={styles.categoriesContainer}
         />
         
-        <Text style={[styles.selectionCount, { color: theme.colors.onSurfaceVariant }]}>
-          {selectedCategories.length} of {categories.length} selected
-          {selectedCategories.length < 3 && ' (minimum 3)'}
-        </Text>
-        
+
         <Button
           mode="contained"
           onPress={handleSave}

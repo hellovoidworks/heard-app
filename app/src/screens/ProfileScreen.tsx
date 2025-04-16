@@ -17,9 +17,6 @@ const ProfileScreen = () => {
   const [username, setUsername] = useState(profile?.username || '');
   const [loading, setLoading] = useState(false);
   const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmText, setDeleteConfirmText] = useState('');
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
@@ -31,56 +28,7 @@ const ProfileScreen = () => {
     await signOut();
   };
 
-  const handleDeleteButtonPress = () => {
-    Alert.alert(
-      'Delete Account',
-      'Are you sure you want to delete your account? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Continue',
-          style: 'destructive',
-          onPress: () => setShowDeleteConfirm(true),
-        },
-      ]
-    );
-  };
 
-  const handleDeleteAccount = async () => {
-    if (deleteConfirmText.toLowerCase() !== 'delete') {
-      Alert.alert('Error', 'Please type "delete" to confirm');
-      return;
-    }
-
-    setDeletingAccount(true);
-    try {
-      if (!user) {
-        throw new Error('No user found');
-      }
-
-      // Delete the user using the RPC function
-      // This runs server-side with appropriate permissions and will trigger our CASCADE rules
-      const { error } = await supabase.rpc('delete_user');
-      
-      if (error) {
-        throw error;
-      }
-
-      // Sign out after deletion
-      await signOut();
-      
-      // No need to navigate as signOut will redirect to login
-    } catch (error: any) {
-      console.error('Error deleting account:', error);
-      Alert.alert('Error', error.message || 'Failed to delete account');
-    } finally {
-      setDeletingAccount(false);
-      setShowDeleteConfirm(false);
-    }
-  };
 
   const handleSaveProfile = async () => {
     // Reset any previous errors
@@ -194,7 +142,7 @@ const ProfileScreen = () => {
               onPress={() => setEditing(true)}
               style={styles.editButton}
             >
-              Edit Profile
+              Change Username
             </Button>
           </View>
         )}
@@ -204,13 +152,6 @@ const ProfileScreen = () => {
 
       <List.Section>
         <List.Subheader style={{ color: theme.colors.onSurfaceVariant }}>Account</List.Subheader>
-        <List.Item
-          title="Account Settings"
-          titleStyle={{ color: theme.colors.onSurface }}
-          left={props => <List.Icon {...props} icon="account-cog" color={theme.colors.primary} />}
-          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
-          onPress={() => navigation.navigate('AccountSettings')}
-        />
         <List.Item
           title="Notification Settings"
           titleStyle={{ color: theme.colors.onSurface }}
@@ -226,10 +167,11 @@ const ProfileScreen = () => {
           onPress={() => navigation.navigate('CategoryPreferencesSettings')}
         />
         <List.Item
-          title="Privacy Settings"
+          title="Delete My Account"
           titleStyle={{ color: theme.colors.onSurface }}
-          left={props => <List.Icon {...props} icon="shield" color={theme.colors.primary} />}
+          left={props => <List.Icon {...props} icon="account-remove" color={theme.colors.primary} />}
           right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
+          onPress={() => navigation.navigate('DeleteAccount')}
         />
       </List.Section>
 
@@ -240,72 +182,15 @@ const ProfileScreen = () => {
           mode="outlined" 
           onPress={handleSignOut}
           style={styles.signOutButton}
-          textColor="red"
+          textColor="white"
         >
           Sign Out
         </Button>
 
-        <Divider style={[styles.divider, { backgroundColor: theme.colors.outline, marginTop: 16 }]} />
-        
-        <Text style={[styles.dangerZoneText, { color: 'red' }]}>Danger Zone</Text>
-        
-        <Button 
-          mode="outlined" 
-          onPress={handleDeleteButtonPress}
-          style={styles.deleteButton}
-          textColor="red"
-          icon="account-remove"
-        >
-          Delete My Account
-        </Button>
+
       </View>
 
-      {/* Delete Account Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
-          <View style={{ backgroundColor: theme.colors.background, padding: 20, borderRadius: 8, width: '100%', maxWidth: 400 }}>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: theme.colors.onSurface }}>Confirm Account Deletion</Text>
-            <Text style={{ marginBottom: 16, color: theme.colors.onSurface }}>This action cannot be undone. All your data will be permanently deleted. Type <Text style={{ fontWeight: 'bold' }}>delete</Text> to confirm.</Text>
-            
-            <RNTextInput
-              style={{ 
-                borderWidth: 1, 
-                borderColor: theme.colors.outline, 
-                borderRadius: 4, 
-                padding: 10, 
-                marginBottom: 16,
-                color: theme.colors.onSurface
-              }}
-              placeholder="Type 'delete' to confirm"
-              value={deleteConfirmText}
-              onChangeText={setDeleteConfirmText}
-              autoCapitalize="none"
-            />
-            
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <Button 
-                mode="text" 
-                onPress={() => {
-                  setShowDeleteConfirm(false);
-                  setDeleteConfirmText('');
-                }}
-                style={{ marginRight: 8 }}
-              >
-                Cancel
-              </Button>
-              <Button 
-                mode="contained" 
-                onPress={handleDeleteAccount}
-                loading={deletingAccount}
-                disabled={deletingAccount || deleteConfirmText.toLowerCase() !== 'delete'}
-                buttonColor="red"
-              >
-                Delete Forever
-              </Button>
-            </View>
-          </View>
-        </View>
-      )}
+
     </ScrollView>
   );
 };
@@ -353,7 +238,7 @@ const styles = StyleSheet.create({
   },
   signOutButton: {
     width: '100%',
-    borderColor: 'red',
+    borderColor: 'white',
     borderWidth: 1,
   },
   deleteButton: {

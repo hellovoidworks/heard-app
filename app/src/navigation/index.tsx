@@ -28,7 +28,7 @@ import {
   MailboxScreen,
   NotificationSettingsScreen,
   CategoryPreferencesSettingsScreen,
-  AccountSettingsScreen
+  DeleteAccountScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -495,14 +495,19 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
               <Stack.Screen 
                 name="CategoryPreferencesSettings" 
                 component={CategoryPreferencesSettingsScreen} 
-                options={{ headerShown: false }} 
-              />
-              <Stack.Screen 
-                name="AccountSettings" 
-                component={AccountSettingsScreen} 
                 options={{ 
                   headerShown: true, 
-                  title: 'Account Settings',
+                  title: 'Category Preferences',
+                  headerStyle: { backgroundColor: '#121212' },
+                  headerTintColor: '#FFFFFF'
+                }} 
+              />
+              <Stack.Screen 
+                name="DeleteAccount" 
+                component={DeleteAccountScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Delete My Account',
                   headerStyle: { backgroundColor: '#121212' },
                   headerTintColor: '#FFFFFF'
                 }} 
