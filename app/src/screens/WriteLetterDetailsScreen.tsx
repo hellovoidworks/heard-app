@@ -293,19 +293,23 @@ const WriteLetterDetailsScreen = () => {
             loading={isSubmitting}
             disabled={isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji}
           >
-            <Text style={{ 
-              color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
-                ? theme.colors.onSurfaceDisabled 
-                : 'white'
-            }}>
-              Send Mail + 5{' '}
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ 
+                color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
+                  ? theme.colors.onSurfaceDisabled 
+                  : 'white'
+              }}>
+                Send Mail + 5
+              </Text>
               <Text style={{ 
                 color: isSubmitting || !content.trim() || !selectedCategory || !displayName.trim() || !moodEmoji 
                   ? theme.colors.onSurfaceDisabled 
                   : '#FFD700',
-                fontSize: 18
+                fontSize: 18,
+                marginTop: 1,
+                marginLeft: 0
               }}>★</Text>
-            </Text>
+            </View>
           </Button>
         </View>
       </KeyboardAvoidingView>

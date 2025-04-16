@@ -523,11 +523,15 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   loading={sendingResponse}
                   style={{ flex: 1 }}
                 >
-                  Send Reply +2{' '}
-                  <Text style={{ 
-                    color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
-                    fontSize: 16
-                  }}>★</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text>Send Reply +2</Text>
+                    <Text style={{ 
+                      color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
+                      fontSize: 16,
+                      marginTop: 1,
+                      marginLeft: 0
+                    }}>★</Text>
+                  </View>
                 </Button>
               </View>
             </Surface>
@@ -660,11 +664,15 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               onPress={handleOpenResponseModal}
               style={[styles.actionButton, { flex: 1.2 }]}
             >
-              Reply +2{' '}
-              <Text style={{ 
-                color: '#FFD700',
-                fontSize: 16
-              }}>★</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text>Reply +2</Text>
+                <Text style={{ 
+                  color: '#FFD700',
+                  fontSize: 16,
+                  marginTop: 1,
+                  marginLeft: 0
+                }}>★</Text>
+              </View>
             </Button>
           </View>
         </View>
