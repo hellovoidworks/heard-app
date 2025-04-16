@@ -338,7 +338,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         }
         ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
-            <Text style={{ color: theme.colors.onBackground }}>No conversations yet</Text>
+            <Text style={[styles.emptyText, { color: theme.colors.onBackground, textAlign: 'center', maxWidth: '80%' }]}>You haven't received or written any replies yet</Text>
           </View>
         )}
       />
@@ -470,6 +470,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    marginBottom: 20,
   },
 });
 

@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontWeight: '500',
-    fontSize: 13,
+    fontSize: 15,
   },
   unreadBadge: {
     borderRadius: 8,
