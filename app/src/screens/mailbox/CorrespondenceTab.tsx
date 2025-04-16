@@ -83,6 +83,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         most_recent_interactor_id: string;
         unread_message_count: number;
         mood_emoji: string | null;
+        letter_display_name: string | null;
       };
 
       const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
@@ -105,20 +106,28 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         }
       }
 
-      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => ({
-        letter_id: item.letter_id,
-        other_participant_id: item.other_participant_id,
-        other_participant_name: participantNames[item.other_participant_id] || 'User',
-        letter_title: item.letter_title,
-        letter_author_id: item.letter_author_id,
-        most_recent_interaction_at: item.most_recent_interaction_at,
-        most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
-        most_recent_interactor_id: item.most_recent_interactor_id,
-        unread_message_count: item.unread_message_count,
-        category_name: item.category_name,
-        category_color: item.category_color,
-        mood_emoji: item.mood_emoji,
-      }));
+      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => {
+        // Log the letter_display_name from the raw data
+        if (item.most_recent_interactor_id === item.letter_author_id) {
+          console.log(`[CorrespondenceTab] Raw letter_display_name for letter ${item.letter_id}:`, item.letter_display_name);
+        }
+        
+        return {
+          letter_id: item.letter_id,
+          other_participant_id: item.other_participant_id,
+          other_participant_name: participantNames[item.other_participant_id] || 'User',
+          letter_title: item.letter_title,
+          letter_author_id: item.letter_author_id,
+          letter_display_name: item.letter_display_name, // Include the letter_display_name field
+          most_recent_interaction_at: item.most_recent_interaction_at,
+          most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
+          most_recent_interactor_id: item.most_recent_interactor_id,
+          unread_message_count: item.unread_message_count,
+          category_name: item.category_name,
+          category_color: item.category_color,
+          mood_emoji: item.mood_emoji,
+        };
+      });
 
       setCorrespondences(formattedCorrespondences);
 
@@ -184,6 +193,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         most_recent_interactor_id: string;
         unread_message_count: number;
         mood_emoji: string | null;
+        letter_display_name: string | null;
       };
 
       const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
@@ -206,20 +216,28 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
         }
       }
 
-      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => ({
-        letter_id: item.letter_id,
-        other_participant_id: item.other_participant_id,
-        other_participant_name: participantNames[item.other_participant_id] || 'User',
-        letter_title: item.letter_title,
-        letter_author_id: item.letter_author_id,
-        most_recent_interaction_at: item.most_recent_interaction_at,
-        most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
-        most_recent_interactor_id: item.most_recent_interactor_id,
-        unread_message_count: item.unread_message_count,
-        category_name: item.category_name,
-        category_color: item.category_color,
-        mood_emoji: item.mood_emoji,
-      }));
+      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => {
+        // Log the letter_display_name from the raw data
+        if (item.most_recent_interactor_id === item.letter_author_id) {
+          console.log(`[CorrespondenceTab] Raw letter_display_name for letter ${item.letter_id}:`, item.letter_display_name);
+        }
+        
+        return {
+          letter_id: item.letter_id,
+          other_participant_id: item.other_participant_id,
+          other_participant_name: participantNames[item.other_participant_id] || 'User',
+          letter_title: item.letter_title,
+          letter_author_id: item.letter_author_id,
+          letter_display_name: item.letter_display_name, // Include the letter_display_name field
+          most_recent_interaction_at: item.most_recent_interaction_at,
+          most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
+          most_recent_interactor_id: item.most_recent_interactor_id,
+          unread_message_count: item.unread_message_count,
+          category_name: item.category_name,
+          category_color: item.category_color,
+          mood_emoji: item.mood_emoji,
+        };
+      });
 
       setCorrespondences(formattedCorrespondences);
 
