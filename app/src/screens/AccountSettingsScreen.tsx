@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, Alert, TextInput as RNTextInput } from 'react-native';
+import { View, StyleSheet, ScrollView, Alert, TextInput as RNTextInput, KeyboardAvoidingView, Platform, Keyboard } from 'react-native';
 import { Text, Button, useTheme } from 'react-native-paper';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../services/supabase';
@@ -86,7 +86,10 @@ const DeleteAccountScreen = () => {
     
     {/* Delete Account Confirmation Dialog */}
     {showDeleteConfirm && (
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }]}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 20 }]}
+      >
         <View style={{ backgroundColor: theme.colors.background, padding: 20, borderRadius: 8, width: '100%', maxWidth: 400 }}>
           <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: theme.colors.onSurface }}>Confirm Account Deletion</Text>
           <Text style={{ marginBottom: 16, color: theme.colors.onSurface }}>This action cannot be undone. All your data will be permanently deleted. Type <Text style={{ fontWeight: 'bold' }}>delete</Text> to confirm.</Text>
@@ -110,6 +113,7 @@ const DeleteAccountScreen = () => {
             <Button 
               mode="text" 
               onPress={() => {
+                Keyboard.dismiss();
                 setShowDeleteConfirm(false);
                 setDeleteConfirmText('');
               }}
@@ -119,7 +123,10 @@ const DeleteAccountScreen = () => {
             </Button>
             <Button 
               mode="contained" 
-              onPress={handleDeleteAccount}
+              onPress={() => {
+                Keyboard.dismiss();
+                handleDeleteAccount();
+              }}
               loading={deletingAccount}
               disabled={deletingAccount || deleteConfirmText.toLowerCase() !== 'delete'}
               buttonColor="red"
@@ -128,7 +135,7 @@ const DeleteAccountScreen = () => {
             </Button>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     )}
     </>
   );
