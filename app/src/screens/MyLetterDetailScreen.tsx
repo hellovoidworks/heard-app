@@ -56,6 +56,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         .from('letters')
         .select(`
           *,
+          display_name,
           category:categories(*),
           author:user_profiles!letters_author_id_fkey(*)
         `)
