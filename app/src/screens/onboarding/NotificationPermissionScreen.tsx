@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, Platform, Alert, Image, TouchableOpacity, Animated } from 'react-native';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { Button, Text, Title, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
@@ -23,6 +24,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
   
   // Setup the bouncing animation
   useEffect(() => {
+    // Track the Notifications Appear event
+    const adjustEvent = new AdjustEvent('pplvr3');
+    Adjust.trackEvent(adjustEvent);
+    
     const startBounceAnimation = () => {
       Animated.loop(
         Animated.sequence([
@@ -49,6 +54,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 
   const handleEnableNotifications = async () => {
     setLoading(true);
+    
+    // Track the Enabled Notifications Button tapped event
+    const adjustEvent = new AdjustEvent('z0fhf3');
+    Adjust.trackEvent(adjustEvent);
     
     try {
       if (!user) {
@@ -139,6 +148,10 @@ const NotificationPermissionScreen = ({ navigation }: Props) => {
 
   const handleSkip = async () => {
     setLoading(true);
+    
+    // Track the Not Now tapped event
+    const adjustEvent = new AdjustEvent('udzb4t');
+    Adjust.trackEvent(adjustEvent);
     
     try {
       if (!user) {

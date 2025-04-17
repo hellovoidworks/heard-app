@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, useTheme, IconButton } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -36,6 +37,10 @@ const EmailSignInScreen = ({ navigation }: Props) => {
     }
 
     try {
+      // Track the Sign in with Email - Email Submit button tapped event
+      const adjustEvent = new AdjustEvent('l38ymr');
+      Adjust.trackEvent(adjustEvent);
+      
       setLoading(true);
       
       const { data, error } = await supabase.auth.signInWithOtp({

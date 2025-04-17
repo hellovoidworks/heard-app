@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { View, StyleSheet, ScrollView, Alert, SafeAreaView } from 'react-native';
 import { Button, Text, Title, ActivityIndicator, IconButton, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -28,6 +29,11 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
   useEffect(() => {
     console.log('CategoryPreferencesScreen mounted');
     console.log('User from context:', user?.id);
+    
+    // Track the Category Appear event
+    const adjustEvent = new AdjustEvent('8le0si');
+    Adjust.trackEvent(adjustEvent);
+    
     return () => {
       console.log('CategoryPreferencesScreen unmounted');
     };

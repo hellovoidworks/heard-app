@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated, Easing } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AnimatedEmoji from '../components/AnimatedEmoji';
@@ -254,6 +255,10 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             reaction_type: emoji
           }
         ]);
+        
+      // Track the Sent Reaction event with Adjust
+      const adjustEvent = new AdjustEvent('v4v0k1');
+      Adjust.trackEvent(adjustEvent);
         
       if (error) {
         console.error('Error adding reaction:', error);

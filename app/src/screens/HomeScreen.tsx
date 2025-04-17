@@ -19,6 +19,7 @@ import {
   MORNING_MINUTE_TEST
 } from '../utils/deliveryWindow';
 import { fontNames } from '../utils/fonts';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { StorageService, STORAGE_KEYS } from '../services/storage';
 import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 
@@ -1032,6 +1033,10 @@ const HomeScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Track the Get Mail event with Adjust
+    const adjustEvent = new AdjustEvent('rlhu9q');
+    Adjust.trackEvent(adjustEvent);
 
     // Call the existing deliver function
     deliverMoreLetters();

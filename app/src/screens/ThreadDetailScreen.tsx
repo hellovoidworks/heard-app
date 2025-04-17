@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { 
   Text, 
@@ -208,6 +209,10 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       }
       
       if (data) {
+        // Track the Sent Reply event with Adjust
+        const adjustEvent = new AdjustEvent('f5erqb');
+        Adjust.trackEvent(adjustEvent);
+        
         setReplies([...replies, data as ReplyWithDetails]); 
         setReplyText(''); 
         

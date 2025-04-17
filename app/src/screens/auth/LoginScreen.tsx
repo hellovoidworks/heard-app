@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, FlatList, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { fontNames } from '../../utils/fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, Title, Divider, IconButton, useTheme } from 'react-native-paper';
@@ -34,6 +35,10 @@ const LoginScreen = ({ navigation }: Props) => {
 
   const handleSignInWithApple = async () => {
     try {
+      // Track the Sign in with Apple button tapped event
+      const adjustEvent = new AdjustEvent('rcvpc3');
+      Adjust.trackEvent(adjustEvent);
+      
       setLoading(true);
       
       // Generate a random nonce
@@ -82,6 +87,10 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   const handleEmailSignIn = () => {
+    // Track the Sign in with Email button tapped event
+    const adjustEvent = new AdjustEvent('ev36wo');
+    Adjust.trackEvent(adjustEvent);
+    
     navigation.navigate('EmailSignIn');
   };
 

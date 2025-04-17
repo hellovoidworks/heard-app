@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform, TouchableOpacity, SafeAreaView, Text as RNText, Animated } from 'react-native';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput, Button, Text, Divider, ActivityIndicator, useTheme, Surface } from 'react-native-paper';
 import CategorySelector from '../components/CategorySelector';
@@ -134,6 +135,10 @@ const WriteLetterDetailsScreen = () => {
       
       // Note: We no longer need to store the pending reward in AsyncStorage
       // because the STAR_REWARD_EARNED event is now emitted directly in AuthContext
+
+      // Track the Sent Mail event with Adjust
+      const adjustEvent = new AdjustEvent('40ccjt');
+      Adjust.trackEvent(adjustEvent);
 
       // Navigate immediately - the animation will be shown after navigation
       console.log('WriteLetterDetailsScreen: Navigating to Home screen');

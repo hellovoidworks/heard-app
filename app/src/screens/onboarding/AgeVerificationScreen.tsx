@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert, Platform, TouchableOpacity } from 'react-native';
+import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { Button, Text, Title, HelperText, useTheme } from 'react-native-paper';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { OnboardingStackParamList } from '../../navigation/types';
@@ -35,6 +36,11 @@ const AgeVerificationScreen = ({ navigation }: Props) => {
   // Log navigation state for debugging
   useEffect(() => {
     console.log('AgeVerificationScreen mounted');
+    
+    // Track the Age Verification Appear event
+    const adjustEvent = new AdjustEvent('ncsa2y');
+    Adjust.trackEvent(adjustEvent);
+    
     // Preload categories when the screen mounts
     preloadCategories();
     return () => {
