@@ -26,6 +26,7 @@ type Letter = {
   view_count: number;
   reply_count: number;
   reaction_count: number;
+  display_name?: string;
 };
 
 // Helper function to format numbers (e.g., 1100 -> 1.1k)
@@ -89,7 +90,8 @@ const MyLettersTab = () => {
         mood_emoji: letter.mood_emoji,
         view_count: parseInt(letter.view_count) || 0,
         reply_count: parseInt(letter.reply_count) || 0,
-        reaction_count: parseInt(letter.reaction_count) || 0
+        reaction_count: parseInt(letter.reaction_count) || 0,
+        display_name: letter.display_name
       });
       });
 
@@ -122,7 +124,8 @@ const MyLettersTab = () => {
         created_at: letter.created_at,
         category: letter.category,
         mood_emoji: letter.mood_emoji,
-        author_id: user?.id || '' // Since this is the user's letter
+        author_id: user?.id || '', // Since this is the user's letter
+        display_name: letter.display_name
       },
       initialStats: {
         replyCount: letter.reply_count,

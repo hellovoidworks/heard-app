@@ -24,6 +24,7 @@ export type RootStackParamList = {
       } | null;
       mood_emoji?: string;
       author_id: string;
+      display_name?: string;
     };
     initialStats?: {
       replyCount: number;
