@@ -26,7 +26,7 @@ const LetterTitleCard: React.FC<LetterTitleCardProps> = ({ letter }) => {
     >
       <Card.Content>
         <View style={styles.letterHeader}>
-          <View style={styles.moodEmojiContainer}>
+          <View style={[styles.moodEmojiContainer, { backgroundColor: `${categoryColor}66` }]}>
             <Text style={styles.moodEmoji}>{letter.mood_emoji || '😊'}</Text>
           </View>
           <View style={styles.letterTitleContainer}>
@@ -64,7 +64,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

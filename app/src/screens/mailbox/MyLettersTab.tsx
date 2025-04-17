@@ -160,7 +160,7 @@ const MyLettersTab = () => {
           <View style={styles.threeColumnLayout}>
             {/* Left column: Mood emoji */}
             <View style={styles.leftColumn}>
-              <View style={styles.moodEmojiContainer}>
+              <View style={[styles.moodEmojiContainer, { backgroundColor: `${categoryColor}66` }]}>
                 <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
               </View>
             </View>
@@ -290,7 +290,6 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },

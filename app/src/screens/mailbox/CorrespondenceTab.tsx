@@ -304,7 +304,7 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
           {isUnread && <View style={styles.unreadIndicator} />}
           <Card.Content style={styles.cardContent}>
             <View style={styles.topRow}>
-              <View style={styles.emojiContainer}>
+              <View style={[styles.emojiContainer, { backgroundColor: `${categoryColor}66` }]}>
                 <Text style={styles.emojiText}>{moodEmoji}</Text>
               </View>
               <View style={styles.titleContainer}>
@@ -447,7 +447,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 8,
     borderRadius: 18, // Make it circular
-    backgroundColor: 'rgba(255, 255, 255, 0.4)', // 40% opacity white background
   },
   emojiText: {
     fontSize: 20, // Slightly larger emoji
