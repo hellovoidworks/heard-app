@@ -17,7 +17,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "co.voidworks.heardapp",
       "associatedDomains": [
         "applinks:lrdylsehrfkkrjzicczz.supabase.co"
@@ -31,14 +31,22 @@
             ]
           }
         ],
-        "UIBackgroundModes": ["remote-notification"]
+        "UIBackgroundModes": ["remote-notification"],
+        "CFBundleDisplayName": "Heard"
       },
       "useFrameworks": "static",
       "frameworks": [
         "AdSupport.framework",
         "AdServices.framework",
         "StoreKit.framework"
-      ]
+      ],
+      "buildSettings": {
+        "TARGETED_DEVICE_FAMILY": "1",
+        "SUPPORTS_MACCATALYST": false,
+        "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": false,
+        "SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD": false,
+        "DEVELOPMENT_TEAM": "DKQ9N3J9SS"
+      }
     },
     "android": {
       "adaptiveIcon": {
