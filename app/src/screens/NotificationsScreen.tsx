@@ -80,9 +80,18 @@ const NotificationsScreen = () => {
       }
     }
 
-    // Navigate to the letter if available
+    // Navigate based on notification type
     if (notification.letter_id) {
-      navigation.navigate('LetterDetail', { letterId: notification.letter_id });
+      if (notification.type === 'reaction') {
+        // For reaction notifications, navigate to MyLetterDetail with modal presentation
+        navigation.navigate('MyLetterDetail', { 
+          letterId: notification.letter_id,
+          presentationMode: 'modal'
+        });
+      } else {
+        // For other notification types, navigate to LetterDetail
+        navigation.navigate('LetterDetail', { letterId: notification.letter_id });
+      }
     }
   };
 

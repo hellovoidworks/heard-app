@@ -74,13 +74,11 @@ function navigateToNotification(data: any) {
         );
         break;
       case 'reaction':
-        // Push the MyLetterDetail screen onto the stack
-        navigationRef.current?.dispatch(
-          CommonActions.navigate({
-            name: 'MyLetterDetail',
-            params: { letterId: letterId }
-          })
-        );
+        // Use modal presentation for reaction notifications
+        navigationRef.current?.navigate('MyLetterDetail', { 
+          letterId: letterId,
+          presentationMode: 'modal'
+        });
         break;
       case 'new_mail':
         // Navigate to the home screen for new mail notifications

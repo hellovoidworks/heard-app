@@ -24,7 +24,8 @@ type Thread = {
 };
 
 const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId, letterData, initialStats } = route.params;
+  const { letterId, letterData, initialStats, presentationMode } = route.params;
+  const isModal = presentationMode === 'modal';
   const [letter, setLetter] = useState<LetterWithDetails | null>(letterData ? letterData as LetterWithDetails : null);
   const [loading, setLoading] = useState(!letterData);
   const [refreshing, setRefreshing] = useState(false);
@@ -277,21 +278,24 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.onBackground} />
-        </TouchableOpacity>
-        
-        <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>My Mail</Text>
-        
-        <View style={styles.headerButtons}>
-          {/* Trash icon hidden for now
-          <TouchableOpacity onPress={handleDeleteLetter} style={styles.deleteButton}>
-            <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+      {/* Only show custom header when not in modal mode */}
+      {!isModal && (
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+            <Ionicons name="arrow-back" size={24} color={theme.colors.onBackground} />
           </TouchableOpacity>
-          */}
+          
+          <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>My Mail</Text>
+          
+          <View style={styles.headerButtons}>
+            {/* Trash icon hidden for now
+            <TouchableOpacity onPress={handleDeleteLetter} style={styles.deleteButton}>
+              <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+            </TouchableOpacity>
+            */}
+          </View>
         </View>
-      </View>
+      )}
       
       <ScrollView
         style={styles.scrollView}

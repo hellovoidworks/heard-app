@@ -395,11 +395,32 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
               <Stack.Screen 
                 name="MyLetterDetail" 
                 component={MyLetterDetailScreen} 
-                options={{ 
-                  headerShown: false,
-                  presentation: 'card',
-                  animation: 'slide_from_right'
-                }} 
+                options={({ navigation, route }) => {
+                  // Check if we should present this as a modal
+                  const { presentationMode } = route.params as { presentationMode?: 'modal' | 'push' };
+                  const isModal = presentationMode === 'modal';
+                  
+                  return {
+                    headerShown: isModal, // Show header only in modal mode
+                    title: isModal ? 'My Mail' : '',
+                    headerStyle: { backgroundColor: '#161616' },
+                    headerTintColor: '#FFFFFF',
+                    // For modal presentation, use a close button instead of back button
+                    headerLeft: isModal ? () => (
+                      <Ionicons 
+                        name="close-outline" 
+                        size={28} 
+                        color="#FFFFFF" 
+                        style={{ marginLeft: 5 }}
+                        onPress={() => navigation.goBack()}
+                      />
+                    ) : undefined,
+                    // If modal presentation is requested, set the presentation mode
+                    presentation: isModal ? 'modal' : 'card',
+                    // Use a different animation for modal
+                    animation: isModal ? 'slide_from_bottom' : 'slide_from_right'
+                  };
+                }}
               />
               <Stack.Screen 
                 name="ThreadDetail" 

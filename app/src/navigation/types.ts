@@ -31,6 +31,7 @@ export type RootStackParamList = {
       readCount: number;
       reactionCount: number;
     };
+    presentationMode?: 'modal' | 'push'; // To control how the screen is presented
   };
   ThreadDetail: { 
     letterId: string;
