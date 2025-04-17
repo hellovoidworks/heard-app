@@ -483,10 +483,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   letterContent: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#FFFFFF',
     opacity: 0.9,
     marginTop: 0, // Remove top margin
+    lineHeight: 18,
   },
   interactorName: {
     color: '#CCCCCC',

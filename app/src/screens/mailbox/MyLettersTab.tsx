@@ -304,10 +304,10 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   letterContent: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#FFFFFF',
     opacity: 0.9,
-    lineHeight: 16,
+    lineHeight: 18,
   },
   categoryContainer: {
     borderRadius: 8,
