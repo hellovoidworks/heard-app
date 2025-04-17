@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   slideImage: {
     width: Dimensions.get('window').width * 0.85,
     maxWidth: 420,
-    maxHeight: 430,
+    maxHeight: 455,
     marginBottom: 15,
     resizeMode: 'contain',
   },
