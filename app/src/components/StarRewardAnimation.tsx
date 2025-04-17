@@ -335,11 +335,10 @@ const StarRewardAnimation: React.FC = () => {
             },
           ]}
         >
-          {/* Display 1-5 stars based on reward amount */}
+          {/* Display +N★ text */}
           <View style={styles.starsRow}>
-            {[...Array(Math.min(rewardAmount, 5))].map((_, index) => (
-              <Ionicons key={index} name="star" size={40} color="#FFD700" style={styles.rewardStar} />
-            ))}
+            <Text style={styles.rewardText}>+{rewardAmount}</Text>
+            <Ionicons name="star" size={40} color="#FFD700" style={styles.rewardStar} />
           </View>
         </Animated.View>
       </Animated.View>
@@ -391,7 +390,12 @@ const styles = StyleSheet.create({
     maxWidth: 250,
   },
   rewardStar: {
-    margin: 5,
+    marginLeft: 5,
+  },
+  rewardText: {
+    color: '#FFFFFF',
+    fontSize: 40,
+    fontWeight: 'bold',
   },
 });
 
