@@ -1322,7 +1322,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#121212', // Changed to match bottom navigation background color
+    backgroundColor: '#161616', // Changed to match bottom navigation background color
     paddingTop: 12,
     paddingBottom: 24, // Increased bottom padding to avoid overlap with the + circle button
     paddingHorizontal: 16,

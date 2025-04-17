@@ -94,8 +94,8 @@ const EmailSignInScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['bottom']}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    <SafeAreaView style={[styles.container, { backgroundColor: '#161616' }]} edges={['bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor="#161616" />
       <KeyboardAvoidingView
         style={styles.keyboardAvoidView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -202,7 +202,7 @@ const EmailSignInScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#161616',
   },
   keyboardAvoidView: {
     flex: 1,

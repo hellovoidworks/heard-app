@@ -56,7 +56,7 @@ const AuthNavigator = () => (
   <AuthStack.Navigator 
     screenOptions={{ 
       headerShown: false,
-      contentStyle: { backgroundColor: '#121212' }
+      contentStyle: { backgroundColor: '#161616' }
     }}
   >
     <AuthStack.Screen name="Login" component={LoginScreen} />
@@ -71,7 +71,7 @@ const OnboardingNavigator = () => {
     <OnboardingStack.Navigator 
       screenOptions={{ 
         headerShown: false,
-        contentStyle: { backgroundColor: '#121212' }
+        contentStyle: { backgroundColor: '#161616' }
       }}
       screenListeners={{
         state: (e) => {
@@ -116,14 +116,14 @@ const MainNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerStyle: {
-          backgroundColor: '#121212',
+          backgroundColor: '#161616',
         },
         headerShadowVisible: false,
         headerTintColor: '#FFFFFF',
         tabBarShowLabel: true,
         tabBarStyle: {
           height: 60 + insets.bottom,
-          backgroundColor: '#121212',
+          backgroundColor: '#161616',
           paddingBottom: insets.bottom,
         },
         tabBarActiveTintColor: '#FFFFFF',
@@ -136,7 +136,7 @@ const MainNavigator = () => {
         <View style={{
           flexDirection: 'row',
           height: 60 + insets.bottom,
-          backgroundColor: '#121212',
+          backgroundColor: '#161616',
           alignItems: 'center',
           justifyContent: 'space-around',
           paddingBottom: insets.bottom,
@@ -251,7 +251,7 @@ const MainNavigator = () => {
             );
           },
           headerStyle: {
-            backgroundColor: '#121212',
+            backgroundColor: '#161616',
           },
           headerShadowVisible: false,
           headerTitleAlign: 'left',
@@ -287,7 +287,7 @@ const MainNavigator = () => {
             );
           },
           headerStyle: {
-            backgroundColor: '#121212',
+            backgroundColor: '#161616',
           },
           headerShadowVisible: false,
           headerTitleAlign: 'left',
@@ -370,9 +370,9 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
       linking={linking}>
       <Stack.Navigator screenOptions={{ 
         headerShown: false,
-        contentStyle: { backgroundColor: '#121212' },
+        contentStyle: { backgroundColor: '#161616' },
         headerStyle: { 
-          backgroundColor: '#121212',
+          backgroundColor: '#161616',
         },
         headerShadowVisible: false,
         headerTintColor: '#FFFFFF'
@@ -412,7 +412,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                   return {
                     headerShown: true,
                     title: '',
-                    headerStyle: { backgroundColor: '#121212' },
+                    headerStyle: { backgroundColor: '#161616' },
                     headerTintColor: '#FFFFFF',
                     headerBackTitle: isModal ? undefined : 'Inbox',
                     // For modal presentation, use a close button instead of back button
@@ -438,7 +438,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
                   title: 'Write Mail',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',
                   headerLeft: () => (
@@ -458,7 +458,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
                   title: 'Write Mail',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',
                   headerLeft: () => (
@@ -478,7 +478,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={({ navigation }) => ({ 
                   headerShown: true, 
                   title: '',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF',
                   presentation: 'card',
                 })} 
@@ -489,7 +489,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={{ 
                   headerShown: true, 
                   title: 'Profile',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 }} 
               />
@@ -499,7 +499,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={{ 
                   headerShown: true, 
                   title: 'Notifications',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 }} 
               />
@@ -509,7 +509,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={{ 
                   headerShown: true, 
                   title: 'Notification Settings',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 }} 
               />
@@ -519,7 +519,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={{ 
                   headerShown: true, 
                   title: 'Category Preferences',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 }} 
               />
@@ -529,7 +529,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={{ 
                   headerShown: true, 
                   title: 'Delete My Account',
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 }} 
               />
@@ -539,7 +539,7 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                 options={({ route }) => ({ 
                   headerShown: true, 
                   title: route.params.title,
-                  headerStyle: { backgroundColor: '#121212' },
+                  headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 })} 
               />

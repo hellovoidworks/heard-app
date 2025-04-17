@@ -96,7 +96,7 @@ export const darkTheme = {
     onSecondary: '#FFFFFF',
     secondaryContainer: '#1B3AA3',
     onSecondaryContainer: '#DCEAFF',
-    background: '#121212',
+    background: '#161616',
     onBackground: '#FFFFFF',
     surface: '#1E1E1E',
     onSurface: '#FFFFFF',
@@ -109,7 +109,7 @@ export const darkTheme = {
     errorContainer: '#370B1E',
     onErrorContainer: '#F9D8D6',
     elevation: {
-      level0: '#121212',
+      level0: '#161616',
       level1: '#1E1E1E',
       level2: '#222222',
       level3: '#252525',

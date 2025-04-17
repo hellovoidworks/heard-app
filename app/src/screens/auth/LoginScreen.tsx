@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, FlatList, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
+import { fontNames } from '../../utils/fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput, Button, Text, Title, Divider, IconButton, useTheme } from 'react-native-paper';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,6 +18,8 @@ const LoginScreen = ({ navigation }: Props) => {
   const { signIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const carouselRef = React.useRef<FlatList<any>>(null);
   const theme = useTheme();
 
   // Check if Apple authentication is available on this device
@@ -83,25 +86,47 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: '#121212' }]} edges={['bottom']}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
+    <SafeAreaView style={[styles.container, { backgroundColor: '#161616' }]} edges={['bottom']}>
+      <StatusBar barStyle="light-content" backgroundColor="#161616" />
       <View style={styles.mainContainer}>
-        {/* Logo at the top */}
-        <View style={styles.logoContainer}>
-          <Image 
-            source={require('../../../assets/logo.png')} 
-            style={styles.logo} 
-            resizeMode="contain"
+        {/* Carousel at the top */}
+        <View style={styles.carouselContainer}>
+          <FlatList
+            data={[
+              {
+                image: require('../../assets/home-1.png'),
+                title: 'Express freely, annonymously.',
+                description: 'Let it out. Share authentic, unfiltered stories without giving yourself away.'
+              },
+              {
+                image: require('../../assets/home-2.png'),
+                title: 'Keep it real,\njust between you two.',
+                description: 'Open up, link up, and stir up a little magic — no judgment, just real vibes.'
+              }
+            ]}
+            keyExtractor={(_: any, idx: number) => idx.toString()}
+            renderItem={({ item }: { item: { image: any; title: string; description: string } }) => (
+              <View style={styles.slide}>
+                <Image source={item.image} style={styles.slideImage} />
+                <Text style={styles.slideTitle}>{item.title}</Text>
+                <Text style={styles.slideDescription}>{item.description}</Text>
+              </View>
+            )}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+              const index = Math.round(e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width);
+              setCarouselIndex(index);
+            }}
+            ref={carouselRef}
           />
-        </View>
-
-        {/* Main image in the middle */}
-        <View style={styles.mainImageContainer}>
-          <Image 
-            source={require('../../assets/main-1.png')} 
-            style={styles.mainImage} 
-            resizeMode="contain"
-          />
+          {/* Dot indicator */}
+          <View style={styles.dotContainer}>
+            {[0,1].map(i => (
+              <View key={i} style={[styles.dot, carouselIndex === i && styles.dotActive]} />
+            ))}
+          </View>
         </View>
         
         {/* Buttons at the bottom */}
@@ -110,14 +135,19 @@ const LoginScreen = ({ navigation }: Props) => {
             <TouchableOpacity 
               style={styles.appleButtonContainer}
               disabled={loading}
+              onPress={handleSignInWithApple}
+              accessibilityLabel="Sign in with Apple"
+              activeOpacity={0.8}
             >
-              <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-                buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
-                cornerRadius={30}
-                style={styles.appleButton}
-                onPress={handleSignInWithApple}
-              />
+              <View style={styles.customAppleButton}>
+                <Image
+                  source={require('../../assets/apple-logo.png')}
+                  style={styles.appleLogo}
+                  resizeMode="contain"
+                  accessibilityIgnoresInvertColors
+                />
+                <Text style={styles.appleButtonText}>Sign in with Apple</Text>
+              </View>
             </TouchableOpacity>
           )}
           
@@ -144,53 +174,109 @@ const LoginScreen = ({ navigation }: Props) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#161616',
   },
   mainContainer: {
     flex: 1,
-    paddingTop: Platform.OS === 'ios' ? 50 : 30, // Account for status bar
+    paddingTop: Platform.OS === 'ios' ? 50 : 30,
     justifyContent: 'space-between',
   },
-  logoContainer: {
-    alignItems: 'center',
-    paddingTop: 40,
-    marginTop: 20,
-  },
-  logo: {
-    width: 250,
-    height: 100,
-  },
-  mainImageContainer: {
+  carouselContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  mainImage: {
+    paddingTop: 10,
+    paddingHorizontal: 0,
     width: '100%',
-    height: 300,
+  },
+  slide: {
+    width: Dimensions.get('window').width,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 0,
+  },
+  slideImage: {
+    width: Dimensions.get('window').width * 0.85,
+    maxWidth: 420,
+    maxHeight: 430,
+    marginBottom: 15,
+    resizeMode: 'contain',
+  },
+  slideTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    fontFamily: fontNames.interBold,
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 10,
+    maxWidth: 310,
+  },
+  slideDescription: {
+    fontSize: 16,
+    color: '#E0E0E0',
+    textAlign: 'center',
+    marginBottom: 5,
+    lineHeight: 22,
+    maxWidth: 310,
+  },
+  dotContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -5,
+    marginBottom: 0,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#444',
+    marginHorizontal: 5,
+  },
+  dotActive: {
+    backgroundColor: '#476EF1', // App's primary color
+    width: 16,
   },
   buttonsContainer: {
     width: '100%',
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 8, // further reduced
     alignItems: 'center',
+    marginTop: 32, // shift lower
   },
   appleButtonContainer: {
     width: '100%',
-    height: 60,
-    marginBottom: 16,
-    borderRadius: 30,
+    height: 48, // further reduced
+    marginBottom: 8, // further reduced
+    borderRadius: 24,
     overflow: 'hidden',
   },
-  appleButton: {
+  customAppleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderRadius: 24,
     width: '100%',
-    height: 60,
+    height: 48,
+  },
+  appleLogo: {
+    width: 22,
+    height: 22,
+    marginRight: 10,
+  },
+  appleButtonText: {
+    color: '#222',
+    fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: fontNames.interBold,
+    letterSpacing: 0.2,
   },
   emailButtonContainer: {
     width: '100%',
-    height: 60,
-    borderRadius: 30,
+    height: 48,
+    borderRadius: 24,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -203,13 +289,14 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 30,
-    padding: 15,
+    borderRadius: 24,
+    padding: 10,
   },
   emailButtonText: {
     color: 'white',
-    fontSize: 22,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: 'bold',
+    fontFamily: fontNames.interBold,
     backgroundColor: 'transparent',
   },
 });
