@@ -209,7 +209,7 @@ const CategoryPreferencesScreen = ({ navigation }: Props) => {
           onPress={handleContinue}
           style={styles.button}
           loading={saving}
-          disabled={saving || selectedCategories.length < 3}
+          disabled={saving || selectedCategories.length < 5}
           buttonColor={theme.colors.primary}
           textColor={theme.colors.onPrimary}
           labelStyle={{ fontSize: 18, fontWeight: 'bold' }}
