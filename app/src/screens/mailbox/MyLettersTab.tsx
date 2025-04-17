@@ -284,18 +284,18 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   moodEmojiContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   moodEmoji: {
-    fontSize: 28,
+    fontSize: 26,
   },
   letterTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
     fontFamily: fontNames.interSemiBold,

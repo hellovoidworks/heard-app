@@ -61,16 +61,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   moodEmojiContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   moodEmoji: {
-    fontSize: 28,
+    fontSize: 26,
   },
   letterTitleContainer: {
     flex: 1,
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_500Medium',
   },
   letterTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 8,
     color: '#FFFFFF',

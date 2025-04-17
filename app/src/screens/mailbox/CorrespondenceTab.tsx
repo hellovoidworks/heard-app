@@ -474,7 +474,7 @@ const styles = StyleSheet.create({
     paddingBottom: 2, // Slight adjustment for visual centering
   },
   letterTitle: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     marginBottom: 0, // Remove bottom margin
     color: '#FFFFFF',
