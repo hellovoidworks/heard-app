@@ -53,8 +53,10 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
   const [userReaction, setUserReaction] = useState<{emoji: string, date: string} | null>(null);
-  const [loading, setLoading] = useState(!initialLetterData); // Only show loading if we don't have initial data
-  const [repliesLoading, setRepliesLoading] = useState(true); // Separate loading state for replies
+  const [letterLoading, setLetterLoading] = useState(!initialLetterData); // Loading state for letter data
+  const [repliesLoading, setRepliesLoading] = useState(true); // Loading state for replies
+  const [dataLoaded, setDataLoaded] = useState(false); // Track when data is loaded but not yet scrolled
+  const [isFullyLoaded, setIsFullyLoaded] = useState(false); // Final state when everything is loaded AND scrolled
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,8 +68,10 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const fetchLetterAndReplies = useCallback(async () => {
     if (!user || !letterId || !otherParticipantId) return;
 
+    // Reset all loading states
+    setIsFullyLoaded(false);
     if (!initialLetterData) {
-      setLoading(true);
+      setLetterLoading(true);
     }
     setRepliesLoading(true);
     setError(null);
@@ -90,14 +94,14 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       if (rpcError) {
         console.error('Error calling get_thread_details:', rpcError);
         setError(rpcError.message);
-        setLoading(false);
+        setLetterLoading(false);
         return;
       }
 
       if (!data) {
         console.error('No data returned from get_thread_details');
         setError('Could not load thread details.');
-        setLoading(false);
+        setLetterLoading(false);
         return;
       }
       
@@ -109,7 +113,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       if (!fetchedLetter) {
         console.error('Letter data missing in get_thread_details response');
         setError('Could not load the letter.');
-        setLoading(false);
+        setLetterLoading(false);
         return;
       }
 
@@ -126,7 +130,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       console.error('Unexpected error fetching thread details:', e);
       setError(e.message || 'An unexpected error occurred.');
     } finally {
-      setLoading(false);
+      setLetterLoading(false);
       setRepliesLoading(false);
     }
   }, [letterId, user, otherParticipantId, supabase]);
@@ -289,12 +293,17 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [fetchLetterAndReplies, user]);
 
 
+  // Track when data is loaded but not yet scrolled
   useEffect(() => {
-    if (!loading && replies.length > 0) {
-      // Scroll to the end of the conversation
-      setTimeout(() => {
-        scrollViewRef.current?.scrollToEnd({ animated: false });
-      }, 200);
+    if (!letterLoading && !repliesLoading) {
+      setDataLoaded(true);
+    }
+  }, [letterLoading, repliesLoading]);
+
+  // Handle actions when data is loaded - mark replies as read
+  useEffect(() => {
+    if (dataLoaded && letter && replies.length > 0) {
+      console.log('[ThreadDetailScreen] Data loaded, marking replies as read');
       
       // Mark all replies from the other participant as read
       const unreadReplyIds = replies
@@ -306,7 +315,33 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         markRepliesAsRead(unreadReplyIds);
       }
     }
-  }, [loading, replies.length, otherParticipantId, markRepliesAsRead]);
+  }, [dataLoaded, letter, replies, otherParticipantId, markRepliesAsRead]);
+  
+  // Handle transition from loading to displaying content
+  useEffect(() => {
+    if (dataLoaded && letter && !isFullyLoaded) {
+      // First set the content as visible
+      console.log('[ThreadDetailScreen] Data loaded, transitioning to fully loaded state');
+      setIsFullyLoaded(true);
+    }
+  }, [dataLoaded, letter, isFullyLoaded]);
+  
+  // Handle scrolling after content is visible and layout is calculated
+  useEffect(() => {
+    if (isFullyLoaded && replies.length > 0) {
+      // Use a series of attempts to scroll to ensure it happens
+      const scrollAttempts = [10, 50, 100, 200, 500];
+      
+      scrollAttempts.forEach(delay => {
+        setTimeout(() => {
+          if (scrollViewRef.current) {
+            console.log(`[ThreadDetailScreen] Scroll attempt at ${delay}ms`);
+            scrollViewRef.current.scrollToEnd({ animated: false });
+          }
+        }, delay);
+      });
+    }
+  }, [isFullyLoaded, replies.length]);
 
   const canReply = useMemo(() => {
     if (!user) return false;
@@ -319,7 +354,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return latestReply.author_id !== user.id;
   }, [user, letter, replies]);
 
-  if (loading && !letter) {
+  // Show loading screen until everything is fully loaded and properly scrolled
+  if (!isFullyLoaded) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -350,6 +386,20 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         contentContainerStyle={{ 
           paddingBottom: canReply ? 8 : Math.max(insets.bottom, 16) 
         }}
+        onContentSizeChange={() => {
+          // When content size changes and we're fully loaded, scroll to bottom
+          if (isFullyLoaded && replies.length > 0) {
+            console.log('[ThreadDetailScreen] Content size changed, scrolling to end');
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
+        onLayout={() => {
+          // Also scroll when layout is calculated
+          if (isFullyLoaded && replies.length > 0) {
+            console.log('[ThreadDetailScreen] Layout calculated, scrolling to end');
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }
+        }}
       >
         {/* Letter Title Card */}
         {letter && <LetterTitleCard letter={letter} />}
@@ -373,12 +423,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         
         {replies.length > 0 && <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />}
         
-        {/* Replies */}
-        {repliesLoading && replies.length === 0 && letter && (
-          <View style={styles.repliesLoadingContainer}>
-            <ActivityIndicator size="small" color={theme.colors.primary} />
-          </View>
-        )}
+        {/* No need for separate replies loading indicator since we now wait for everything to load */}
         {replies.map((reply) => {
           const isFromCurrentUser = user && reply.author_id === user.id;
           const isFromLetterAuthor = reply.author_id === letter.author_id;
