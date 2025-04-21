@@ -14,7 +14,7 @@ import { darkTheme } from './src/utils/theme';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontsToLoad } from './src/utils/fonts';
-// Import Adjust as shown in the documentation example
+// Import Adjust with same pattern as in EmailSignInScreen.tsx
 import { Adjust, AdjustConfig, AdjustEvent } from 'react-native-adjust';
 
 console.log('=== App initialization started ===');
