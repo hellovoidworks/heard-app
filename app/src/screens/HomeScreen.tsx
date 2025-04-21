@@ -1047,7 +1047,7 @@ const HomeScreen = () => {
       return (
         <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
           <ActivityIndicator size="large" color={theme.colors.primary} />
-          <Text style={[styles.loadingText, { color: theme.colors.primary }]}>Loading your letters...</Text>
+          <Text style={[styles.loadingText, { color: theme.colors.primary }]}>Receiving mail...</Text>
         </View>
       );
     }
