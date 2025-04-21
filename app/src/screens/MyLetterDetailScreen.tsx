@@ -234,9 +234,40 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  // Mark reactions as read when the letter author views the letter
+  const markReactionsAsRead = async () => {
+    if (!letterId || !user || !letter) return;
+    
+    // Only mark reactions as read if the current user is the letter author
+    if (letter.author_id === user.id) {
+      try {
+        console.log(`Marking reactions as read for letter: ${letterId}`);
+        const { error } = await supabase.rpc('mark_letter_reactions_as_read', {
+          letter_id_param: letterId,
+          user_id_param: user.id
+        });
+        
+        if (error) {
+          console.error('Error marking reactions as read:', error);
+        } else {
+          console.log('Successfully marked reactions as read');
+        }
+      } catch (error) {
+        console.error('Exception marking reactions as read:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchLetter();
   }, [letterId]);
+  
+  // Mark reactions as read when the letter and user are available
+  useEffect(() => {
+    if (letter && user && !loading) {
+      markReactionsAsRead();
+    }
+  }, [letter, user, loading]);
 
   const handleRefresh = () => {
     setRefreshing(true);

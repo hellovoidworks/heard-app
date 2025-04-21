@@ -3,6 +3,7 @@ import { NavigationContainer, DarkTheme, NavigationContainerRef } from '@react-n
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { registerForPushNotificationsAsync, savePushToken } from '../services/notifications';
 import { Ionicons } from '@expo/vector-icons';
 import linking from '../utils/linking';
@@ -111,6 +112,7 @@ const OnboardingNavigator = () => {
 const MainNavigator = () => {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
+  const { totalUnreadCount } = useNotification();
   
   return (
     <Tab.Navigator
@@ -191,15 +193,39 @@ const MainNavigator = () => {
             }}
             onPress={() => props.navigation.navigate('Mailbox')}
           >
-            <Text style={{
-              color: props.state.index === 1 ? '#FFFFFF' : '#666666',
-              fontSize: 16,
-              fontWeight: 'normal',
-              textTransform: 'uppercase',
-              fontFamily: fontNames.interMedium,
-            }}>
-              MAILBOX
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{
+                color: props.state.index === 1 ? '#FFFFFF' : '#666666',
+                fontSize: 16,
+                fontWeight: 'normal',
+                textTransform: 'uppercase',
+                fontFamily: fontNames.interMedium,
+              }}>
+                MAILBOX
+              </Text>
+              
+              {/* Unread count badge */}
+              {totalUnreadCount > 0 && (
+                <View style={{
+                  backgroundColor: 'red',
+                  borderRadius: 8,
+                  minWidth: 16,
+                  height: 16,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginLeft: 5,
+                  paddingHorizontal: 3,
+                }}>
+                  <Text style={{
+                    color: '#FFFFFF',
+                    fontSize: 10,
+                    fontWeight: '900',
+                  }}>
+                    {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       )}

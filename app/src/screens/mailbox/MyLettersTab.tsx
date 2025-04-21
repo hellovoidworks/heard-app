@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
@@ -17,16 +17,21 @@ type Letter = {
   title: string;
   content: string;
   created_at: string;
-  category: {
+  category?: {
     id: string;
     name: string;
     color: string;
   } | null;
   mood_emoji?: string;
-  view_count: number;
-  reply_count: number;
-  reaction_count: number;
+  view_count?: number;
+  reply_count?: number;
+  reaction_count?: number;
   display_name?: string;
+  has_unread_reactions?: boolean;
+};
+
+type Props = {
+  onUnreadReactionsCountChange?: (count: number) => void;
 };
 
 // Helper function to format numbers (e.g., 1100 -> 1.1k)
@@ -39,15 +44,18 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-const MyLettersTab = () => {
+const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
   const [letters, setLetters] = useState<Letter[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  // Keep track of the last viewed letter to update its unread status when returning to this screen
+  const [lastViewedLetterId, setLastViewedLetterId] = useState<string | null>(null);
+  const [unreadReactionsCount, setUnreadReactionsCount] = useState(0);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
-  const fetchMyLetters = async () => {
+  const fetchMyLetters = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -74,39 +82,111 @@ const MyLettersTab = () => {
 
       // Process the data to match our Letter type
       const processedLetters = data.map((letter: any) => {
-        // Debug: Log each letter's view count
-        console.log(`Letter "${letter.title}": view_count=${letter.view_count}, type=${typeof letter.view_count}`);
+        // Debug: Log each letter's view count and unread reactions status
+        console.log(`Letter "${letter.title}": view_count=${letter.view_count}, has_unread_reactions=${letter.has_unread_reactions}`);
         
         return ({
-        id: letter.id,
-        title: letter.title,
-        content: letter.content,
-        created_at: letter.created_at,
-        category: letter.category_id ? {
-          id: letter.category_id,
-          name: letter.category_name,
-          color: letter.category_color
-        } : null,
-        mood_emoji: letter.mood_emoji,
-        view_count: parseInt(letter.view_count) || 0,
-        reply_count: parseInt(letter.reply_count) || 0,
-        reaction_count: parseInt(letter.reaction_count) || 0,
-        display_name: letter.display_name
-      });
+          id: letter.id,
+          title: letter.title,
+          content: letter.content,
+          created_at: letter.created_at,
+          category: letter.category_id ? {
+            id: letter.category_id,
+            name: letter.category_name,
+            color: letter.category_color
+          } : null,
+          mood_emoji: letter.mood_emoji,
+          view_count: parseInt(letter.view_count) || 0,
+          reply_count: parseInt(letter.reply_count) || 0,
+          reaction_count: parseInt(letter.reaction_count) || 0,
+          display_name: letter.display_name,
+          has_unread_reactions: letter.has_unread_reactions
+        });
       });
 
-      setLetters(processedLetters);
+      // Sort letters - unread reactions first, then by creation date (newest first)
+      const sortedLetters = [...processedLetters].sort((a, b) => {
+        // First sort by unread reactions (true values first)
+        if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
+        if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
+        
+        // Then sort by date (newest first)
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+
+      // Count letters with unread reactions
+      const unreadCount = sortedLetters.filter(letter => letter.has_unread_reactions).length;
+      
+      // Update state and notify parent component if the count changed
+      setUnreadReactionsCount(unreadCount);
+      if (onUnreadReactionsCountChange) {
+        onUnreadReactionsCountChange(unreadCount);
+      }
+
+      setLetters(sortedLetters);
     } catch (error) {
       console.error('Error:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [user]);
 
+  // Initial fetch on component mount
   useEffect(() => {
     fetchMyLetters();
-  }, [user]);
+  }, []);
+  
+  // Efficiently update letters when returning to this tab
+  useFocusEffect(
+    useCallback(() => {
+      console.log('MyLettersTab focused');
+      
+      // If we have a lastViewedLetterId, update just that letter's unread status
+      if (lastViewedLetterId) {
+        console.log(`Updating unread status for letter: ${lastViewedLetterId}`);
+        
+        // Update the letter in our local state
+        setLetters(prevLetters => {
+          const updatedLetters = prevLetters.map(letter => {
+            if (letter.id === lastViewedLetterId) {
+              // Mark this letter as having no unread reactions
+              return { ...letter, has_unread_reactions: false };
+            }
+            return letter;
+          }).sort((a, b) => {
+            // Re-sort the letters after updating
+            if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
+            if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
+            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          });
+          
+          // Count letters with unread reactions after the update
+          const newUnreadCount = updatedLetters.filter(letter => letter.has_unread_reactions).length;
+          
+          // Update state and notify parent component if the count changed
+          if (newUnreadCount !== unreadReactionsCount) {
+            setUnreadReactionsCount(newUnreadCount);
+            if (onUnreadReactionsCountChange) {
+              onUnreadReactionsCountChange(newUnreadCount);
+            }
+          }
+          
+          return updatedLetters;
+        });
+        
+        // Reset the lastViewedLetterId
+        setLastViewedLetterId(null);
+      } else {
+        // If no specific letter was viewed or on first load, fetch all letters
+        fetchMyLetters();
+      }
+      
+      return () => {
+        // Cleanup function when component loses focus (optional)
+      };
+    }, [user, fetchMyLetters, lastViewedLetterId])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -114,6 +194,9 @@ const MyLettersTab = () => {
   };
 
   const handleLetterPress = (letter: Letter) => {
+    // Store the letter ID being viewed
+    setLastViewedLetterId(letter.id);
+    
     // Pass the full letter data along with counts to avoid redundant fetching
     navigation.navigate('MyLetterDetail', { 
       letterId: letter.id,
@@ -122,15 +205,15 @@ const MyLettersTab = () => {
         title: letter.title,
         content: letter.content,
         created_at: letter.created_at,
-        category: letter.category,
-        mood_emoji: letter.mood_emoji,
+        category: letter.category || null,
+        mood_emoji: letter.mood_emoji || '',
         author_id: user?.id || '', // Since this is the user's letter
         display_name: letter.display_name
       },
       initialStats: {
-        replyCount: letter.reply_count,
-        readCount: letter.view_count,
-        reactionCount: letter.reaction_count
+        readCount: letter.view_count || 0,
+        replyCount: letter.reply_count || 0,
+        reactionCount: letter.reaction_count || 0
       }
     });
   };
@@ -142,68 +225,86 @@ const MyLettersTab = () => {
     const defaultMoodEmoji = '😊';
     // Format the date to display in the top right corner (month and date only)
     const formattedDate = format(new Date(item.created_at), 'MMM d');
+    const hasUnreadReactions = item.has_unread_reactions === true;
 
     return (
-      <Card
-        style={[
-          styles.letterCard,
-          { 
-            backgroundColor,
-            borderWidth: 1,
-            borderColor: categoryColor 
-          }
-        ]}
-        onPress={() => handleLetterPress(item)}
-      >
-        <Card.Content>
-          {/* Date display is now moved to be inline with title */}
-          <View style={styles.threeColumnLayout}>
-            {/* Left column: Mood emoji */}
-            <View style={styles.leftColumn}>
-              <View style={[styles.moodEmojiContainer, { backgroundColor: `${categoryColor}66` }]}>
-                <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+      <View style={{ position: 'relative' }}>
+        {hasUnreadReactions && (
+          <View 
+            style={{
+              width: 10,
+              height: 10,
+              borderRadius: 5,
+              backgroundColor: '#FF6347',
+              position: 'absolute',
+              top: 16,
+              left: 24,
+              zIndex: 1,
+            }} 
+          />
+        )}
+        <Card
+          style={[
+            styles.letterCard,
+            { 
+              backgroundColor,
+              borderWidth: 1,
+              borderColor: categoryColor,
+              ...(hasUnreadReactions ? { elevation: 4 } : {})
+            }
+          ]}
+          onPress={() => handleLetterPress(item)}
+        >
+          <Card.Content>
+            {/* Date display is now moved to be inline with title */}
+            <View style={styles.threeColumnLayout}>
+              {/* Left column: Mood emoji */}
+              <View style={styles.leftColumn}>
+                <View style={[styles.moodEmojiContainer, { backgroundColor: `${categoryColor}66` }]}>
+                  <Text style={styles.moodEmoji}>{item.mood_emoji || defaultMoodEmoji}</Text>
+                </View>
               </View>
-            </View>
-            
-            {/* Center column: Text and preview */}
-            <View style={styles.centerColumn}>
-              <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
-              <Paragraph style={styles.letterContent} numberOfLines={2}>{item.content}</Paragraph>
               
-              {/* Statistics row */}
-              <View style={styles.statsContainer}>
-                {/* Views */}
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="eye-outline" size={14} color="#FFFFFF" />
-                  <Text style={styles.statText}>{formatNumber(item.view_count || 0)}</Text>
-                </View>
+              {/* Center column: Text and preview */}
+              <View style={styles.centerColumn}>
+                <Title style={styles.letterTitle} numberOfLines={2} ellipsizeMode="tail">{item.title}</Title>
+                <Paragraph style={styles.letterContent} numberOfLines={2}>{item.content}</Paragraph>
                 
-                {/* Replies */}
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="reply-outline" size={14} color="#FFFFFF" />
-                  <Text style={styles.statText}>{formatNumber(item.reply_count || 0)}</Text>
+                {/* Statistics row */}
+                <View style={styles.statsContainer}>
+                  {/* Views */}
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons name="eye-outline" size={14} color="#FFFFFF" />
+                    <Text style={styles.statText}>{formatNumber(item.view_count || 0)}</Text>
+                  </View>
+                  
+                  {/* Replies */}
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons name="reply-outline" size={14} color="#FFFFFF" />
+                    <Text style={styles.statText}>{formatNumber(item.reply_count || 0)}</Text>
+                  </View>
+                  
+                  {/* Reactions */}
+                  <View style={styles.statItem}>
+                    <MaterialCommunityIcons name="emoticon-outline" size={14} color="#FFFFFF" />
+                    <Text style={styles.statText}>{formatNumber(item.reaction_count || 0)}</Text>
+                  </View>
                 </View>
-                
-                {/* Reactions */}
-                <View style={styles.statItem}>
-                  <MaterialCommunityIcons name="emoticon-outline" size={14} color="#FFFFFF" />
-                  <Text style={styles.statText}>{formatNumber(item.reaction_count || 0)}</Text>
+              </View>
+              
+              {/* Right column: Date and Category display */}
+              <View style={styles.rightColumn}>
+                <Text style={styles.dateText}>{formattedDate}</Text>
+                <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
+                  <Text style={styles.categoryName}>
+                    {item.category?.name.toUpperCase()}
+                  </Text>
                 </View>
               </View>
             </View>
-            
-            {/* Right column: Date and Category display */}
-            <View style={styles.rightColumn}>
-              <Text style={styles.dateText}>{formattedDate}</Text>
-              <View style={[styles.categoryContainer, { backgroundColor: `${categoryColor}66` }]}>
-                <Text style={styles.categoryName}>
-                  {item.category?.name.toUpperCase()}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
+          </Card.Content>
+        </Card>
+      </View>
     );
   };
 

@@ -62,6 +62,8 @@ export type OnboardingStackParamList = {
 
 export type MainTabParamList = {
   Home: undefined;
-  Mailbox: undefined;
+  Mailbox: {
+    unreadCount?: number;
+  };
   // Write removed as it's now accessed as a modal
 }; 

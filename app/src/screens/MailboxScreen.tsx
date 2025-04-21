@@ -1,20 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../navigation/types';
 import CorrespondenceTab from './mailbox/CorrespondenceTab';
 import MyLettersTab from './mailbox/MyLettersTab';
-import { updateAppBadgeCount } from '../services/notifications';
+import { useNotification } from '../contexts/NotificationContext';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 const MailboxScreen = () => {
   const [activeTab, setActiveTab] = useState('correspondence');
-  const [unreadCount, setUnreadCount] = useState(0);
   const theme = useTheme();
+  const navigation = useNavigation<NavigationProp>();
   
-  // Update the app badge count whenever unreadCount changes
+  // Use the notification context instead of local state
+  const { 
+    unreadMessagesCount, 
+    unreadReactionsCount, 
+    totalUnreadCount,
+    setUnreadMessagesCount,
+    setUnreadReactionsCount
+  } = useNotification();
+  
+  // Update the navigation params whenever the total unread count changes
   useEffect(() => {
-    console.log(`[MailboxScreen] Unread count changed to ${unreadCount}, updating app badge`);
-    updateAppBadgeCount(unreadCount);
-  }, [unreadCount]);
+    console.log(`[MailboxScreen] Total unread count: ${totalUnreadCount} (messages: ${unreadMessagesCount}, reactions: ${unreadReactionsCount})`);
+    
+    // Expose the total unread count to the navigation
+    if (navigation && navigation.setParams) {
+      navigation.setParams({ unreadCount: totalUnreadCount });
+    }
+  }, [unreadMessagesCount, unreadReactionsCount, totalUnreadCount, navigation]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -33,10 +51,10 @@ const MailboxScreen = () => {
               ]}>
                 Inbox
               </Text>
-              {unreadCount > 0 && (
+              {unreadMessagesCount > 0 && (
                 <View style={[styles.unreadBadge, activeTab === 'correspondence' ? { backgroundColor: '#FFFFFF' } : { backgroundColor: 'red' }]}>
                   <Text style={[styles.unreadBadgeText, activeTab === 'correspondence' ? { color: theme.colors.primary } : { color: '#FFFFFF' }]}>
-                    {unreadCount > 99 ? '99+' : unreadCount}
+                    {unreadMessagesCount > 99 ? '99+' : unreadMessagesCount}
                   </Text>
                 </View>
               )}
@@ -49,19 +67,28 @@ const MailboxScreen = () => {
             ]} 
             onPress={() => setActiveTab('myLetters')}
           >
-            <Text style={[
-              styles.tabText, 
-              activeTab === 'myLetters' ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
-            ]}>
-              My Mail
-            </Text>
+            <View style={styles.tabTextContainer}>
+              <Text style={[
+                styles.tabText, 
+                activeTab === 'myLetters' ? { color: '#FFFFFF' } : { color: theme.colors.onSurface }
+              ]}>
+                My Mail
+              </Text>
+              {unreadReactionsCount > 0 && (
+                <View style={[styles.unreadBadge, activeTab === 'myLetters' ? { backgroundColor: '#FFFFFF' } : { backgroundColor: 'red' }]}>
+                  <Text style={[styles.unreadBadgeText, activeTab === 'myLetters' ? { color: theme.colors.primary } : { color: '#FFFFFF' }]}>
+                    {unreadReactionsCount > 99 ? '99+' : unreadReactionsCount}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
       </View>
       
       <View style={[styles.tabContent, { backgroundColor: theme.colors.background }]}>
         {activeTab === 'correspondence' ? 
-          <CorrespondenceTab onUnreadCountChange={setUnreadCount} /> : 
-          <MyLettersTab />}
+          <CorrespondenceTab onUnreadCountChange={setUnreadMessagesCount} /> : 
+          <MyLettersTab onUnreadReactionsCountChange={setUnreadReactionsCount} />}
       </View>
     </View>
   );

@@ -6,6 +6,7 @@ import { Provider as PaperProvider } from 'react-native-paper';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { CategoryProvider } from './src/contexts/CategoryContext';
 import { PreloadProvider } from './src/contexts/PreloadContext';
+import { NotificationProvider } from './src/contexts/NotificationContext';
 import AppNavigator from './src/navigation';
 import StarRewardAnimation from './src/components/StarRewardAnimation';
 import { supabase } from './src/services/supabase';
@@ -406,10 +407,11 @@ export default function App() {
       <PaperProvider theme={darkTheme}>
         <AuthProvider key={`auth-provider-${forceReset}`}>
           <CategoryProvider>
-            <PreloadProvider>
-              <AppNavigator ref={navigationRef} />
-              {/* Position the star reward animation component with absolute positioning and highest z-index */}
-              <View style={{
+            <NotificationProvider>
+              <PreloadProvider>
+                <AppNavigator ref={navigationRef} />
+                {/* Position the star reward animation component with absolute positioning and highest z-index */}
+                <View style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
@@ -421,7 +423,8 @@ export default function App() {
               }}>
                 <StarRewardAnimation />
               </View>
-            </PreloadProvider>
+              </PreloadProvider>
+            </NotificationProvider>
           </CategoryProvider>
         </AuthProvider>
       </PaperProvider>
