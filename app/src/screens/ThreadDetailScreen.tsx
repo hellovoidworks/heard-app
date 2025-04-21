@@ -23,6 +23,7 @@ import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LetterTitleCard from '../components/LetterTitleCard';
 import ReactionDisplay from '../components/ReactionDisplay';
+import detailScreenPreloader from '../utils/detailScreenPreloader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
@@ -230,8 +231,12 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchLetterAndReplies();
+    
+    // Preload mailbox tab data in the background
+    if (user?.id) {
+      detailScreenPreloader.preloadMailboxDataFromDetailScreen(user.id);
+    }
   }, [letterId, otherParticipantId, user]); 
-
 
 
   useEffect(() => {

@@ -22,6 +22,7 @@ import { fontNames } from '../utils/fonts';
 import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { StorageService, STORAGE_KEYS } from '../services/storage';
 import eventEmitter, { EVENTS } from '../utils/eventEmitter';
+import tabDataPreloader from '../utils/tabDataPreloader';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -56,10 +57,10 @@ const HomeScreen = () => {
   
   // No need to track animation triggered state anymore
   
-  // Check for pending star rewards when the screen comes into focus
+  // Check for pending star rewards and preload mailbox data when the screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      const checkPendingStarRewards = async () => {
+      const handleScreenFocus = async () => {
         try {
           // Check if there are any pending star rewards
           const pendingRewardStr = await AsyncStorage.getItem('@heard_app/pending_star_reward');
@@ -80,17 +81,26 @@ const HomeScreen = () => {
               }, 500);
             }
           }
+
+          // Preload mailbox tab data in the background if user is logged in
+          if (user?.id) {
+            console.log('HomeScreen: Preloading mailbox data in the background');
+            // Use setTimeout to avoid blocking the UI thread during focus
+            setTimeout(() => {
+              tabDataPreloader.preloadAllMailboxData(user.id);
+            }, 1000); // Short delay to prioritize HomeScreen's own data loading
+          }
         } catch (error) {
-          console.error('Error checking for pending star rewards:', error);
+          console.error('Error in handleScreenFocus:', error);
         }
       };
       
-      checkPendingStarRewards();
+      handleScreenFocus();
       
       return () => {
         // Cleanup if needed
       };
-    }, [])
+    }, [user?.id])
   );
 
   // Create a map to store animation values for each letter
@@ -559,6 +569,15 @@ const HomeScreen = () => {
       // The database function already handles tracking letters as received
       if (resultLetters.length > 0) {
         console.log('FETCH DEBUG: Setting anyLettersInWindow to true');
+        
+        // Preload mailbox tab data in the background after successfully loading letters
+        // This ensures users will have cached data when they navigate to Inbox or My Mail
+        setTimeout(() => {
+          if (user?.id) {
+            console.log('HomeScreen: Preloading mailbox data after letters load');
+            tabDataPreloader.preloadAllMailboxData(user.id);
+          }
+        }, 2000); // Delay to prioritize letter rendering
         setAnyLettersInWindow(true);
       }
       

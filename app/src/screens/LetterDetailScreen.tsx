@@ -15,6 +15,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import LetterTitleCard from '../components/LetterTitleCard';
 import eventEmitter, { EVENTS } from '../utils/eventEmitter';
+import detailScreenPreloader from '../utils/detailScreenPreloader';
+import tabDataPreloader from '../utils/tabDataPreloader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 
@@ -52,9 +54,9 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [isAnimating, setIsAnimating] = useState(true); // Start animating immediately
   const [showFullText, setShowFullText] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const [isDiscarding, setIsDiscarding] = useState(false);
   
   // Animation values for discard effect
-  const [isDiscarding, setIsDiscarding] = useState(false);
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;

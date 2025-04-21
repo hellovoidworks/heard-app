@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import LetterTitleCard from '../components/LetterTitleCard';
 import ReactionDisplay from '../components/ReactionDisplay';
+import detailScreenPreloader from '../utils/detailScreenPreloader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
@@ -260,7 +261,12 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchLetter();
-  }, [letterId]);
+    
+    // Preload mailbox tab data in the background
+    if (user?.id) {
+      detailScreenPreloader.preloadMailboxDataFromDetailScreen(user.id);
+    }
+  }, [letterId, user?.id]);
   
   // Mark reactions as read when the letter and user are available
   useEffect(() => {

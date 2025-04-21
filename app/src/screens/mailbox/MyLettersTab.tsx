@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, Button, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
@@ -9,6 +9,8 @@ import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { fontNames } from '../../utils/fonts';
+import { useDataWithCache } from '../../hooks/useDataWithCache';
+import dataCache from '../../utils/dataCache';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -45,153 +47,143 @@ const formatNumber = (num: number): string => {
 };
 
 const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
-  const [letters, setLetters] = useState<Letter[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   // Keep track of the last viewed letter to update its unread status when returning to this screen
   const [lastViewedLetterId, setLastViewedLetterId] = useState<string | null>(null);
-  const [unreadReactionsCount, setUnreadReactionsCount] = useState(0);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
-  const fetchMyLetters = useCallback(async () => {
-    try {
-      setLoading(true);
+  // Define the fetch function that will be used by our hook
+  const fetchMyLetters = useCallback(async (): Promise<Letter[]> => {
+    if (!user) return [];
+
+    console.log('[MyLettersTab] Fetching my letters');
+    
+    // Get all letters with their stats in a single query using the fixed database function
+    const { data, error } = await supabase
+      .rpc('get_my_letters_with_stats', { user_id: user.id });
       
-      if (!user) return;
+    // Debug: Log the raw data to see what we're getting from the database
+    console.log('[MyLettersTab] Raw letter data from database:', data ? data.slice(0, 2) : 'No data');
 
-      // Get all letters with their stats in a single query using the fixed database function
-      const { data, error } = await supabase
-        .rpc('get_my_letters_with_stats', { user_id: user.id });
-        
-      // Debug: Log the raw data to see what we're getting from the database
-      console.log('Raw letter data from database:', data ? data.slice(0, 2) : 'No data');
-
-      if (error) {
-        console.error('Error fetching letters with stats:', error);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setLetters([]);
-        setLoading(false);
-        setRefreshing(false);
-        return;
-      }
-
-      // Process the data to match our Letter type
-      const processedLetters = data.map((letter: any) => {
-        // Debug: Log each letter's view count and unread reactions status
-        console.log(`Letter "${letter.title}": view_count=${letter.view_count}, has_unread_reactions=${letter.has_unread_reactions}`);
-        
-        return ({
-          id: letter.id,
-          title: letter.title,
-          content: letter.content,
-          created_at: letter.created_at,
-          category: letter.category_id ? {
-            id: letter.category_id,
-            name: letter.category_name,
-            color: letter.category_color
-          } : null,
-          mood_emoji: letter.mood_emoji,
-          view_count: parseInt(letter.view_count) || 0,
-          reply_count: parseInt(letter.reply_count) || 0,
-          reaction_count: parseInt(letter.reaction_count) || 0,
-          display_name: letter.display_name,
-          has_unread_reactions: letter.has_unread_reactions
-        });
-      });
-
-      // Sort letters - unread reactions first, then by creation date (newest first)
-      const sortedLetters = [...processedLetters].sort((a, b) => {
-        // First sort by unread reactions (true values first)
-        if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
-        if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
-        
-        // Then sort by date (newest first)
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-
-      // Count letters with unread reactions
-      const unreadCount = sortedLetters.filter(letter => letter.has_unread_reactions).length;
-      
-      // Update state and notify parent component if the count changed
-      setUnreadReactionsCount(unreadCount);
-      if (onUnreadReactionsCountChange) {
-        onUnreadReactionsCountChange(unreadCount);
-      }
-
-      setLetters(sortedLetters);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (error) {
+      console.error('[MyLettersTab] Error fetching letters with stats:', error);
+      return [];
     }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Process the data to match our Letter type
+    const processedLetters = data.map((letter: any) => ({
+      id: letter.id,
+      title: letter.title,
+      content: letter.content,
+      created_at: letter.created_at,
+      category: letter.category_id ? {
+        id: letter.category_id,
+        name: letter.category_name,
+        color: letter.category_color
+      } : null,
+      mood_emoji: letter.mood_emoji,
+      view_count: parseInt(letter.view_count) || 0,
+      reply_count: parseInt(letter.reply_count) || 0,
+      reaction_count: parseInt(letter.reaction_count) || 0,
+      display_name: letter.display_name,
+      has_unread_reactions: letter.has_unread_reactions
+    }));
+
+    // Sort letters - unread reactions first, then by creation date (newest first)
+    return [...processedLetters].sort((a, b) => {
+      // First sort by unread reactions (true values first)
+      if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
+      if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
+      
+      // Then sort by date (newest first)
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   }, [user]);
 
-  // Initial fetch on component mount
-  useEffect(() => {
-    fetchMyLetters();
-  }, []);
+  // Handler for when data is loaded
+  const handleDataLoaded = useCallback((letters: Letter[]) => {
+    // Count letters with unread reactions
+    const unreadCount = letters.filter(letter => letter.has_unread_reactions).length;
+    
+    // Notify parent component about the unread count
+    if (onUnreadReactionsCountChange) {
+      onUnreadReactionsCountChange(unreadCount);
+    }
+  }, [onUnreadReactionsCountChange]);
+
+  // Use our custom hook for data fetching with cache
+  const {
+    data: letters = [],
+    initialLoading,
+    refreshing,
+    handleRefresh,
+    handleFocus,
+    setData: setLetters
+  } = useDataWithCache<Letter[]>({
+    cacheKey: dataCache.CACHE_KEYS.MY_LETTERS,
+    fetchFunction: fetchMyLetters,
+    initialData: [],
+    onDataLoaded: handleDataLoaded
+  });
   
-  // Efficiently update letters when returning to this tab
+  // Handle specific letter updates when returning from letter detail
+  useEffect(() => {
+    if (lastViewedLetterId && letters.length > 0) {
+      console.log(`[MyLettersTab] Updating unread status for letter: ${lastViewedLetterId}`);
+      
+      // Update the letter in our local state to mark reactions as read
+      const updatedLetters = letters.map(letter => {
+        if (letter.id === lastViewedLetterId) {
+          // Mark this letter as having no unread reactions
+          return { ...letter, has_unread_reactions: false };
+        }
+        return letter;
+      }).sort((a, b) => {
+        // Re-sort the letters after updating
+        if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
+        if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      
+      // Set the updated letters
+      setLetters(updatedLetters);
+      
+      // Update the cache with the modified letters
+      dataCache.saveToCache(dataCache.CACHE_KEYS.MY_LETTERS, updatedLetters);
+      
+      // Count letters with unread reactions after the update
+      const newUnreadCount = updatedLetters.filter(letter => letter.has_unread_reactions).length;
+      
+      // Notify parent component about the updated unread count
+      if (onUnreadReactionsCountChange) {
+        onUnreadReactionsCountChange(newUnreadCount);
+      }
+      
+      // Reset the lastViewedLetterId
+      setLastViewedLetterId(null);
+    }
+  }, [lastViewedLetterId, letters, setLetters, onUnreadReactionsCountChange]);
+  
+  // Register focus effect to handle tab focus
   useFocusEffect(
     useCallback(() => {
-      console.log('MyLettersTab focused');
+      console.log('[MyLettersTab] Screen focused');
       
-      // If we have a lastViewedLetterId, update just that letter's unread status
-      if (lastViewedLetterId) {
-        console.log(`Updating unread status for letter: ${lastViewedLetterId}`);
-        
-        // Update the letter in our local state
-        setLetters(prevLetters => {
-          const updatedLetters = prevLetters.map(letter => {
-            if (letter.id === lastViewedLetterId) {
-              // Mark this letter as having no unread reactions
-              return { ...letter, has_unread_reactions: false };
-            }
-            return letter;
-          }).sort((a, b) => {
-            // Re-sort the letters after updating
-            if (a.has_unread_reactions && !b.has_unread_reactions) return -1;
-            if (!a.has_unread_reactions && b.has_unread_reactions) return 1;
-            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-          });
-          
-          // Count letters with unread reactions after the update
-          const newUnreadCount = updatedLetters.filter(letter => letter.has_unread_reactions).length;
-          
-          // Update state and notify parent component if the count changed
-          if (newUnreadCount !== unreadReactionsCount) {
-            setUnreadReactionsCount(newUnreadCount);
-            if (onUnreadReactionsCountChange) {
-              onUnreadReactionsCountChange(newUnreadCount);
-            }
-          }
-          
-          return updatedLetters;
-        });
-        
-        // Reset the lastViewedLetterId
-        setLastViewedLetterId(null);
-      } else {
-        // If no specific letter was viewed or on first load, fetch all letters
-        fetchMyLetters();
+      // Skip background refresh if we're updating a specific letter
+      if (!lastViewedLetterId) {
+        handleFocus();
       }
       
       return () => {
         // Cleanup function when component loses focus (optional)
       };
-    }, [user, fetchMyLetters, lastViewedLetterId])
+    }, [handleFocus, lastViewedLetterId])
   );
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchMyLetters();
-  };
 
   const handleLetterPress = (letter: Letter) => {
     // Store the letter ID being viewed
@@ -308,9 +300,9 @@ const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
     );
   };
 
-  if (loading && !refreshing) {
+  if (initialLoading) {
     return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );

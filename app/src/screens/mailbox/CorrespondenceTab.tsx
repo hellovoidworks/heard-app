@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
-import { Text, Card, Title, Paragraph, ActivityIndicator, Chip, Button, useTheme } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, ActivityIndicator, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -8,6 +8,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../navigation/types';
 import { format } from 'date-fns';
 import { fontNames } from '../../utils/fonts';
+import { useDataWithCache } from '../../hooks/useDataWithCache';
+import dataCache from '../../utils/dataCache';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -32,237 +34,128 @@ type CorrespondenceTabProps = {
 };
 
 const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
-  const [correspondences, setCorrespondences] = useState<Correspondence[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const { user } = useAuth();
   const navigation = useNavigation<NavigationProp>();
   const theme = useTheme();
 
-  // Main fetch function that shows loading indicator
-  const fetchCorrespondences = useCallback(async () => {
-    try {
-      setLoading(true);
+  // Define the fetch function that will be used by our hook
+  const fetchCorrespondences = useCallback(async (): Promise<Correspondence[]> => {
+    if (!user) return [];
 
-      if (!user) return;
+    console.log(`[CorrespondenceTab] Fetching correspondences for user: ${user.id}`);
+    const { data, error } = await supabase.rpc(
+      'get_user_correspondences_by_pair',
+      { p_user_id: user.id }
+    );
 
-      console.log(`[CorrespondenceTab] Fetching correspondences for user: ${user.id}`);
-      const { data, error } = await supabase.rpc(
-        'get_user_correspondences_by_pair',
-        { p_user_id: user.id }
-      );
+    if (error) {
+      console.error('[CorrespondenceTab] Error fetching correspondences:', error);
+      return [];
+    }
+    
+    // Log the raw data returned from the function
+    console.log(`[CorrespondenceTab] Raw data from SQL function:`, JSON.stringify(data?.slice(0, 2)));
+    if (data && data.length > 0) {
+      // Log the first correspondence to see all available fields
+      console.log(`[CorrespondenceTab] First correspondence fields:`, Object.keys(data[0]).join(', '));
+    }
 
-      if (error) {
-        console.error('Error fetching correspondences:', error);
-        setCorrespondences([]);
-        return;
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    type CorrespondencePairResult = {
+      letter_id: string;
+      other_participant_id: string;
+      letter_title: string;
+      letter_author_id: string;
+      letter_created_at: string;
+      category_name: string | null;
+      category_color: string | null;
+      most_recent_interaction_at: string;
+      most_recent_interaction_content: string;
+      most_recent_interactor_id: string;
+      unread_message_count: number;
+      mood_emoji: string | null;
+      letter_display_name: string | null;
+    };
+
+    const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
+    const uniqueOtherParticipantIds = [...new Set(otherParticipantIds)];
+
+    let participantNames: { [key: string]: string } = {};
+    if (uniqueOtherParticipantIds.length > 0) {
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('user_profiles')
+        .select('id, username')
+        .in('id', uniqueOtherParticipantIds);
+
+      if (profilesError) {
+        console.error('Error fetching participant profiles:', profilesError);
+      } else if (profilesData) {
+        participantNames = profilesData.reduce((acc: { [key: string]: string }, profile: { id: string; username: string | null }) => {
+          acc[profile.id] = profile.username || 'Unknown User';
+          return acc;
+        }, {} as { [key: string]: string });
+      }
+    }
+
+    return data.map((item: CorrespondencePairResult) => {
+      // Log the letter_display_name from the raw data
+      if (item.most_recent_interactor_id === item.letter_author_id) {
+        console.log(`[CorrespondenceTab] Raw letter_display_name for letter ${item.letter_id}:`, item.letter_display_name);
       }
       
-      // Log the raw data returned from the function
-      console.log(`[CorrespondenceTab] Raw data from SQL function:`, JSON.stringify(data?.slice(0, 2)));
-      if (data && data.length > 0) {
-        // Log the first correspondence to see all available fields
-        console.log(`[CorrespondenceTab] First correspondence fields:`, Object.keys(data[0]).join(', '));
-      }
-
-      if (!data || data.length === 0) {
-        setCorrespondences([]);
-        return;
-      }
-
-      type CorrespondencePairResult = {
-        letter_id: string;
-        other_participant_id: string;
-        letter_title: string;
-        letter_author_id: string;
-        letter_created_at: string;
-        category_name: string | null;
-        category_color: string | null;
-        most_recent_interaction_at: string;
-        most_recent_interaction_content: string;
-        most_recent_interactor_id: string;
-        unread_message_count: number;
-        mood_emoji: string | null;
-        letter_display_name: string | null;
+      return {
+        letter_id: item.letter_id,
+        other_participant_id: item.other_participant_id,
+        other_participant_name: participantNames[item.other_participant_id] || 'User',
+        letter_title: item.letter_title,
+        letter_author_id: item.letter_author_id,
+        letter_display_name: item.letter_display_name, // Include the letter_display_name field
+        most_recent_interaction_at: item.most_recent_interaction_at,
+        most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
+        most_recent_interactor_id: item.most_recent_interactor_id,
+        unread_message_count: item.unread_message_count,
+        category_name: item.category_name,
+        category_color: item.category_color,
+        mood_emoji: item.mood_emoji,
       };
-
-      const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
-      const uniqueOtherParticipantIds = [...new Set(otherParticipantIds)];
-
-      let participantNames: { [key: string]: string } = {};
-      if (uniqueOtherParticipantIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('user_profiles')
-          .select('id, username')
-          .in('id', uniqueOtherParticipantIds);
-
-        if (profilesError) {
-          console.error('Error fetching participant profiles:', profilesError);
-        } else if (profilesData) {
-          participantNames = profilesData.reduce((acc: { [key: string]: string }, profile: { id: string; username: string | null }) => {
-            acc[profile.id] = profile.username || 'Unknown User';
-            return acc;
-          }, {} as { [key: string]: string });
-        }
-      }
-
-      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => {
-        // Log the letter_display_name from the raw data
-        if (item.most_recent_interactor_id === item.letter_author_id) {
-          console.log(`[CorrespondenceTab] Raw letter_display_name for letter ${item.letter_id}:`, item.letter_display_name);
-        }
-        
-        return {
-          letter_id: item.letter_id,
-          other_participant_id: item.other_participant_id,
-          other_participant_name: participantNames[item.other_participant_id] || 'User',
-          letter_title: item.letter_title,
-          letter_author_id: item.letter_author_id,
-          letter_display_name: item.letter_display_name, // Include the letter_display_name field
-          most_recent_interaction_at: item.most_recent_interaction_at,
-          most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
-          most_recent_interactor_id: item.most_recent_interactor_id,
-          unread_message_count: item.unread_message_count,
-          category_name: item.category_name,
-          category_color: item.category_color,
-          mood_emoji: item.mood_emoji,
-        };
-      });
-
-      setCorrespondences(formattedCorrespondences);
-
-      const totalUnreadCount = formattedCorrespondences.reduce(
-        (total: number, item: Correspondence) => total + item.unread_message_count, 0
-      );
-      onUnreadCountChange?.(totalUnreadCount);
-    } catch (error) {
-      console.error('Error:', error);
-      setCorrespondences([]);
-      onUnreadCountChange?.(0);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    });
   }, [user, onUnreadCountChange]);
 
-  useEffect(() => {
-    fetchCorrespondences();
-  }, [user]);
-  
-  // Background refresh function that doesn't show loading indicator
-  const refreshInBackground = useCallback(async () => {
-    try {
-      if (!user) return;
+  // Handler for when data is loaded - update the unread count badge
+  const handleDataLoaded = useCallback((correspondences: Correspondence[]) => {
+    // Count total unread messages
+    const totalUnreadCount = correspondences.reduce(
+      (total: number, item: Correspondence) => total + item.unread_message_count, 0
+    );
+    
+    // Update the badge count
+    onUnreadCountChange?.(totalUnreadCount);
+  }, [onUnreadCountChange]);
 
-      console.log('[CorrespondenceTab] Refreshing in background');
-      console.log(`[CorrespondenceTab] Fetching correspondences for user: ${user.id}`);
-      
-      const { data, error } = await supabase.rpc(
-        'get_user_correspondences_by_pair',
-        { p_user_id: user.id }
-      );
+  // Use our custom hook for data fetching with cache
+  const {
+    data: correspondences = [],
+    initialLoading,
+    refreshing,
+    handleRefresh,
+    handleFocus
+  } = useDataWithCache<Correspondence[]>({
+    cacheKey: dataCache.CACHE_KEYS.CORRESPONDENCES,
+    fetchFunction: fetchCorrespondences,
+    initialData: [],
+    onDataLoaded: handleDataLoaded
+  });
 
-      if (error) {
-        console.error('Error fetching correspondences:', error);
-        return;
-      }
-      
-      // Log the raw data returned from the function
-      console.log(`[CorrespondenceTab] Background refresh - Raw data from SQL function:`, JSON.stringify(data?.slice(0, 2)));
-      if (data && data.length > 0) {
-        // Log the first correspondence to see all available fields
-        console.log(`[CorrespondenceTab] Background refresh - First correspondence fields:`, Object.keys(data[0]).join(', '));
-      }
-
-      if (!data || data.length === 0) {
-        setCorrespondences([]);
-        onUnreadCountChange?.(0);
-        return;
-      }
-
-      type CorrespondencePairResult = {
-        letter_id: string;
-        other_participant_id: string;
-        letter_title: string;
-        letter_author_id: string;
-        letter_created_at: string;
-        category_name: string | null;
-        category_color: string | null;
-        most_recent_interaction_at: string;
-        most_recent_interaction_content: string;
-        most_recent_interactor_id: string;
-        unread_message_count: number;
-        mood_emoji: string | null;
-        letter_display_name: string | null;
-      };
-
-      const otherParticipantIds = data.map((item: CorrespondencePairResult) => item.other_participant_id).filter((id: string | null): id is string => id !== null);
-      const uniqueOtherParticipantIds = [...new Set(otherParticipantIds)];
-
-      let participantNames: { [key: string]: string } = {};
-      if (uniqueOtherParticipantIds.length > 0) {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('user_profiles')
-          .select('id, username')
-          .in('id', uniqueOtherParticipantIds);
-
-        if (profilesError) {
-          console.error('Error fetching participant profiles:', profilesError);
-        } else if (profilesData) {
-          participantNames = profilesData.reduce((acc: { [key: string]: string }, profile: { id: string; username: string | null }) => {
-            acc[profile.id] = profile.username || 'Unknown User';
-            return acc;
-          }, {} as { [key: string]: string });
-        }
-      }
-
-      const formattedCorrespondences = data.map((item: CorrespondencePairResult) => {
-        // Log the letter_display_name from the raw data
-        if (item.most_recent_interactor_id === item.letter_author_id) {
-          console.log(`[CorrespondenceTab] Raw letter_display_name for letter ${item.letter_id}:`, item.letter_display_name);
-        }
-        
-        return {
-          letter_id: item.letter_id,
-          other_participant_id: item.other_participant_id,
-          other_participant_name: participantNames[item.other_participant_id] || 'User',
-          letter_title: item.letter_title,
-          letter_author_id: item.letter_author_id,
-          letter_display_name: item.letter_display_name, // Include the letter_display_name field
-          most_recent_interaction_at: item.most_recent_interaction_at,
-          most_recent_interaction_content: item.most_recent_interaction_content.substring(0, 100) + (item.most_recent_interaction_content.length > 100 ? '...' : ''),
-          most_recent_interactor_id: item.most_recent_interactor_id,
-          unread_message_count: item.unread_message_count,
-          category_name: item.category_name,
-          category_color: item.category_color,
-          mood_emoji: item.mood_emoji,
-        };
-      });
-
-      setCorrespondences(formattedCorrespondences);
-
-      const totalUnreadCount = formattedCorrespondences.reduce(
-        (total: number, item: Correspondence) => total + item.unread_message_count, 0
-      );
-      onUnreadCountChange?.(totalUnreadCount);
-    } catch (error) {
-      console.error('Error in background refresh:', error);
-    }
-  }, [user, onUnreadCountChange]);
-
-  // Automatically refresh the correspondence list when the screen comes into focus
+  // Register focus effect to handle tab focus
   useFocusEffect(
     useCallback(() => {
-      console.log('[CorrespondenceTab] Screen came into focus, refreshing correspondences in background');
-      refreshInBackground();
-      return () => {};
-    }, [refreshInBackground])
+      console.log('[CorrespondenceTab] Screen focused');
+      handleFocus(); // Use our hook's focus handler to refresh in background
+    }, [handleFocus])
   );
-
-  const handleRefresh = () => {
-    setRefreshing(true);
-    fetchCorrespondences();
-  };
 
   const handleCorrespondencePress = (correspondence: Correspondence) => {
     console.log(`[CorrespondenceTab] Navigating to ThreadDetail. letterId: ${correspondence.letter_id}, otherParticipantId: ${correspondence.other_participant_id}`);
@@ -280,13 +173,6 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
     // Use a better default emoji and ensure proper rendering
     const moodEmoji = item.mood_emoji ? item.mood_emoji : '📝';
     
-    // Debug logging for letter display name
-    if (item.most_recent_interactor_id === item.letter_author_id) {
-      console.log(`[CorrespondenceTab] Letter author is interactor. letter_id: ${item.letter_id}`);
-      console.log(`[CorrespondenceTab] letter_display_name: ${item.letter_display_name || 'undefined'}`);
-      console.log(`[CorrespondenceTab] other_participant_name: ${item.other_participant_name}`);
-    }
-
     return (
       <Card
         style={[
@@ -360,34 +246,31 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
     );
   };
 
-  if (loading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <FlatList
-        data={correspondences}
-        renderItem={renderCorrespondenceItem}
-        keyExtractor={(item) => `${item.letter_id}-${item.other_participant_id}`}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.colors.primary}
-          />
-        }
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text style={[styles.emptyText, { color: theme.colors.onBackground, textAlign: 'center', maxWidth: '80%' }]}>You haven't received or written any replies yet</Text>
-          </View>
-        )}
-      />
+      {initialLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : correspondences.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No messages yet</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={correspondences}
+          renderItem={renderCorrespondenceItem}
+          keyExtractor={(item) => `${item.letter_id}-${item.other_participant_id}`}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.colors.primary]}
+            />
+          }
+        />
+      )}
     </View>
   );
 };
