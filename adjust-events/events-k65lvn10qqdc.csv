@@ -8,6 +8,8 @@ token,name,unique
 "40ccjt","Sent Mail","false"
 "v4v0k1","Sent Reaction","false"
 "f5erqb","Sent Reply","false"
+"h3oew9","session_end","false"
+"xe30he","session_start","false"
 "rcvpc3","Sign in with Apple button tapped","false"
 "ev36wo","Sign in with Email button tapped","false"
 "l38ymr","Sign in with Email - Email Submit button tapped","false"

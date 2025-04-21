@@ -9,13 +9,13 @@ import { PreloadProvider } from './src/contexts/PreloadContext';
 import AppNavigator from './src/navigation';
 import StarRewardAnimation from './src/components/StarRewardAnimation';
 import { supabase } from './src/services/supabase';
-import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator } from 'react-native';
+import { Linking, Platform, Alert, LogBox, View, Text, ActivityIndicator, AppState, AppStateStatus } from 'react-native';
 import { darkTheme } from './src/utils/theme';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontsToLoad } from './src/utils/fonts';
 // Import Adjust as shown in the documentation example
-import { Adjust, AdjustConfig } from 'react-native-adjust';
+import { Adjust, AdjustConfig, AdjustEvent } from 'react-native-adjust';
 
 console.log('=== App initialization started ===');
 
@@ -144,9 +144,30 @@ export default function App() {
       // Initialize the SDK
       Adjust.initSdk(adjustConfig);
       console.log('Adjust SDK initialized successfully');
+      
+      // Track session_start event when app is first opened
+      const startEvent = new AdjustEvent('xe30he');
+      Adjust.trackEvent(startEvent);
     } catch (error) {
       console.error('Error initializing Adjust SDK:', error);
     }
+    
+    // Set up AppState handler to track app foreground/background states
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      console.log('App state changed to:', nextAppState);
+      
+      if (nextAppState === 'active') {
+        // App came to foreground - track session_start
+        console.log('App became active - tracking session_start event');
+        const startEvent = new AdjustEvent('xe30he');
+        Adjust.trackEvent(startEvent);
+      } else if (nextAppState === 'background' || nextAppState === 'inactive') {
+        // App went to background - track session_end
+        console.log('App went to background - tracking session_end event');
+        const endEvent = new AdjustEvent('h3oew9');
+        Adjust.trackEvent(endEvent);
+      }
+    });
     
     // Set up notification response handler
     const notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
@@ -357,6 +378,7 @@ export default function App() {
       subscription.remove();
       authListener?.subscription?.unsubscribe();
       notificationResponseSubscription.remove();
+      appStateSubscription.remove(); // Clean up the AppState listener
     };
   }, []);
 
