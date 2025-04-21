@@ -158,10 +158,11 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
   );
 
   const handleCorrespondencePress = (correspondence: Correspondence) => {
-    console.log(`[CorrespondenceTab] Navigating to ThreadDetail. letterId: ${correspondence.letter_id}, otherParticipantId: ${correspondence.other_participant_id}`);
+    console.log(`[CorrespondenceTab] Navigating to ThreadDetail with initial data. letterId: ${correspondence.letter_id}, otherParticipantId: ${correspondence.other_participant_id}`);
     navigation.navigate('ThreadDetail', {
       letterId: correspondence.letter_id,
       otherParticipantId: correspondence.other_participant_id,
+      initialCorrespondence: correspondence,
     });
   };
 

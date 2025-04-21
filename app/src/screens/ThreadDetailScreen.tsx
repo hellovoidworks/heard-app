@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { 
@@ -28,11 +29,32 @@ import detailScreenPreloader from '../utils/detailScreenPreloader';
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
 const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId, otherParticipantId } = route.params; // Get both IDs
+  const { letterId, otherParticipantId, initialCorrespondence } = route.params; // Get both IDs and initial data
+  
+  // Create initial letter data from correspondence if available
+  const initialLetterData = useMemo(() => {
+    if (!initialCorrespondence) return null;
+    
+    return {
+      id: initialCorrespondence.letter_id,
+      title: initialCorrespondence.letter_title,
+      author_id: initialCorrespondence.letter_author_id,
+      display_name: initialCorrespondence.letter_display_name || '',
+      // We don't have content yet, but can set other fields
+      created_at: initialCorrespondence.most_recent_interaction_at, // Approximate until we get real data
+      category: initialCorrespondence.category_name ? {
+        name: initialCorrespondence.category_name,
+        color: initialCorrespondence.category_color || '#888888',
+      } : null,
+      mood_emoji: initialCorrespondence.mood_emoji,
+    } as Partial<LetterWithDetails>;
+  }, [initialCorrespondence]);
+  
   const [letter, setLetter] = useState<LetterWithDetails | null>(null);
   const [replies, setReplies] = useState<ReplyWithDetails[]>([]);
   const [userReaction, setUserReaction] = useState<{emoji: string, date: string} | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!initialLetterData); // Only show loading if we don't have initial data
+  const [repliesLoading, setRepliesLoading] = useState(true); // Separate loading state for replies
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,9 +66,15 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const fetchLetterAndReplies = useCallback(async () => {
     if (!user || !letterId || !otherParticipantId) return;
 
-    setLoading(true);
+    if (!initialLetterData) {
+      setLoading(true);
+    }
+    setRepliesLoading(true);
     setError(null);
-    setLetter(null);
+    // Don't clear letter if we have initialLetterData
+    if (!initialLetterData) {
+      setLetter(null);
+    }
     setReplies([]);
     setUserReaction(null);
 
@@ -99,6 +127,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setError(e.message || 'An unexpected error occurred.');
     } finally {
       setLoading(false);
+      setRepliesLoading(false);
     }
   }, [letterId, user, otherParticipantId, supabase]);
 
@@ -229,6 +258,13 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
+  // Set initial letter data if available
+  useEffect(() => {
+    if (initialLetterData && !letter) {
+      setLetter(initialLetterData as LetterWithDetails);
+    }
+  }, [initialLetterData, letter]);
+
   useEffect(() => {
     fetchLetterAndReplies();
     
@@ -237,6 +273,20 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       detailScreenPreloader.preloadMailboxDataFromDetailScreen(user.id);
     }
   }, [letterId, otherParticipantId, user]); 
+
+  // Add AppState listener to refresh data when app comes back from background
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && user) {
+        console.log('[ThreadDetailScreen] App came to foreground, refreshing thread data');
+        fetchLetterAndReplies();
+      }
+    });
+    
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, [fetchLetterAndReplies, user]);
 
 
   useEffect(() => {
@@ -269,7 +319,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     return latestReply.author_id !== user.id;
   }, [user, letter, replies]);
 
-  if (loading) {
+  if (loading && !letter) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -324,6 +374,11 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {replies.length > 0 && <Divider style={[styles.divider, { backgroundColor: theme.colors.surfaceDisabled }]} />}
         
         {/* Replies */}
+        {repliesLoading && replies.length === 0 && letter && (
+          <View style={styles.repliesLoadingContainer}>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+          </View>
+        )}
         {replies.map((reply) => {
           const isFromCurrentUser = user && reply.author_id === user.id;
           const isFromLetterAuthor = reply.author_id === letter.author_id;
@@ -477,10 +532,11 @@ const styles = StyleSheet.create({
   },
   replyInput: {
     flex: 1,
+    fontSize: 16,
     marginRight: 8,
-    maxHeight: 100,
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 20,
+    maxHeight: 100,
   },
   sendButton: {
     alignSelf: 'center',
@@ -498,6 +554,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
+  },
+  repliesLoadingContainer: {
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   reactionText: {
     fontSize: 14,

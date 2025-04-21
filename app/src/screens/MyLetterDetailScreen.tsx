@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, useTheme, Divider } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -267,6 +268,20 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       detailScreenPreloader.preloadMailboxDataFromDetailScreen(user.id);
     }
   }, [letterId, user?.id]);
+  
+  // Add AppState listener to refresh data when app comes back from background
+  useEffect(() => {
+    const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && user && letterId) {
+        console.log('[MyLetterDetailScreen] App came to foreground, refreshing letter data');
+        fetchLetter();
+      }
+    });
+    
+    return () => {
+      appStateSubscription.remove();
+    };
+  }, [user, letterId]);
   
   // Mark reactions as read when the letter and user are available
   useEffect(() => {
