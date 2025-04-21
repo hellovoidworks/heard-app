@@ -15,7 +15,13 @@ import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { fontsToLoad } from './src/utils/fonts';
 // Import Adjust as shown in the documentation example
-import { Adjust, AdjustConfig, AdjustEvent } from 'react-native-adjust';
+import { Adjust, AdjustConfig } from 'react-native-adjust';
+
+// Define a helper function to create Adjust events to work around TypeScript issues
+const createAdjustEvent = (token: string) => {
+  // @ts-ignore - Ignore TypeScript errors for AdjustEvent
+  return new (require('react-native-adjust').AdjustEvent)(token);
+};
 
 console.log('=== App initialization started ===');
 
@@ -146,7 +152,7 @@ export default function App() {
       console.log('Adjust SDK initialized successfully');
       
       // Track session_start event when app is first opened
-      const startEvent = new AdjustEvent('xe30he');
+      const startEvent = createAdjustEvent('xe30he');
       Adjust.trackEvent(startEvent);
     } catch (error) {
       console.error('Error initializing Adjust SDK:', error);
@@ -159,12 +165,12 @@ export default function App() {
       if (nextAppState === 'active') {
         // App came to foreground - track session_start
         console.log('App became active - tracking session_start event');
-        const startEvent = new AdjustEvent('xe30he');
+        const startEvent = createAdjustEvent('xe30he');
         Adjust.trackEvent(startEvent);
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
         // App went to background - track session_end
         console.log('App went to background - tracking session_end event');
-        const endEvent = new AdjustEvent('h3oew9');
+        const endEvent = createAdjustEvent('h3oew9');
         Adjust.trackEvent(endEvent);
       }
     });
