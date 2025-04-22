@@ -32,7 +32,8 @@
           }
         ],
         "UIBackgroundModes": ["remote-notification"],
-        "CFBundleDisplayName": "Heard"
+        "CFBundleDisplayName": "Heard",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "useFrameworks": "static",
       "frameworks": [
