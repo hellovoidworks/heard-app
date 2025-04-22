@@ -1,16 +1,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, useTheme, Divider } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import { LetterWithDetails, ReplyWithDetails } from '../types/database.types';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { format } from 'date-fns';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import dataCache from '../utils/dataCache';
 import LetterTitleCard from '../components/LetterTitleCard';
 import ReactionDisplay from '../components/ReactionDisplay';
 import detailScreenPreloader from '../utils/detailScreenPreloader';
@@ -41,6 +44,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { user } = useAuth();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { setUnreadReactionsCount } = useNotification();
   const [dataSource, setDataSource] = useState<'passed' | 'fetched'>(letterData ? 'passed' : 'fetched');
 
   const fetchLetter = async () => {
@@ -256,6 +260,15 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           console.error('Error marking reactions as read:', error);
         } else {
           console.log('Successfully marked reactions as read');
+          
+          // Update the notification badge count
+          // When reactions are read, we can set the unread count to 0
+          // This ensures the badge disappears immediately without waiting for a tab refresh
+          setUnreadReactionsCount(0);
+          
+          // Force fetching fresh data when user returns to MyLettersTab
+          // by saving current timestamp to AsyncStorage
+          AsyncStorage.setItem('reactions_last_read', Date.now().toString());
         }
       } catch (error) {
         console.error('Exception marking reactions as read:', error);
