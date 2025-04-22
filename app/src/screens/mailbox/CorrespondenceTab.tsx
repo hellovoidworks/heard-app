@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect } from 'react';
 import { View, StyleSheet, FlatList, RefreshControl } from 'react-native';
 import { Text, Card, Title, Paragraph, ActivityIndicator, useTheme } from 'react-native-paper';
 import { supabase } from '../../services/supabase';
@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { fontNames } from '../../utils/fonts';
 import { useDataWithCache } from '../../hooks/useDataWithCache';
 import dataCache from '../../utils/dataCache';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -148,6 +149,23 @@ const CorrespondenceTab = ({ onUnreadCountChange }: CorrespondenceTabProps) => {
     initialData: [],
     onDataLoaded: handleDataLoaded
   });
+  
+  // Listen for unread count changes from background preloading
+  useEffect(() => {
+    // Handler for unread letters count changed event
+    const handleUnreadCountChanged = (count: number) => {
+      console.log(`[CorrespondenceTab] Received unread count update: ${count}`);
+      onUnreadCountChange?.(count);
+    };
+    
+    // Subscribe to the event
+    eventEmitter.on(EVENTS.UNREAD_LETTERS_COUNT_CHANGED, handleUnreadCountChanged);
+    
+    // Clean up event listener when component unmounts
+    return () => {
+      eventEmitter.off(EVENTS.UNREAD_LETTERS_COUNT_CHANGED, handleUnreadCountChanged);
+    };
+  }, [onUnreadCountChange]);
 
   // Register focus effect to handle tab focus
   useFocusEffect(

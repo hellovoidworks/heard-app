@@ -1,5 +1,6 @@
 import { supabase } from '../services/supabase';
 import dataCache from './dataCache';
+import eventEmitter, { EVENTS } from './eventEmitter';
 
 /**
  * Utility to preload data for tabs while on another screen
@@ -86,6 +87,14 @@ export async function preloadCorrespondenceData(userId: string): Promise<void> {
     // Cache the processed data
     await dataCache.saveToCache(dataCache.CACHE_KEYS.CORRESPONDENCES, formattedCorrespondences);
     console.log(`[TabDataPreloader] Successfully preloaded ${formattedCorrespondences.length} correspondences`);
+    
+    // Calculate unread count and emit event
+    const unreadCount = formattedCorrespondences.reduce(
+      (total: number, correspondence: { unread_message_count: number }) => total + correspondence.unread_message_count, 0
+    );
+    
+    console.log(`[TabDataPreloader] Emitting unread letters count: ${unreadCount}`);
+    eventEmitter.emit(EVENTS.UNREAD_LETTERS_COUNT_CHANGED, unreadCount);
   } catch (error) {
     console.error('[TabDataPreloader] Error in preloadCorrespondenceData:', error);
   }
@@ -145,6 +154,12 @@ export async function preloadMyLettersData(userId: string): Promise<void> {
     // Cache the processed data
     await dataCache.saveToCache(dataCache.CACHE_KEYS.MY_LETTERS, sortedLetters);
     console.log(`[TabDataPreloader] Successfully preloaded ${sortedLetters.length} my letters`);
+    
+    // Calculate unread reactions count and emit event
+    const unreadReactionsCount = sortedLetters.filter(letter => letter.has_unread_reactions).length;
+    
+    console.log(`[TabDataPreloader] Emitting unread reactions count: ${unreadReactionsCount}`);
+    eventEmitter.emit(EVENTS.UNREAD_REACTIONS_COUNT_CHANGED, unreadReactionsCount);
   } catch (error) {
     console.error('[TabDataPreloader] Error in preloadMyLettersData:', error);
   }
@@ -168,6 +183,10 @@ export async function preloadAllMailboxData(userId: string): Promise<void> {
   ]);
   
   console.log('[TabDataPreloader] All mailbox data preloaded successfully');
+  
+  // Emit a global event that all mailbox data has been preloaded
+  // This can be used by components that need to update when any mailbox data changes
+  eventEmitter.emit(EVENTS.MAILBOX_DATA_PRELOADED);
 }
 
 export default {

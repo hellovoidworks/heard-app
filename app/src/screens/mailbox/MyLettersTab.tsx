@@ -11,6 +11,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { fontNames } from '../../utils/fonts';
 import { useDataWithCache } from '../../hooks/useDataWithCache';
 import dataCache from '../../utils/dataCache';
+import eventEmitter, { EVENTS } from '../../utils/eventEmitter';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -130,6 +131,23 @@ const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
     initialData: [],
     onDataLoaded: handleDataLoaded
   });
+  
+  // Listen for unread reactions count changes from background preloading
+  useEffect(() => {
+    // Handler for unread reactions count changed event
+    const handleUnreadReactionsCountChanged = (count: number) => {
+      console.log(`[MyLettersTab] Received unread reactions count update: ${count}`);
+      onUnreadReactionsCountChange?.(count);
+    };
+    
+    // Subscribe to the event
+    eventEmitter.on(EVENTS.UNREAD_REACTIONS_COUNT_CHANGED, handleUnreadReactionsCountChanged);
+    
+    // Clean up event listener when component unmounts
+    return () => {
+      eventEmitter.off(EVENTS.UNREAD_REACTIONS_COUNT_CHANGED, handleUnreadReactionsCountChanged);
+    };
+  }, [onUnreadReactionsCountChange]);
   
   // Handle specific letter updates when returning from letter detail
   useEffect(() => {
