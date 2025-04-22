@@ -262,9 +262,26 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           console.log('Successfully marked reactions as read');
           
           // Update the notification badge count
-          // When reactions are read, we can set the unread count to 0
-          // This ensures the badge disappears immediately without waiting for a tab refresh
-          setUnreadReactionsCount(0);
+          // Get the actual count of letters with unread reactions (excluding this one)
+          try {
+            // Query to count letters with unread reactions (excluding the current letter)
+            const { data: unreadLetters, error: unreadError } = await supabase
+              .from('my_letters_with_stats_view')
+              .select('id')
+              .eq('author_id', user.id)
+              .eq('has_unread_reactions', true)
+              .neq('id', letterId);
+            
+            if (unreadError) {
+              console.error('Error fetching unread reactions count:', unreadError);
+            } else {
+              // Update with the actual count of other letters with unread reactions
+              setUnreadReactionsCount(unreadLetters?.length || 0);
+              console.log(`Updated unread reactions count: ${unreadLetters?.length || 0}`);
+            }
+          } catch (countError) {
+            console.error('Exception counting unread reactions:', countError);
+          }
           
           // Force fetching fresh data when user returns to MyLettersTab
           // by saving current timestamp to AsyncStorage
