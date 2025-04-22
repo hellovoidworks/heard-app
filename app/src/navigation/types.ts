@@ -32,6 +32,7 @@ export type RootStackParamList = {
       reactionCount: number;
     };
     presentationMode?: 'modal' | 'push'; // To control how the screen is presented
+    reactionEmoji?: string; // Reaction emoji to animate when opened from a notification
   };
   ThreadDetail: { 
     letterId: string;

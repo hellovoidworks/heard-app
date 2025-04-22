@@ -76,9 +76,11 @@ function navigateToNotification(data: any) {
         break;
       case 'reaction':
         // Use modal presentation for reaction notifications
+        // Pass the reaction_type from the notification data for animation
         navigationRef.current?.navigate('MyLetterDetail', { 
           letterId: letterId,
-          presentationMode: 'modal'
+          presentationMode: 'modal',
+          reactionEmoji: data.reaction_type
         });
         break;
       case 'new_mail':

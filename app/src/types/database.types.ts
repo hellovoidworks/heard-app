@@ -120,6 +120,10 @@ export type NotificationWithDetails = Notification & {
   sender?: UserProfile;
   letter?: Letter;
   reaction?: Reaction;
+  data?: {
+    reaction_type?: string;
+    [key: string]: any;
+  };
 };
 
 export interface Database {

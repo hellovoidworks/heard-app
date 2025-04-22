@@ -34,6 +34,8 @@ const AnimatedEmoji: React.FC<AnimatedEmojiProps> = ({
   const pulseAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    console.log('[AnimatedEmoji] Props received:', { emoji, visible, animation });
+    
     if (visible) {
       // Reset all animations
       shakeAnim.setValue(0);

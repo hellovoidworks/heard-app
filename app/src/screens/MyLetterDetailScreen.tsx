@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
+import AnimatedEmoji from '../components/AnimatedEmoji';
 import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, SafeAreaView, FlatList } from 'react-native';
 import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, useTheme, Divider } from 'react-native-paper';
 import { supabase } from '../services/supabase';
@@ -34,6 +35,8 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [reactionStats, setReactionStats] = useState<{emoji: string, username: string, date: string}[]>([]);
   const [replyCount, setReplyCount] = useState(initialStats?.replyCount || 0);
   const [readCount, setReadCount] = useState(initialStats?.readCount || 0);
+  const [showReactionEmoji, setShowReactionEmoji] = useState(false);
+  const [reactionEmoji, setReactionEmoji] = useState<string | undefined>(route.params.reactionEmoji);
   const [threads, setThreads] = useState<Thread[]>([]);
   const { user } = useAuth();
   const theme = useTheme();
@@ -269,8 +272,25 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   }, [letterId, user?.id]);
   
+  // Handle reaction emoji animation when coming from notification
+  useEffect(() => {
+    console.log('[MyLetterDetailScreen] Animation check - reactionEmoji:', reactionEmoji, 'loading:', loading);
+    
+    if (reactionEmoji && !loading) {
+      console.log('[MyLetterDetailScreen] Setting up animation timer for emoji:', reactionEmoji);
+      // Short delay to ensure the screen is fully rendered
+      const timer = setTimeout(() => {
+        console.log('[MyLetterDetailScreen] Triggering animation for emoji:', reactionEmoji);
+        setShowReactionEmoji(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [reactionEmoji, loading]);
+
   // Add AppState listener to refresh data when app comes back from background
   useEffect(() => {
+    fetchLetter();
+    
     const appStateSubscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active' && user && letterId) {
         console.log('[MyLetterDetailScreen] App came to foreground, refreshing letter data');
@@ -436,6 +456,21 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
         </View>
       </ScrollView>
+
+      {/* Animated reaction emoji from notification */}
+      {reactionEmoji && (
+        <AnimatedEmoji
+          emoji={reactionEmoji}
+          visible={showReactionEmoji}
+          animation="random"
+          duration={1500}  /* Slightly shorter animation duration */
+          onAnimationComplete={() => {
+            console.log('[MyLetterDetailScreen] Animation completed');
+            // Shorter delay before hiding
+            setTimeout(() => setShowReactionEmoji(false), 100);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };

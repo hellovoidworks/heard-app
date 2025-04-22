@@ -84,9 +84,11 @@ const NotificationsScreen = () => {
     if (notification.letter_id) {
       if (notification.type === 'reaction') {
         // For reaction notifications, navigate to MyLetterDetail with modal presentation
+        // Also pass the reaction_type from the notification data to animate it
         navigation.navigate('MyLetterDetail', { 
           letterId: notification.letter_id,
-          presentationMode: 'modal'
+          presentationMode: 'modal',
+          reactionEmoji: notification.data?.reaction_type
         });
       } else {
         // For other notification types, navigate to LetterDetail
