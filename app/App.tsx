@@ -141,7 +141,7 @@ export default function App() {
       // Create the config object exactly as shown in the documentation
       const adjustConfig = new AdjustConfig(
         'k65lvn10qqdc',
-        AdjustConfig.EnvironmentSandbox
+        AdjustConfig.EnvironmentProduction
       );
       
       // Initialize the SDK
