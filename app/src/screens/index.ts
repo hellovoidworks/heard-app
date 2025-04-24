@@ -25,3 +25,4 @@ export { default as NotificationSettingsScreen } from './settings/NotificationSe
 export { default as CategoryPreferencesSettingsScreen } from './CategoryPreferencesSettingsScreen'; 
 export { default as DeleteAccountScreen } from './AccountSettingsScreen'; 
 export { default as WebViewScreen } from './WebViewScreen';
+export { default as ContactUsScreen } from './ContactUsScreen';

@@ -193,7 +193,7 @@ const ProfileScreen = () => {
       <List.Section>
         <List.Subheader style={{ color: theme.colors.onSurfaceVariant }}>Terms & Privacy</List.Subheader>
         <List.Item
-          title="Terms"
+          title="Terms of Use"
           titleStyle={{ color: theme.colors.onSurface }}
           left={props => <List.Icon {...props} icon="file-document" color={theme.colors.primary} />}
           right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
@@ -211,6 +211,13 @@ const ProfileScreen = () => {
             url: 'https://stealth-trade-6e8.notion.site/Heard-App-Privacy-Policy-1d7e3751d8e3806a9568cf000778deb9?pvs=4', 
             title: 'Privacy Policy' 
           })}
+        />
+        <List.Item
+          title="Contact Us"
+          titleStyle={{ color: theme.colors.onSurface }}
+          left={props => <List.Icon {...props} icon="email" color={theme.colors.primary} />}
+          right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
+          onPress={() => navigation.navigate('ContactUs')}
         />
       </List.Section>
 

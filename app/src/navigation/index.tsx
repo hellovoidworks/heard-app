@@ -30,7 +30,8 @@ import {
   NotificationSettingsScreen,
   CategoryPreferencesSettingsScreen,
   DeleteAccountScreen,
-  WebViewScreen
+  WebViewScreen,
+  ContactUsScreen
 } from '../screens';
 
 // Import onboarding screens
@@ -589,6 +590,16 @@ const AppNavigator = forwardRef<NavigationContainerRef<RootStackParamList>>((_, 
                   headerStyle: { backgroundColor: '#161616' },
                   headerTintColor: '#FFFFFF'
                 })} 
+              />
+              <Stack.Screen 
+                name="ContactUs" 
+                component={ContactUsScreen} 
+                options={{ 
+                  headerShown: true, 
+                  title: 'Contact Us',
+                  headerStyle: { backgroundColor: '#161616' },
+                  headerTintColor: '#FFFFFF'
+                }} 
               />
             </>
           )
