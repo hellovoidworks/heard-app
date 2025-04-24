@@ -44,6 +44,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showReactionEmoji, setShowReactionEmoji] = useState(false);
   const [reactionEmoji, setReactionEmoji] = useState<string | undefined>(route.params.reactionEmoji);
   const [threads, setThreads] = useState<Thread[]>([]);
+  const [statsRefreshed, setStatsRefreshed] = useState(false); // Track if stats have been refreshed from database
   const { user } = useAuth();
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -152,21 +153,24 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         setReactionStats([]);
       }
       
-      // Only fetch reply count if we don't have initial stats or if refreshing
-      if (!isInitialLoad || initialStats?.replyCount === undefined) {
-        // Use the database function to count replies excluding blocked users
-        const { data: replyCount, error: countError } = await supabase
-          .rpc('count_letter_replies_excluding_blocked', {
-            p_letter_id: letterId,
-            p_user_id: user.id
-          });
-          
-        if (countError) {
-          console.error('Error fetching replies count:', countError);
-        } else {
-          console.log(`[MyLetterDetailScreen] Reply count excluding blocked users: ${replyCount}`);
-          setReplyCount(replyCount || 0);
-        }
+      // After initial stats, always fetch the reply count - especially important after reporting
+      // Use the database function to count replies excluding blocked users
+      const { data: replyCount, error: countError } = await supabase
+        .rpc('count_letter_replies_excluding_blocked', {
+          p_letter_id: letterId,
+          p_user_id: user.id
+        });
+        
+      if (countError) {
+        console.error('Error fetching replies count:', countError);
+      } else {
+        // Log detailed information about the reply count update
+        console.log(`[MyLetterDetailScreen] Previous reply count: ${replyCount}`);
+        console.log(`[MyLetterDetailScreen] Updating UI reply count to: ${replyCount || 0}`);
+        
+        // Force update the reply count state and mark stats as refreshed
+        setReplyCount(replyCount || 0);
+        setStatsRefreshed(true);
       }
       
       // Only fetch read count if we don't have initial stats or if refreshing
@@ -217,13 +221,35 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       console.log(user.id);
       console.log(`[MyLetterDetailScreen] Fetched ${repliesData?.length || 0} replies (excluding blocked users and reported threads)`);
       
-      if (repliesData && repliesData.length > 0) {
+      // Filter out replies from blocked users on the frontend side as an additional layer
+      // This is a temporary solution until the database function works correctly
+      let filteredReplies = repliesData;
+      if (blockedIds.length > 0 && repliesData) {
+        console.log(`[MyLetterDetailScreen] Applying frontend filter for ${blockedIds.length} blocked users`);
+        filteredReplies = repliesData.filter((reply: ReplyWithDetails) => {
+          // Filter out replies where author or recipient is in blockedIds
+          const authorIsBlocked = blockedIds.includes(reply.author_id);
+          const recipientIsBlocked = reply.reply_to_user_id && blockedIds.includes(reply.reply_to_user_id);
+          const keepReply = !authorIsBlocked && !recipientIsBlocked;
+          return keepReply;
+        });
+        console.log(`[MyLetterDetailScreen] After frontend filtering: ${filteredReplies.length} replies (removed ${repliesData.length - filteredReplies.length})`);
+        
+        // If we filtered out replies, also update the reply count in the UI immediately
+        // This ensures the count is consistent with what's displayed
+        if (filteredReplies.length !== repliesData.length) {
+          console.log(`[MyLetterDetailScreen] Updating reply count in UI from ${replyCount} to ${filteredReplies.length}`);
+          setReplyCount(filteredReplies.length);
+        }
+      }
+      
+      if (filteredReplies && filteredReplies.length > 0) {
         
         // Create a map to track unique conversations by participant
         const conversationsByParticipant: { [participantId: string]: ReplyWithDetails[] } = {};
         
         // Group replies into conversations between the letter author (current user) and each participant
-        repliesData.forEach((reply: ReplyWithDetails) => {
+        filteredReplies.forEach((reply: ReplyWithDetails) => {
           let participantId: string;
           
           // Determine the conversation participant (the person who's not the current user)
@@ -371,13 +397,18 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   }, [letter]);
   
-  // Refresh conversation data when returning to this screen (e.g., after replying in ThreadDetailScreen)
+  // Refresh conversation data when returning to this screen (e.g., after replying or reporting in ThreadDetailScreen)
   useFocusEffect(
     React.useCallback(() => {
       // Only refresh if we already have loaded the letter
       if (letter && !loading) {
-        console.log('MyLetterDetailScreen is focused again, refreshing threads...');
+        console.log('MyLetterDetailScreen is focused again, refreshing threads and stats...');
+        // Refresh threads to update the conversation list
         fetchThreads();
+        
+        // Also refresh letter stats to update the reply count
+        // This is particularly important after reporting a thread
+        fetchLetterStats();
       }
       return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -477,7 +508,11 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             
             <View style={styles.statItem}>
               <Ionicons name="chatbubble-outline" size={20} color={theme.colors.onSurfaceVariant} />
-              <Text style={[styles.statText, { color: theme.colors.onSurfaceVariant }]}>
+              {/* Using key to force re-render when replyCount changes */}
+              <Text 
+                key={`reply-count-${replyCount}`} 
+                style={[styles.statText, { color: theme.colors.onSurfaceVariant }]}
+              >
                 {replyCount} replies
               </Text>
             </View>

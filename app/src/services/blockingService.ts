@@ -86,14 +86,13 @@ export const blockUser = async (userId: string): Promise<{success: boolean, erro
 };
 
 /**
- * Checks if there is a blocking relationship between the current user and the specified user
- * This checks BOTH if the current user has blocked the target user OR if the target user has blocked the current user
+ * Checks if a user is blocked by the current user OR if the user has blocked the current user
  * @param userId The ID of the user to check
  * @returns A promise resolving to {isBlocked: boolean, error?: string}
  */
 export const isUserBlocked = async (userId: string): Promise<{isBlocked: boolean, error?: string}> => {
   try {
-    console.log(`[blockingService] Checking if bidirectional block exists with user: ${userId}`);
+    console.log(`[blockingService] Checking if user is blocked (bidirectional): ${userId}`);
     
     // Get the current user
     const { data: userData } = await supabase.auth.getUser();
@@ -103,50 +102,45 @@ export const isUserBlocked = async (userId: string): Promise<{isBlocked: boolean
       return { isBlocked: false, error: 'User not authenticated' };
     }
     
-    // Check if the current user has blocked the target user
+    // Check if current user has blocked the other user
     const { data: blockedByMe, error: error1 } = await supabase
       .from('user_blocks')
       .select('id')
       .eq('blocker_id', currentUserId)
       .eq('blocked_id', userId)
-      .maybeSingle();
+      .maybeSingle(); // Use maybeSingle instead of single to avoid errors
     
-    // Check if the target user has blocked the current user
-    const { data: blockedMe, error: error2 } = await supabase
+    // Check if the other user has blocked the current user
+    const { data: blockedByThem, error: error2 } = await supabase
       .from('user_blocks')
       .select('id')
       .eq('blocker_id', userId)
       .eq('blocked_id', currentUserId)
       .maybeSingle();
     
-    // Handle errors from either query
     if (error1 && error1.code !== 'PGRST116') {
-      console.error('[blockingService] Error checking if I blocked user:', error1);
+      console.error('[blockingService] Error checking if user is blocked by me:', error1);
       return { isBlocked: false, error: error1.message };
     }
     
     if (error2 && error2.code !== 'PGRST116') {
-      console.error('[blockingService] Error checking if user blocked me:', error2);
+      console.error('[blockingService] Error checking if I am blocked by user:', error2);
       return { isBlocked: false, error: error2.message };
     }
     
-    // If we got a result from either query, there is a blocking relationship
-    const isBlocked = !!blockedByMe || !!blockedMe;
-    
-    if (isBlocked) {
-      console.log(`[blockingService] Block relationship found: ${!!blockedByMe ? 'I blocked them' : 'They blocked me'}`);
-    }
+    // If either query returned a result, there is a blocking relationship
+    const isBlocked = !!blockedByMe || !!blockedByThem;
+    console.log(`[blockingService] Block status for ${userId}: ${isBlocked} (blockedByMe: ${!!blockedByMe}, blockedByThem: ${!!blockedByThem})`);
     
     return { isBlocked };
   } catch (e: any) {
-    console.error('[blockingService] Unexpected error checking blocking relationship:', e);
+    console.error('[blockingService] Unexpected error checking if user is blocked:', e);
     return { isBlocked: false, error: e.message || 'An unexpected error occurred' };
   }
 };
 
 /**
- * Gets a complete list of user IDs involved in blocking relationships with the current user
- * This includes both users blocked BY the current user AND users WHO HAVE blocked the current user
+ * Gets the list of user IDs blocked by the current user AND users who have blocked the current user
  * @returns A promise resolving to {blockedIds: string[], error?: string}
  */
 export const getBlockedUserIds = async (): Promise<{blockedIds: string[], error?: string}> => {
@@ -161,36 +155,22 @@ export const getBlockedUserIds = async (): Promise<{blockedIds: string[], error?
       return { blockedIds: [], error: 'User not authenticated' };
     }
     
-    // Get users that the current user has blocked
-    const { data: blockedByMe, error: error1 } = await supabase
-      .from('user_blocks')
-      .select('blocked_id')
-      .eq('blocker_id', currentUserId);
+    // Use the new database function to get all blocked users in both directions
+    const { data: blockedUsers, error } = await supabase
+      .rpc('get_blocked_users', {
+        p_user_id: currentUserId
+      });
     
-    // Get users who have blocked the current user
-    const { data: blockedMe, error: error2 } = await supabase
-      .from('user_blocks')
-      .select('blocker_id')
-      .eq('blocked_id', currentUserId);
-    
-    if (error1) {
-      console.error('[blockingService] Error fetching users blocked by me:', error1);
-      return { blockedIds: [], error: error1.message };
+    if (error) {
+      console.error('[blockingService] Error fetching blocked users:', error);
+      return { blockedIds: [], error: error.message };
     }
     
-    if (error2) {
-      console.error('[blockingService] Error fetching users who blocked me:', error2);
-      return { blockedIds: [], error: error2.message };
-    }
+    // Extract the blocked_id values
+    const blockedIds = blockedUsers?.map((item: { blocked_id: string }) => item.blocked_id) || [];
     
-    // Combine both lists and remove duplicates
-    const blockedByMeIds = blockedByMe?.map(item => item.blocked_id) || [];
-    const blockedMeIds = blockedMe?.map(item => item.blocker_id) || [];
-    
-    // Use a Set to remove duplicates and convert back to array
-    const blockedIds = [...new Set([...blockedByMeIds, ...blockedMeIds])];
-    
-    console.log(`[blockingService] Found ${blockedByMeIds.length} users blocked by me and ${blockedMeIds.length} users who blocked me`);
+    console.log(`[blockingService] Found ${blockedIds.length} blocked users (bidirectional)`);
+    console.log(`[blockingService] Blocked IDs: ${blockedIds.join(', ')}`);
     
     return { blockedIds };
   } catch (e: any) {

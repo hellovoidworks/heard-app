@@ -355,8 +355,14 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             {
               text: 'OK',
               onPress: () => {
-                // Close modal or navigate back based on presentation mode
+                // Go back to the previous screen
+                console.log('[ThreadDetailScreen] Thread reported, returning to previous screen');
+                // Trigger a hard refresh when returning to parent screen
+                // The parent screen should already be listening for focus events
                 navigation.goBack();
+                
+                // We're relying on the useFocusEffect in MyLetterDetailScreen
+                // which will trigger fetchLetterStats() when returning to that screen
               }
             }
           ]
