@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Adjust, AdjustEvent } from 'react-native-adjust';
-import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated, Easing } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Modal, TouchableOpacity, FlatList, SafeAreaView, KeyboardAvoidingView, Platform, Keyboard, TextInput, Animated, Easing, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BlockReportBottomSheet, { BlockReportBottomSheetRef } from '../components/BlockReportBottomSheet';
+import ReportReasonModal from '../components/ReportReasonModal';
+import { reportContent, ReportType } from '../services/reportService';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import WordByWordText from '../components/WordByWordText';
-import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme } from 'react-native-paper';
+import { Text, Card, Title, Paragraph, Chip, ActivityIndicator, Button, TextInput as PaperTextInput, IconButton, Surface, useTheme, Menu, Divider } from 'react-native-paper';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { LetterWithDetails } from '../types/database.types';
@@ -37,6 +40,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [letter, setLetter] = useState<LetterWithDetails | null>(initialLetter || null);
   const [loading, setLoading] = useState(!initialLetter);
   const [refreshing, setRefreshing] = useState(false);
+  const [reportReasonModalVisible, setReportReasonModalVisible] = useState(false);
   const [reactionModalVisible, setReactionModalVisible] = useState(false);
   const [responseModalVisible, setResponseModalVisible] = useState(false);
   const [responseText, setResponseText] = useState('');
@@ -55,6 +59,10 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showFullText, setShowFullText] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const [isDiscarding, setIsDiscarding] = useState(false);
+  const [moreOptionsVisible, setMoreOptionsVisible] = useState(false);
+  
+  // Refs for bottom sheets
+  const blockReportBottomSheetRef = useRef<BlockReportBottomSheetRef>(null);
   
   // Animation values for discard effect
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -420,7 +428,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     });
   };
 
-  const renderReactionModal = () => {
+    const renderReactionModal = () => {
     return (
       <Modal
         animationType="slide"
@@ -460,7 +468,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </Modal>
     );
   };
-  
+
   const renderResponseModal = () => {
     return (
       <Modal
@@ -472,7 +480,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           setResponseModalVisible(false);
         }}
       >
-        <KeyboardAvoidingView 
+        <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
         >
@@ -489,7 +497,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   style={styles.closeButton}
                 />
               </View>
-              
+
               <PaperTextInput
                 value={responseText}
                 onChangeText={setResponseText}
@@ -497,8 +505,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 placeholderTextColor={theme.colors.onSurfaceDisabled}
                 multiline
                 numberOfLines={6}
-                style={[styles.responseInput, { 
-                  backgroundColor: 'transparent', 
+                style={[styles.responseInput, {
+                  backgroundColor: 'transparent',
                   color: theme.colors.onSurface,
                   textAlignVertical: 'top',
                   minHeight: 150,
@@ -521,8 +529,8 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                   />
                 )}
               />
-              
-              <View style={[styles.modalButtons, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+
+              <View style={[styles.modalButtons, { paddingBottom: Math.max(16, 16) }]}>
                 <Button
                   mode="contained"
                   onPress={handleSendResponse}
@@ -532,7 +540,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                     <Text>Send Reply +2</Text>
-                    <Text style={{ 
+                    <Text style={{
                       color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
                       fontSize: 16,
                       marginTop: 1,
@@ -547,6 +555,93 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </Modal>
     );
   };
+
+  const handleBlock = () => {
+    // Close the bottom sheet
+    blockReportBottomSheetRef.current?.close();
+    
+    // In a real implementation, we would call the API to block the user
+    // For now, just show a console log
+    console.log(`Blocking user: ${letter?.author_id}`);
+    
+    // Here you would add the actual blocking logic
+    // Then navigate back
+    if (onClose) {
+      onClose();
+    } else {
+      navigation.goBack();
+    }
+  };
+  
+  const handleReport = (reason?: string) => {
+    // If we have a reason, it means the modal has already been shown
+    // and we're getting the callback with the reason
+    if (reason) {
+      handleSubmitReportWithReason(reason);
+    }
+  };
+  
+  const handleSubmitReportWithReason = async (reason: string) => {
+    // Show loading indicator or toast message
+    // You could add a loading state here if desired
+    
+    try {
+      // Call the report content API
+      const { success, error } = await reportContent(letterId, ReportType.LETTER, reason, undefined);
+      
+      if (success) {
+        // Show success message
+        console.log('Letter reported successfully');
+        
+        // Show success alert and navigate back only after user clicks OK
+        Alert.alert(
+          'Report Submitted',
+          'Thank you for your report. We will review this content shortly.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Navigate back
+                if (onClose) {
+                  onClose();
+                } else {
+                  navigation.goBack();
+                }
+              }
+            }
+          ]
+        );
+      } else {
+        // Show error message
+        console.error('Failed to report letter:', error);
+        // Show error alert
+        Alert.alert('Report Failed', 'Failed to submit report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error reporting letter:', error);
+      // Show error alert
+      Alert.alert('Error', 'An error occurred while submitting your report. Please try again.');
+    }
+  };
+
+  const renderBlockReportBottomSheet = () => {
+    return (
+      <BlockReportBottomSheet
+        ref={blockReportBottomSheetRef}
+        onBlock={handleBlock}
+        onReport={handleReport}
+        contentType="letter"
+      />
+    );
+  };
+
+  useEffect(() => {
+    fetchLetter();
+    // Reset animation state when letter changes
+    setTextRevealed(false);
+    setIsAnimating(true);
+    setShowFullText(false);
+  }, [letterId]);
 
   if (loading && !refreshing) {
     return (
@@ -566,15 +661,14 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       </View>
     );
   }
-  
+
   const isAuthoredByUser = user && letter.author_id === user.id;
 
-  // Create the rotation interpolation for a more natural paper crumple effect
   const rotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '-10deg']
   });
-  
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Animated.View
@@ -590,117 +684,145 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           }
         ]}
       >
+        <View style={styles.headerContainer}>
+          <TouchableOpacity
+            style={styles.moreButton}
+            onPress={() => blockReportBottomSheetRef.current?.open()}
+          >
+            <Ionicons name="ellipsis-horizontal" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
           ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollViewContent}
           refreshControl={
-            <RefreshControl 
-              refreshing={refreshing} 
-              onRefresh={handleRefresh}
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={async () => {
+                setRefreshing(true);
+                try {
+                  // Refresh data here
+                } catch (error) {
+                  console.error('Error refreshing data:', error);
+                } finally {
+                  setRefreshing(false);
+                }
+              }}
               tintColor={theme.colors.primary}
             />
           }
         >
-        <LetterTitleCard letter={letter} />
+          <LetterTitleCard letter={letter} />
 
-        <View style={styles.letterContent}>
-
-          <TouchableOpacity 
-            activeOpacity={0.9} 
-            onPress={revealText}
-            style={styles.contentContainer}
-          >
-            <View style={styles.contentWrapper}>
-              <View style={styles.textContainer}>
-                {showFullText ? (
-                  <Text style={[styles.content, { color: theme.colors.onSurface }]}>
-                    {letter.content}
-                  </Text>
-                ) : (
-                  <WordByWordText
-                    text={letter.content}
-                    speed={200} // Adjusted speed (milliseconds per word) - slowed down from 50ms to 200ms
-                    style={[styles.content, { color: theme.colors.onSurface }]}
-                    onComplete={() => {
-                      setTextRevealed(true);
-                      setIsAnimating(false);
-                    }}
-                    isActive={isAnimating}
-                    scrollViewRef={scrollViewRef}
-                    autoScroll={false} // Removed autoscrolling
-                    wordCountThreshold={150} // Show full text after 150 words
-                    onWordThresholdReached={() => {
-                      // Use a small timeout to ensure smooth transition
-                      setTimeout(() => {
-                        setShowFullText(true); // Show full text after reaching threshold
+          <View style={styles.letterContent}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                // Reveal text on press
+              }}
+              style={styles.contentContainer}
+            >
+              <View style={styles.contentWrapper}>
+                <View style={styles.textContainer}>
+                  {showFullText ? (
+                    <Text style={[styles.content, { color: theme.colors.onSurface }]}>
+                      {letter.content}
+                    </Text>
+                  ) : (
+                    <WordByWordText
+                      text={letter.content}
+                      speed={200} // Adjusted speed (milliseconds per word) - slowed down from 50ms to 200ms
+                      style={[styles.content, { color: theme.colors.onSurface }]}
+                      onComplete={() => {
                         setTextRevealed(true);
                         setIsAnimating(false);
-                      }, 50);
-                    }}
-                  />
-                )}
+                      }}
+                      isActive={isAnimating}
+                      scrollViewRef={scrollViewRef}
+                      autoScroll={false} // Removed autoscrolling
+                      wordCountThreshold={150} // Show full text after 150 words
+                      onWordThresholdReached={() => {
+                        // Use a small timeout to ensure smooth transition
+                        setTimeout(() => {
+                          setShowFullText(true); // Show full text after reaching threshold
+                          setTextRevealed(true);
+                          setIsAnimating(false);
+                        }, 50);
+                      }}
+                    />
+                  )}
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {!hideBottomNav && (
-        <View style={[styles.actionButtonsContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={styles.actionButtons}>
-            <Button
-              mode="outlined"
-              onPress={handleDiscard}
-              style={[styles.actionButton, { borderColor: '#888888', flex: 1 }]}
-              textColor="#888888"
-            >
-              Discard
-            </Button>
-            <Button
-              mode="outlined"
-              onPress={() => setReactionModalVisible(true)}
-              icon="emoticon-happy-outline"
-              style={[styles.actionButton, { borderColor: 'white', flex: 1 }]}
-              textColor="white"
-            >
-              React
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleOpenResponseModal}
-              style={[styles.actionButton, { flex: 1.2 }]}
-            >
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Text>Reply +2</Text>
-                <Text style={{ 
-                  color: '#FFD700',
-                  fontSize: 16,
-                  marginTop: 1,
-                  marginLeft: 0
-                }}>★</Text>
-              </View>
-            </Button>
+            </TouchableOpacity>
           </View>
-        </View>
-      )}
+        </ScrollView>
 
-      <AnimatedEmoji
-        emoji={selectedEmoji}
-        visible={showEmoji}
-        animation="random"
-        onAnimationComplete={() => {
-          // Close the letter after animation completes
-          if (onClose) {
-            onClose();
-          } else {
-            navigation.goBack();
-          }
-        }}
-      />
+        {!hideBottomNav && (
+          <View style={[styles.actionButtonsContainer, { backgroundColor: theme.colors.background }]}>
+            <View style={styles.actionButtons}>
+              <Button
+                mode="outlined"
+                onPress={handleDiscard}
+                style={[styles.actionButton, { borderColor: '#888888', flex: 1 }]}
+                textColor="#888888"
+              >
+                Discard
+              </Button>
+              <Button
+                mode="outlined"
+                onPress={() => setReactionModalVisible(true)}
+                icon="emoticon-happy-outline"
+                style={[styles.actionButton, { borderColor: 'white', flex: 1 }]}
+                textColor="white"
+              >
+                React
+              </Button>
+              <Button
+                mode="contained"
+                onPress={handleOpenResponseModal}
+                style={[styles.actionButton, { flex: 1.2 }]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <Text>Reply +2</Text>
+                  <Text style={{
+                    color: '#FFD700',
+                    fontSize: 16,
+                    marginTop: 1,
+                    marginLeft: 0
+                  }}>★</Text>
+                </View>
+              </Button>
+            </View>
+          </View>
+        )}
 
-      {renderReactionModal()}
-      {renderResponseModal()}
+        {showEmoji && selectedEmoji && (
+          <AnimatedEmoji
+            emoji={selectedEmoji}
+            animation="random"
+            size={100}
+            visible={showEmoji}
+            showOverlay={true}
+            onAnimationComplete={() => {
+              setShowEmoji(false);
+              setHideBottomNav(false);
+              setSendingReaction(false);
+
+              // Close letter and go back to home screen after reaction
+              if (onClose) {
+                onClose();
+              } else {
+                navigation.goBack();
+              }
+            }}
+          />
+        )}
+
+        {renderReactionModal()}
+        {renderResponseModal()}
+        {renderBlockReportBottomSheet()}
       </Animated.View>
     </SafeAreaView>
   );
@@ -709,6 +831,34 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 5,
+    paddingRight: 10,
+    paddingBottom: 5,
+    zIndex: 10,
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionsList: {
+    width: '100%',
+  },
+  optionItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: 16,
   },
   loadingContainer: {
     flex: 1,
@@ -723,6 +873,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginTop: -10, // Reduce the gap between header and content
   },
   scrollViewContent: {
     paddingBottom: 16,
@@ -836,4 +987,4 @@ const styles = StyleSheet.create({
 
 });
 
-export default LetterDetailScreen; 
+export default LetterDetailScreen;
