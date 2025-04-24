@@ -1,24 +1,21 @@
--- Migration: update_existing_letter_replies_function.sql
+-- Drop existing function to avoid conflicts
+DROP FUNCTION IF EXISTS get_letter_replies_excluding_blocked(UUID, UUID);
 
--- UP MIGRATION
-BEGIN;
-
--- Update the existing function to also filter out reported threads
-CREATE OR REPLACE FUNCTION public.get_letter_replies_excluding_blocked(
+-- Update get_letter_replies_excluding_blocked to correctly handle all blocking scenarios
+CREATE OR REPLACE FUNCTION get_letter_replies_excluding_blocked(
   p_letter_id UUID,
   p_user_id UUID
 )
 RETURNS SETOF replies
 LANGUAGE plpgsql
 SECURITY INVOKER
-AS $function$
+AS $$
 BEGIN
-  -- Return all replies for this letter, excluding those from blocked users and now also reported threads
   RETURN QUERY
   SELECT r.*
   FROM replies r
   WHERE r.letter_id = p_letter_id
-  -- Preserve all existing blocking checks
+  -- These two conditions exclude replies from/to users that the requesting user has blocked
   AND NOT EXISTS (
     -- Check if the reply author is blocked by the requesting user
     SELECT 1 FROM user_blocks b
@@ -32,6 +29,7 @@ BEGIN
     AND b.blocked_id = r.reply_to_user_id
     AND r.reply_to_user_id IS NOT NULL
   )
+  -- These two conditions exclude replies where the requesting user is blocked by someone
   AND NOT EXISTS (
     -- Check if the requesting user is blocked by the reply author
     SELECT 1 FROM user_blocks b
@@ -45,21 +43,18 @@ BEGIN
     AND b.blocked_id = p_user_id
     AND r.reply_to_user_id IS NOT NULL
   )
-  -- Add new filter for reported threads
+  -- This final condition excludes any replies between users who have a blocking relationship
+  -- Ensures conversation threads don't show up for either party
   AND NOT EXISTS (
-    -- Check if the requesting user has reported this conversation
-    SELECT 1
-    FROM content_reports cr
-    WHERE 
-      cr.reporter_id = p_user_id 
-      AND cr.letter_id = p_letter_id
-      AND cr.content_type = 'reply'
-      AND cr.other_participant_id = r.author_id
+    -- Check if there's any blocking relationship between the author and recipient
+    SELECT 1 FROM user_blocks b
+    WHERE (
+      (b.blocker_id = r.author_id AND b.blocked_id = r.reply_to_user_id)
+      OR
+      (b.blocker_id = r.reply_to_user_id AND b.blocked_id = r.author_id)
+    )
+    AND r.reply_to_user_id IS NOT NULL
   )
-  ORDER BY r.created_at ASC;  -- Oldest first to maintain chronological order
+  ORDER BY r.created_at ASC;
 END;
-$function$;
-
-COMMENT ON FUNCTION public.get_letter_replies_excluding_blocked IS 'Get all replies for a letter, excluding blocked users and reported threads';
-
-COMMIT;
+$$;
