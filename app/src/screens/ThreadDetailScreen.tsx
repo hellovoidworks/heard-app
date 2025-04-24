@@ -30,6 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import LetterTitleCard from '../components/LetterTitleCard';
 import ReactionDisplay from '../components/ReactionDisplay';
 import detailScreenPreloader from '../utils/detailScreenPreloader';
+import { blockUser } from '../services/blockingService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
@@ -285,13 +286,30 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {
           text: 'Block',
           style: 'destructive',
-          onPress: () => {
-            // In a real implementation, we would call the API to block the user
-            console.log(`Blocking user: ${otherParticipantId}`);
+          onPress: async () => {
+            // Show loading indicator or message here if needed
             
-            // Here you would add the actual blocking logic
-            // Then navigate back
-            navigation.goBack();
+            if (!otherParticipantId) {
+              console.error('[ThreadDetailScreen] Cannot block user: Missing otherParticipantId');
+              Alert.alert('Error', 'Could not block user. Please try again.');
+              return;
+            }
+            
+            console.log(`[ThreadDetailScreen] Attempting to block user: ${otherParticipantId}`);
+            
+            const { success, error } = await blockUser(otherParticipantId);
+            
+            if (success) {
+              console.log(`[ThreadDetailScreen] Successfully blocked user: ${otherParticipantId}`);
+              Alert.alert(
+                'User Blocked',
+                'This user has been blocked. You will no longer see their content.',
+                [{ text: 'OK', onPress: () => navigation.goBack() }]
+              );
+            } else {
+              console.error(`[ThreadDetailScreen] Failed to block user: ${error}`);
+              Alert.alert('Error', error || 'Failed to block user. Please try again.');
+            }
           }
         }
       ]

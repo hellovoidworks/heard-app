@@ -20,6 +20,7 @@ import LetterTitleCard from '../components/LetterTitleCard';
 import eventEmitter, { EVENTS } from '../utils/eventEmitter';
 import detailScreenPreloader from '../utils/detailScreenPreloader';
 import tabDataPreloader from '../utils/tabDataPreloader';
+import { blockUser } from '../services/blockingService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'LetterDetail'>;
 
@@ -572,16 +573,38 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {
           text: 'Block',
           style: 'destructive',
-          onPress: () => {
-            // In a real implementation, we would call the API to block the user
-            console.log(`Blocking user: ${letter?.author_id}`);
+          onPress: async () => {
+            // Show loading indicator or message here if needed
             
-            // Here you would add the actual blocking logic
-            // Then navigate back
-            if (onClose) {
-              onClose();
+            if (!letter?.author_id) {
+              console.error('[LetterDetailScreen] Cannot block user: Missing author_id');
+              Alert.alert('Error', 'Could not block user. Please try again.');
+              return;
+            }
+            
+            console.log(`[LetterDetailScreen] Attempting to block user: ${letter.author_id}`);
+            
+            const { success, error } = await blockUser(letter.author_id);
+            
+            if (success) {
+              console.log(`[LetterDetailScreen] Successfully blocked user: ${letter.author_id}`);
+              Alert.alert(
+                'User Blocked',
+                'This user has been blocked. You will no longer see their content.',
+                [{ 
+                  text: 'OK', 
+                  onPress: () => {
+                    if (onClose) {
+                      onClose();
+                    } else {
+                      navigation.goBack();
+                    }
+                  } 
+                }]
+              );
             } else {
-              navigation.goBack();
+              console.error(`[LetterDetailScreen] Failed to block user: ${error}`);
+              Alert.alert('Error', error || 'Failed to block user. Please try again.');
             }
           }
         }

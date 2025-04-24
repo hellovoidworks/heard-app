@@ -45,6 +45,7 @@ export type Reply = {
   display_name: string;
   content: string;
   reply_to_id: string | null;
+  reply_to_user_id: string | null;
   created_at: string;
   updated_at: string;
 };

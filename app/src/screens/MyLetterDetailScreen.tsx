@@ -18,6 +18,7 @@ import dataCache from '../utils/dataCache';
 import LetterTitleCard from '../components/LetterTitleCard';
 import ReactionDisplay from '../components/ReactionDisplay';
 import detailScreenPreloader from '../utils/detailScreenPreloader';
+import { getBlockedUserIds } from '../services/blockingService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
@@ -99,17 +100,28 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   };
   
   const fetchLetterStats = async () => {
-    if (!letterId) return;
+    if (!letterId || !user) return;
     
     try {
       // If we have initial stats and this is the first load, we can skip some fetches
       const isInitialLoad = dataSource === 'passed' && !refreshing;
+      
+      // Get the list of blocked user IDs first
+      const { blockedIds, error: blockError } = await getBlockedUserIds();
+      
+      if (blockError) {
+        console.error('Error fetching blocked users:', blockError);
+        // Continue with fetching stats even if there was an error getting blocked users
+      }
+      
+      console.log(`[MyLetterDetailScreen] Fetched ${blockedIds.length} blocked users for letter stats`);
       
       // Define the type for the reaction data returned by our custom function
       type ReactionWithUsername = {
         reaction_type: string;
         created_at: string;
         username: string;
+        user_id: string; // Add this to help with filtering
       };
 
       // Always fetch reactions since they're not passed from the list screen
@@ -123,8 +135,13 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         console.error('Error fetching reactions:', reactionsError);
         setReactionStats([]);
       } else if (reactionsData && reactionsData.length > 0) {
+        // Filter out reactions from blocked users
+        const filteredReactions = reactionsData.filter(reaction => 
+          !reaction.user_id || !blockedIds.includes(reaction.user_id)
+        );
+        
         // Format reactions for display
-        const formattedReactions = reactionsData.map(reaction => ({
+        const formattedReactions = filteredReactions.map(reaction => ({
           emoji: reaction.reaction_type,
           username: reaction.username || 'Anonymous',
           date: format(new Date(reaction.created_at), 'MMM d')
@@ -137,15 +154,18 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       
       // Only fetch reply count if we don't have initial stats or if refreshing
       if (!isInitialLoad || initialStats?.replyCount === undefined) {
-        const { data: repliesData, error: repliesError } = await supabase
-          .from('replies')
-          .select('id', { count: 'exact' })
-          .eq('letter_id', letterId);
+        // Use the database function to count replies excluding blocked users
+        const { data: replyCount, error: countError } = await supabase
+          .rpc('count_letter_replies_excluding_blocked', {
+            p_letter_id: letterId,
+            p_user_id: user.id
+          });
           
-        if (repliesError) {
-          console.error('Error fetching replies count:', repliesError);
+        if (countError) {
+          console.error('Error fetching replies count:', countError);
         } else {
-          setReplyCount(repliesData?.length || 0);
+          console.log(`[MyLetterDetailScreen] Reply count excluding blocked users: ${replyCount}`);
+          setReplyCount(replyCount || 0);
         }
       }
       
@@ -172,40 +192,44 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!letterId || !user) return;
     
     try {
-      // Fetch all replies for this letter
+      // Get the list of blocked user IDs first
+      const { blockedIds, error: blockError } = await getBlockedUserIds();
+      
+      if (blockError) {
+        console.error('Error fetching blocked users:', blockError);
+        // Continue with fetching threads even if there was an error getting blocked users
+      }
+      
+      console.log(`[MyLetterDetailScreen] Fetched ${blockedIds.length} blocked users`);
+      
+      // Use the database function to fetch replies excluding blocked users
       const { data: repliesData, error: repliesError } = await supabase
-        .from('replies')
-        .select(`
-          id,
-          letter_id,
-          author_id,
-          display_name,
-          content,
-          created_at,
-          reply_to_id,
-          reply_to_user_id,
-          updated_at
-        `)
-        .eq('letter_id', letterId)
-        .order('created_at', { ascending: true });
-        
+        .rpc('get_letter_replies_excluding_blocked', {
+          p_letter_id: letterId,
+          p_user_id: user.id
+        });
+      
       if (repliesError) {
         console.error('Error fetching replies:', repliesError);
         return;
       }
       
-      if (repliesData && repliesData.length > 0) { 
+      console.log(`[MyLetterDetailScreen] Fetched ${repliesData?.length || 0} replies (excluding blocked users)`);
+      
+      if (repliesData && repliesData.length > 0) {
+        
         // Create a map to track unique conversations by participant
         const conversationsByParticipant: { [participantId: string]: ReplyWithDetails[] } = {};
         
         // Group replies into conversations between the letter author (current user) and each participant
-        repliesData.forEach(reply => {
+        repliesData.forEach((reply: ReplyWithDetails) => {
           let participantId: string;
           
           // Determine the conversation participant (the person who's not the current user)
           if (reply.author_id === user.id) {
             // If current user wrote this reply, the participant is who they replied to
-            participantId = reply.reply_to_user_id;
+            // Make sure it's not null; fallback to author_id if needed
+            participantId = reply.reply_to_user_id || reply.author_id;
           } else {
             // If someone else wrote this reply to the current user, the participant is the author
             participantId = reply.author_id;

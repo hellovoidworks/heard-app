@@ -897,6 +897,35 @@ const HomeScreen = () => {
     }
   }, [user]);
 
+  // Listen for USER_BLOCKED events to refresh the HomeScreen
+  useEffect(() => {
+    // Function to handle when a user is blocked
+    const handleUserBlocked = async (blockedUserId: string) => {
+      console.log(`[HomeScreen] User blocked event received for user: ${blockedUserId}`);
+      
+      // Check if we have any letters from the blocked user in the current view
+      if (letters.some(letter => letter.author_id === blockedUserId)) {
+        console.log('[HomeScreen] Found letters from blocked user in current view, refreshing...');
+        
+        // Filter out letters from the blocked user from the current display
+        const filteredLetters = letters.filter(letter => letter.author_id !== blockedUserId);
+        
+        if (filteredLetters.length !== letters.length) {
+          console.log(`[HomeScreen] Removed ${letters.length - filteredLetters.length} letters from blocked user`);
+          setLetters(filteredLetters);
+        }
+      }
+    };
+    
+    // Add event listener
+    eventEmitter.on(EVENTS.USER_BLOCKED, handleUserBlocked);
+    
+    // Clean up event listener
+    return () => {
+      eventEmitter.off(EVENTS.USER_BLOCKED, handleUserBlocked);
+    };
+  }, [letters]);
+
   const handleLetterPress = async (letter: LetterWithDetails) => {
     // Navigate to letter detail as modal, passing the entire letter object
     navigation.navigate('LetterDetail', { 
