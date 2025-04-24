@@ -560,17 +560,33 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     // Close the bottom sheet
     blockReportBottomSheetRef.current?.close();
     
-    // In a real implementation, we would call the API to block the user
-    // For now, just show a console log
-    console.log(`Blocking user: ${letter?.author_id}`);
-    
-    // Here you would add the actual blocking logic
-    // Then navigate back
-    if (onClose) {
-      onClose();
-    } else {
-      navigation.goBack();
-    }
+    // Show confirmation alert before blocking
+    Alert.alert(
+      'Block User',
+      'Are you sure you want to block this user? You will no longer see any content from them, and they will not be able to see your content.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () => {
+            // In a real implementation, we would call the API to block the user
+            console.log(`Blocking user: ${letter?.author_id}`);
+            
+            // Here you would add the actual blocking logic
+            // Then navigate back
+            if (onClose) {
+              onClose();
+            } else {
+              navigation.goBack();
+            }
+          }
+        }
+      ]
+    );
   };
   
   const handleReport = (reason?: string) => {
