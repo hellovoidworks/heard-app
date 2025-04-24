@@ -115,7 +115,11 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         // Continue with fetching stats even if there was an error getting blocked users
       }
       
-      console.log(`[MyLetterDetailScreen] Fetched ${blockedIds.length} blocked users for letter stats`);
+      console.log(`[MyLetterDetailScreen] Fetched ${blockedIds.length} blocked users for letter stats`);      
+      // Log detailed information about the blocked users
+      if (blockedIds.length > 0) {
+        console.log(`[MyLetterDetailScreen] Blocked user IDs: ${blockedIds.join(', ')}`);
+      }
       
       // Define the type for the reaction data returned by our custom function
       type ReactionWithUsername = {
@@ -136,17 +140,28 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         console.error('Error fetching reactions:', reactionsError);
         setReactionStats([]);
       } else if (reactionsData && reactionsData.length > 0) {
-        console.log(`[MyLetterDetailScreen] Processing ${reactionsData.length} reactions`);        
+        console.log(`[MyLetterDetailScreen] Processing ${reactionsData.length} reactions`);    
+        
+        // Log detailed info about each reaction for debugging
+        reactionsData.forEach((reaction, index) => {
+          console.log(`[MyLetterDetailScreen] Reaction ${index + 1}: user_id=${reaction.user_id}, username=${reaction.username || 'Unknown'}`);
+        });
+          
         // Filter out reactions from blocked users (in both directions)
         const filteredReactions = reactionsData.filter(reaction => {
           // Skip this check if no user_id (shouldn't happen but being safe)
-          if (!reaction.user_id) return true;
+          if (!reaction.user_id) {
+            console.log(`[MyLetterDetailScreen] Keeping reaction without user_id`);
+            return true;
+          }
           
           // Check if this reaction owner is in our blocked users list
           const isBlocked = blockedIds.includes(reaction.user_id);
           
           if (isBlocked) {
-            console.log(`[MyLetterDetailScreen] Filtering out reaction from blocked user: ${reaction.username || 'Unknown'}`); 
+            console.log(`[MyLetterDetailScreen] Filtering out reaction from blocked user: ${reaction.username || 'Unknown'} (${reaction.user_id})`);
+          } else {
+            console.log(`[MyLetterDetailScreen] Keeping reaction from user: ${reaction.username || 'Unknown'} (${reaction.user_id})`);
           }
           
           // Keep the reaction only if the user is not blocked in either direction
