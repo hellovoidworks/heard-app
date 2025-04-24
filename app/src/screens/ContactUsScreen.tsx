@@ -27,12 +27,9 @@ const ContactUsScreen = () => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.contentContainer}>
-        <Text style={[styles.header, { color: theme.colors.onSurface }]}>
-          Contact Us
-        </Text>
-        
+
         <Text style={[styles.message, { color: theme.colors.onSurface }]}>
-          If you have any feedback or want to report inappropriate activity, please send us an email at
+          If you have any feedback or want to report any inappropriate activity, please send us an email at
         </Text>
         
         <TouchableOpacity onPress={handleSendEmail}>
@@ -51,8 +48,6 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
     flex: 1,
   },
   header: {
@@ -71,10 +66,11 @@ const styles = StyleSheet.create({
   },
   emailLink: {
     fontSize: 16,
-    color: '#9292FF',
+    color: '#FFFFFF',
     textDecorationLine: 'underline',
     fontFamily: fontNames.interMedium,
     marginTop: 8,
+    textAlign: 'center'
   },
 });
 

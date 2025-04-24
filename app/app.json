@@ -31,6 +31,7 @@
             ]
           }
         ],
+        "LSApplicationQueriesSchemes": ["mailto"],
         "UIBackgroundModes": ["remote-notification"],
         "CFBundleDisplayName": "Heard",
         "ITSAppUsesNonExemptEncryption": false
