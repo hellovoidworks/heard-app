@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { AppState, AppStateStatus } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AnimatedEmoji from '../components/AnimatedEmoji';
@@ -338,12 +339,25 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     };
   }, [user, letterId]);
   
-  // Mark reactions as read when the letter and user are available
+  // Mark reactions as read when viewing this letter
   useEffect(() => {
-    if (letter && user && !loading) {
+    if (letter) {
       markReactionsAsRead();
     }
-  }, [letter, user, loading]);
+  }, [letter]);
+  
+  // Refresh conversation data when returning to this screen (e.g., after replying in ThreadDetailScreen)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Only refresh if we already have loaded the letter
+      if (letter && !loading) {
+        console.log('MyLetterDetailScreen is focused again, refreshing threads...');
+        fetchThreads();
+      }
+      return () => {};
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [letter, loading])
+  );
 
   const handleRefresh = () => {
     setRefreshing(true);
