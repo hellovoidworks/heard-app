@@ -204,7 +204,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       
       // Use the database function to fetch replies excluding blocked users and reported threads
       const { data: repliesData, error: repliesError } = await supabase
-        .rpc('get_letter_replies_excluding_blocked_and_reported', {
+        .rpc('get_letter_replies_excluding_blocked', {
           p_letter_id: letterId,
           p_user_id: user.id
         });
