@@ -202,9 +202,9 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       
       console.log(`[MyLetterDetailScreen] Fetched ${blockedIds.length} blocked users`);
       
-      // Use the database function to fetch replies excluding blocked users
+      // Use the database function to fetch replies excluding blocked users and reported threads
       const { data: repliesData, error: repliesError } = await supabase
-        .rpc('get_letter_replies_excluding_blocked', {
+        .rpc('get_letter_replies_excluding_blocked_and_reported', {
           p_letter_id: letterId,
           p_user_id: user.id
         });
@@ -214,7 +214,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         return;
       }
       
-      console.log(`[MyLetterDetailScreen] Fetched ${repliesData?.length || 0} replies (excluding blocked users)`);
+      console.log(`[MyLetterDetailScreen] Fetched ${repliesData?.length || 0} replies (excluding blocked users and reported threads)`);
       
       if (repliesData && repliesData.length > 0) {
         
