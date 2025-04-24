@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState, AppStateStatus, Alert } from 'react-native';
 import { Adjust, AdjustEvent } from 'react-native-adjust';
-import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, ScrollView, KeyboardAvoidingView, Platform, Modal, TouchableOpacity, Keyboard } from 'react-native';
+import BlockReportBottomSheet, { BlockReportBottomSheetRef } from '../components/BlockReportBottomSheet';
+import ReportReasonModal from '../components/ReportReasonModal';
+import { reportContent, ReportType } from '../services/reportService';
 import { 
   Text, 
   Card, 
@@ -13,8 +16,10 @@ import {
   TextInput,
   Surface,
   Divider,
-  useTheme
+  useTheme,
+  IconButton
 } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -29,7 +34,7 @@ import detailScreenPreloader from '../utils/detailScreenPreloader';
 type Props = NativeStackScreenProps<RootStackParamList, 'ThreadDetail'>;
 
 const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { letterId, otherParticipantId, initialCorrespondence } = route.params; // Get both IDs and initial data
+  const { letterId, otherParticipantId, initialCorrespondence, presentationMode = 'push' } = route.params; // Get all params with default presentation mode
   
   // Create initial letter data from correspondence if available
   const initialLetterData = useMemo(() => {
@@ -58,8 +63,10 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const [dataLoaded, setDataLoaded] = useState(false); // Track when data is loaded but not yet scrolled
   const [isFullyLoaded, setIsFullyLoaded] = useState(false); // Final state when everything is loaded AND scrolled
   const [replyText, setReplyText] = useState('');
+  const [reportReasonModalVisible, setReportReasonModalVisible] = useState(false);
   const [sendingReply, setSendingReply] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const blockReportBottomSheetRef = useRef<BlockReportBottomSheetRef>(null);
   const { user, profile } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
   const theme = useTheme();
@@ -261,6 +268,86 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setSendingReply(false);
     }
   };
+  
+  const handleBlock = () => {
+    // Close the bottom sheet
+    blockReportBottomSheetRef.current?.close();
+    
+    // In a real implementation, we would call the API to block the user
+    // For now, just show a console log
+    console.log(`Blocking user: ${otherParticipantId}`);
+    
+    // Here you would add the actual blocking logic
+    // Then navigate back
+    navigation.goBack();
+  };
+  
+  const handleReport = (reason?: string) => {
+    // If we have a reason, it means the modal has already been shown
+    // and we're getting the callback with the reason
+    if (reason) {
+      handleSubmitReportWithReason(reason);
+    }
+  };
+  
+  const handleSubmitReportWithReason = async (reason: string) => {
+    // Show loading indicator or toast message
+    // You could add a loading state here if desired
+    
+    try {
+      // Call the report content API with other participant ID
+      const { success, error } = await reportContent(
+        letterId, 
+        ReportType.REPLY, 
+        reason, 
+        otherParticipantId // Pass the other participant ID
+      );
+      
+      if (success) {
+        // Show success message
+        console.log('Reply reported successfully');
+        
+        // Preload mailbox data to ensure the thread is hidden when returning to correspondence tab
+        if (user) {
+          console.log('[ThreadDetailScreen] Preloading mailbox data after successful report');
+          detailScreenPreloader.preloadMailboxDataFromDetailScreen(user.id);
+        }
+        
+        // Show success alert and navigate back only after user clicks OK
+        Alert.alert(
+          'Report Submitted',
+          'Thank you for your report. This thread will be hidden.',
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Close modal or navigate back based on presentation mode
+                navigation.goBack();
+              }
+            }
+          ]
+        );
+      } else {
+        // Show error message
+        console.error('Failed to report reply:', error);
+        Alert.alert('Report Failed', 'Failed to submit report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error reporting reply:', error);
+      Alert.alert('Error', 'An error occurred while submitting your report. Please try again.');
+    }
+  };
+  
+  const renderBlockReportBottomSheet = () => {
+    return (
+      <BlockReportBottomSheet
+        ref={blockReportBottomSheetRef}
+        onBlock={handleBlock}
+        onReport={handleReport}
+        contentType="thread"
+      />
+    );
+  };
 
   // Set initial letter data if available
   useEffect(() => {
@@ -268,6 +355,22 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       setLetter(initialLetterData as LetterWithDetails);
     }
   }, [initialLetterData, letter]);
+
+  // Set up navigation header with ellipsis button when using push navigation
+  useEffect(() => {
+    if (presentationMode === 'push') {
+      navigation.setOptions({
+        headerRight: () => (
+          <IconButton
+            icon="dots-horizontal"
+            iconColor="white"
+            size={24}
+            onPress={() => blockReportBottomSheetRef.current?.open()}
+          />
+        )
+      });
+    }
+  }, [navigation, presentationMode]);
 
   useEffect(() => {
     fetchLetterAndReplies();
@@ -380,6 +483,15 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
+      {renderBlockReportBottomSheet()}
+      {/* Only show the ellipsis in the content area when in modal mode */}
+      {presentationMode === 'modal' && (
+        <View style={styles.headerContainer}>
+          <TouchableOpacity style={styles.moreButton} onPress={() => blockReportBottomSheetRef.current?.open()}>
+            <Ionicons name="ellipsis-horizontal" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+      )}
       <ScrollView
         ref={scrollViewRef}
         style={[styles.scrollView, { backgroundColor: theme.colors.background }]}
@@ -515,6 +627,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingTop: 5,
+    paddingRight: 10,
+    paddingBottom: 5,
+    zIndex: 10,
+  },
+  moreButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  optionsList: {
+    width: '100%',
+  },
+  optionItem: {
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    padding: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  bottomModalContent: {
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    width: '100%',
+    elevation: 5,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -528,6 +687,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginTop: -10, // Reduce the gap between header and content
   },
   originalLetter: {
     marginHorizontal: 16,
