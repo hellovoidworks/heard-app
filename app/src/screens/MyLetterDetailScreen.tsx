@@ -131,7 +131,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
       // Always fetch reactions since they're not passed from the list screen
       const { data: reactionsData, error: reactionsError } = await supabase
-        .rpc('get_letter_reactions_with_usernames', { letter_id_param: letterId }) as { 
+        .rpc('get_letter_reactions_with_userids', { letter_id_param: letterId }) as { 
           data: ReactionWithUsername[] | null, 
           error: any 
         };
