@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Linking, Image, StatusBar, FlatList, NativeSyntheticEvent, NativeScrollEvent, Dimensions } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, Image, StatusBar, FlatList, NativeSyntheticEvent, NativeScrollEvent, Dimensions, Modal } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
 import { Adjust, AdjustEvent } from 'react-native-adjust';
 import { fontNames } from '../../utils/fonts';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { TextInput, Button, Text, Title, Divider, IconButton, useTheme } from 'react-native-paper';
+import { TextInput, Button, Text, Title, Divider, IconButton, useTheme, ActivityIndicator } from 'react-native-paper';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
@@ -20,8 +23,10 @@ const LoginScreen = ({ navigation }: Props) => {
   const [loading, setLoading] = useState(false);
   const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const [showTermsModal, setShowTermsModal] = useState(false);
   const carouselRef = React.useRef<FlatList<any>>(null);
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Check if Apple authentication is available on this device
   useEffect(() => {
@@ -174,6 +179,42 @@ const LoginScreen = ({ navigation }: Props) => {
               <Text style={styles.emailButtonText}>Sign in with Email</Text>
             </LinearGradient>
           </TouchableOpacity>
+          
+          <Text style={styles.termsText}>
+            By continuing, you agree to our{' '}
+            <Text 
+              style={styles.termsLink}
+              onPress={() => setShowTermsModal(true)}
+            >
+              terms of use
+            </Text>
+          </Text>
+          
+          {/* Terms of Use Modal */}
+          <Modal
+            visible={showTermsModal}
+            animationType="slide"
+            onRequestClose={() => setShowTermsModal(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={[styles.modalHeader, { paddingTop: insets.top + 12 }]}>
+                <Text style={styles.modalTitle}>Terms of Use</Text>
+                <TouchableOpacity onPress={() => setShowTermsModal(false)}>
+                  <Ionicons name="close-outline" size={28} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+              <WebView 
+                source={{ uri: 'https://stealth-trade-6e8.notion.site/Terms-of-Use-1dfe3751d8e38002a363d5052af7ec90?pvs=4' }}
+                style={styles.webview}
+                startInLoadingState={true}
+                renderLoading={() => (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#9292FF" />
+                  </View>
+                )}
+              />
+            </View>
+          </Modal>
         </View>
       </View>
     </SafeAreaView>
@@ -208,7 +249,7 @@ const styles = StyleSheet.create({
   slideImage: {
     width: Dimensions.get('window').width * 0.85,
     maxWidth: 420,
-    maxHeight: 455,
+    maxHeight: 425,
     marginBottom: 15,
     resizeMode: 'contain',
   },
@@ -307,6 +348,49 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontFamily: fontNames.interBold,
     backgroundColor: 'transparent',
+  },
+  termsText: {
+    color: '#E0E0E0',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 16,
+    fontFamily: fontNames.interRegular,
+  },
+  termsLink: {
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#161616',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontFamily: fontNames.interBold,
+    fontWeight: 'bold',
+  },
+  webview: {
+    flex: 1,
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#161616',
   },
 });
 

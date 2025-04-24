@@ -198,8 +198,8 @@ const ProfileScreen = () => {
           left={props => <List.Icon {...props} icon="file-document" color={theme.colors.primary} />}
           right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
           onPress={() => navigation.navigate('WebView', { 
-            url: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/', 
-            title: 'Terms' 
+            url: 'https://stealth-trade-6e8.notion.site/Terms-of-Use-1dfe3751d8e38002a363d5052af7ec90?pvs=4', 
+            title: 'Terms of Use' 
           })}
         />
         <List.Item
@@ -208,7 +208,7 @@ const ProfileScreen = () => {
           left={props => <List.Icon {...props} icon="shield-lock" color={theme.colors.primary} />}
           right={props => <List.Icon {...props} icon="chevron-right" color={theme.colors.onSurfaceVariant} />}
           onPress={() => navigation.navigate('WebView', { 
-            url: 'https://www.apple.com/legal/privacy/en-ww/', 
+            url: 'https://stealth-trade-6e8.notion.site/Heard-App-Privacy-Policy-1d7e3751d8e3806a9568cf000778deb9?pvs=4', 
             title: 'Privacy Policy' 
           })}
         />
