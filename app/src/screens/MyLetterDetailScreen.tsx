@@ -126,7 +126,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         reaction_type: string;
         created_at: string;
         username: string;
-        user_id: string; // Add this to help with filtering
+        user_id: string; // This field is now returned from the updated RPC function
       };
 
       // Always fetch reactions since they're not passed from the list screen
