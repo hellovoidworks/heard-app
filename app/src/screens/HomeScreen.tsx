@@ -1134,7 +1134,7 @@ const HomeScreen = () => {
             style={[styles.writeLetterButton, { backgroundColor: theme.colors.primary }]}
             labelStyle={styles.writeLetterButtonLabel}
           >
-            Write Mail +5<Ionicons name="star" size={16} color="#FFD700" />
+            <View style={{ flexDirection: 'row' }}><Text>Write Mail +5</Text><Ionicons name="star" size={16} color="#FFD700" /></View>
           </Button>
         </View>
       );
@@ -1185,8 +1185,8 @@ const HomeScreen = () => {
             textColor="#FFFFFF"
           >
             {(profile?.stars ?? 0) < 1 ? 
-              <>Write or Reply to get <Ionicons name="star" size={16} color="#888888" /></> : 
-              <>Get New Mail{'    '}1 <Ionicons name="star" size={16} color="#FFD700" /></>
+              <View style={{ flexDirection: 'row' }}><Text>Write or Reply to get</Text><Ionicons name="star" size={16} color="#888888" /></View> : 
+              <View style={{ flexDirection: 'row' }}><Text>Get New Mail -1</Text><Ionicons name="star" size={16} color="#FFD700" /></View>
             }
           </Button>
         </Animated.View>
