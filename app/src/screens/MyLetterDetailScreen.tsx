@@ -266,18 +266,21 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           try {
             // Query to count letters with unread reactions (excluding the current letter)
             const { data: unreadLetters, error: unreadError } = await supabase
-              .from('my_letters_with_stats_view')
-              .select('id')
-              .eq('author_id', user.id)
-              .eq('has_unread_reactions', true)
-              .neq('id', letterId);
+              .rpc('get_my_letters_with_stats', { user_id: user.id })
+              .select('id, has_unread_reactions');
+              
+            // Filter the results locally since RPC doesn't support the same filtering syntax
+            const filteredUnreadLetters = unreadLetters?.filter(
+              (letter: { id: string, has_unread_reactions: boolean }) => 
+                letter.has_unread_reactions && letter.id !== letterId
+            ) || [];
             
             if (unreadError) {
               console.error('Error fetching unread reactions count:', unreadError);
             } else {
               // Update with the actual count of other letters with unread reactions
-              setUnreadReactionsCount(unreadLetters?.length || 0);
-              console.log(`Updated unread reactions count: ${unreadLetters?.length || 0}`);
+              setUnreadReactionsCount(filteredUnreadLetters.length);
+              console.log(`Updated unread reactions count: ${filteredUnreadLetters.length}`);
             }
           } catch (countError) {
             console.error('Exception counting unread reactions:', countError);
