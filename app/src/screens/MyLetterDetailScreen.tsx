@@ -213,7 +213,8 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         console.error('Error fetching replies:', repliesError);
         return;
       }
-      
+      console.log(letterId);
+      console.log(user.id);
       console.log(`[MyLetterDetailScreen] Fetched ${repliesData?.length || 0} replies (excluding blocked users and reported threads)`);
       
       if (repliesData && repliesData.length > 0) {
@@ -433,11 +434,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           <Text style={[styles.headerTitle, { color: theme.colors.onBackground }]}>My Mail</Text>
           
           <View style={styles.headerButtons}>
-            {/* Trash icon hidden for now
-            <TouchableOpacity onPress={handleDeleteLetter} style={styles.deleteButton}>
-              <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
-            </TouchableOpacity>
-            */}
+            {/* Empty view with fixed width to balance the header */}
           </View>
         </View>
       )}
@@ -573,9 +570,11 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 8,
+    width: 40, // Fixed width to balance the header
   },
   headerButtons: {
     flexDirection: 'row',
+    width: 40, // Fixed width to match the closeButton
   },
   deleteButton: {
     padding: 8,
