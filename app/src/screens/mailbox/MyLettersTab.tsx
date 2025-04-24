@@ -66,6 +66,19 @@ const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
       
     // Debug: Log the raw data to see what we're getting from the database
     console.log('[MyLettersTab] Raw letter data from database:', data ? data.slice(0, 2) : 'No data');
+    
+    // Debug specific letter that we're investigating
+    const specificLetter = data?.find((letter: any) => letter.id === '1b9877f5-7eac-43ad-9a09-6e06d098a99c');
+    if (specificLetter) {
+      console.log('[MyLettersTab] SPECIFIC LETTER DATA:', {
+        id: specificLetter.id,
+        title: specificLetter.title,
+        reaction_count: specificLetter.reaction_count,
+        reply_count: specificLetter.reply_count
+      });
+    } else {
+      console.log('[MyLettersTab] Specific letter 1b9877f5-7eac-43ad-9a09-6e06d098a99c not found in results');
+    }
 
     if (error) {
       console.error('[MyLettersTab] Error fetching letters with stats:', error);
