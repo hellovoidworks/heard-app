@@ -174,7 +174,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const markRepliesAsRead = async (replyIds: string[]) => {
+  const markRepliesAsRead = useCallback(async (replyIds: string[]) => {
     if (!user) return;
     
     try {
@@ -197,7 +197,7 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     } catch (error) {
       console.error('Error marking replies as read:', error);
     }
-  };
+  }, [user]);
 
   const handleSendReply = async () => {
     console.log('>>> handleSendReply called. Letter Author ID:', letter?.author_id, 'Current User ID:', user?.id, 'Other Participant ID:', otherParticipantId); 
@@ -419,9 +419,9 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   }, [letterLoading, repliesLoading]);
 
-  // Handle actions when data is loaded - mark replies as read
+  // Mark all replies from other participant as read when data is loaded
   useEffect(() => {
-    if (dataLoaded && letter && replies.length > 0) {
+    if (dataLoaded && letter && replies.length > 0 && otherParticipantId) {
       console.log('[ThreadDetailScreen] Data loaded, marking replies as read');
       
       // Mark all replies from the other participant as read
@@ -434,7 +434,8 @@ const ThreadDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         markRepliesAsRead(unreadReplyIds);
       }
     }
-  }, [dataLoaded, letter, replies, otherParticipantId, markRepliesAsRead]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataLoaded, letter, replies, otherParticipantId]);
   
   // Handle transition from loading to displaying content
   useEffect(() => {
