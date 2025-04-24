@@ -20,13 +20,14 @@ import detailScreenPreloader from '../utils/detailScreenPreloader';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyLetterDetail'>;
 
-type Thread = {
+interface Thread {
   id: string;
   replierId: string;
   latestReplyDate: string;
   latestReplyContent: string;
   replyCount: number;
   replierName: string;
+  latestReplyAuthorId: string;
 };
 
 const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
@@ -228,6 +229,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
             latestReplyContent: latestReply.content,
             replyCount: participantReplies.length,
             replierName: participantReplies.find(r => r.author_id === participantId)?.display_name || 'User', // Use display name from participant's reply
+            latestReplyAuthorId: latestReply.author_id
           };
         });
 
@@ -471,6 +473,7 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
                           style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
                           numberOfLines={2}
                         >
+                          {item.latestReplyAuthorId === user?.id ? "You: " : `${item.replierName}: `}
                           {item.latestReplyContent}
                         </Text>
                         <View style={styles.threadFooter}>
