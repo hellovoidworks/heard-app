@@ -421,8 +421,6 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
     );
   }
 
-  // No section preparation needed with our simpler approach
-
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* Only show custom header when not in modal mode */}
@@ -487,47 +485,45 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </Text>
             </View>
           </View>
+          
+          {/* Conversations section - using regular Views instead of FlatList */}
+          {threads.length > 0 && (
+            <View style={styles.threadsContainer}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
+                Conversations
+              </Text>
+              {threads.map(item => (
+                <TouchableOpacity key={item.id} onPress={() => navigateToThread(item.replierId)}>
+                  <Card style={styles.threadCard}>
+                    <Card.Content>
+                      <View style={styles.threadHeader}>
+                        <Text style={[styles.threadReplier, { color: theme.colors.primary }]}>
+                          {item.replierName}
+                        </Text>
+                        <Text style={[styles.threadDate, { color: theme.colors.onSurfaceDisabled }]}>
+                          {format(new Date(item.latestReplyDate), 'MMM d, yyyy')}
+                        </Text>
+                      </View>
+                      <Text 
+                        style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
+                        numberOfLines={2}
+                      >
+                        {item.latestReplyAuthorId === user?.id ? "You: " : `${item.replierName}: `}
+                        {item.latestReplyContent}
+                      </Text>
+                      <View style={styles.threadFooter}>
+                        <Text style={[styles.replyCount, { color: theme.colors.onSurfaceDisabled }]}>
+                          {item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'}
+                        </Text>
+                      </View>
+                    </Card.Content>
+                  </Card>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
-      
-      {threads.length > 0 && (
-        <View style={styles.threadsOuterContainer}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.onSurfaceVariant }]}>
-            Conversations
-          </Text>
-          {/* Using a non-scrollable container for threads to avoid nested scrolling */}
-          <View style={styles.threadsList}>
-            {threads.map(item => (
-              <TouchableOpacity key={item.id} onPress={() => navigateToThread(item.replierId)}>
-                <Card style={styles.threadCard}>
-                  <Card.Content>
-                    <View style={styles.threadHeader}>
-                      <Text style={[styles.threadReplier, { color: theme.colors.primary }]}>
-                        {item.replierName}
-                      </Text>
-                      <Text style={[styles.threadDate, { color: theme.colors.onSurfaceDisabled }]}>
-                        {format(new Date(item.latestReplyDate), 'MMM d, yyyy')}
-                      </Text>
-                    </View>
-                    <Text 
-                      style={[styles.threadPreview, { color: theme.colors.onSurfaceVariant }]} 
-                      numberOfLines={2}
-                    >
-                      {item.latestReplyAuthorId === user?.id ? "You: " : `${item.replierName}: `}
-                      {item.latestReplyContent}
-                    </Text>
-                    <View style={styles.threadFooter}>
-                      <Text style={[styles.replyCount, { color: theme.colors.onSurfaceDisabled }]}>
-                        {item.replyCount} {item.replyCount === 1 ? 'reply' : 'replies'}
-                      </Text>
-                    </View>
-                  </Card.Content>
-                </Card>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
 
       {/* Animated reaction emoji from notification */}
       {reactionEmoji && (
@@ -662,15 +658,7 @@ const styles = StyleSheet.create({
   },
   threadsContainer: {
     marginTop: 16,
-  },
-  threadsOuterContainer: {
-    flex: 1,
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  threadsList: {
-    marginTop: 10,
+    marginBottom: 16,
   },
   threadCard: {
     borderRadius: 12,
