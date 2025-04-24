@@ -136,10 +136,24 @@ const MyLetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         console.error('Error fetching reactions:', reactionsError);
         setReactionStats([]);
       } else if (reactionsData && reactionsData.length > 0) {
-        // Filter out reactions from blocked users
-        const filteredReactions = reactionsData.filter(reaction => 
-          !reaction.user_id || !blockedIds.includes(reaction.user_id)
-        );
+        console.log(`[MyLetterDetailScreen] Processing ${reactionsData.length} reactions`);        
+        // Filter out reactions from blocked users (in both directions)
+        const filteredReactions = reactionsData.filter(reaction => {
+          // Skip this check if no user_id (shouldn't happen but being safe)
+          if (!reaction.user_id) return true;
+          
+          // Check if this reaction owner is in our blocked users list
+          const isBlocked = blockedIds.includes(reaction.user_id);
+          
+          if (isBlocked) {
+            console.log(`[MyLetterDetailScreen] Filtering out reaction from blocked user: ${reaction.username || 'Unknown'}`); 
+          }
+          
+          // Keep the reaction only if the user is not blocked in either direction
+          return !isBlocked;
+        });
+        
+        console.log(`[MyLetterDetailScreen] Filtered out ${reactionsData.length - filteredReactions.length} reactions from blocked users`);
         
         // Format reactions for display
         const formattedReactions = filteredReactions.map(reaction => ({
