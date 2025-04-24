@@ -282,11 +282,12 @@ const MyLettersTab: React.FC<Props> = ({ onUnreadReactionsCountChange }) => {
                 
                 {/* Statistics row */}
                 <View style={styles.statsContainer}>
-                  {/* Views */}
+                  {/* Views - hidden for now 
                   <View style={styles.statItem}>
                     <MaterialCommunityIcons name="eye-outline" size={14} color="#FFFFFF" />
                     <Text style={styles.statText}>{formatNumber(item.view_count || 0)}</Text>
                   </View>
+                  */}
                   
                   {/* Replies */}
                   <View style={styles.statItem}>
