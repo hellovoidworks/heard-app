@@ -860,14 +860,102 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         )}
 
         {renderReactionModal()}
-        {renderResponseModal()}
         {renderBlockReportBottomSheet()}
       </Animated.View>
+      {responseModalVisible && (
+        <View style={styles.replyInputWrapper}>
+          <KeyboardAvoidingView
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
+            style={{width: '100%'}}
+          >
+            <Surface style={[styles.replyInputContent, { backgroundColor: theme.colors.surface }]}>
+              <View style={styles.modalHeader}>
+                <IconButton
+                  icon="close"
+                  size={20}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    setResponseModalVisible(false);
+                  }}
+                  style={styles.closeButton}
+                />
+              </View>
+
+              <PaperTextInput
+                value={responseText}
+                onChangeText={setResponseText}
+                placeholder="Write your reply..."
+                placeholderTextColor={theme.colors.onSurfaceDisabled}
+                multiline
+                numberOfLines={6}
+                style={[styles.responseInput, {
+                  backgroundColor: 'transparent',
+                  color: theme.colors.onSurface,
+                  textAlignVertical: 'top',
+                  minHeight: 150,
+                  maxHeight: 150,
+                  fontSize: 16,
+                  paddingHorizontal: 0
+                }]}
+                theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
+                selectionColor="white"
+                underlineColor="transparent"
+                activeUnderlineColor="transparent"
+                mode="flat"
+                render={props => (
+                  <TextInput
+                    {...props}
+                    ref={inputRef}
+                    multiline
+                    style={[props.style, { color: theme.colors.onSurface }]}
+                    placeholder="Write your reply..."
+                    placeholderTextColor={theme.colors.onSurfaceDisabled}
+                  />
+                )}
+              />
+
+              <View style={[styles.modalButtons, { paddingBottom: Math.max(16, insets.bottom) }]}>
+                <Button
+                  mode="contained"
+                  onPress={handleSendResponse}
+                  disabled={!responseText.trim() || sendingResponse}
+                  loading={sendingResponse}
+                  style={{ flex: 1 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Text>Send Reply +2</Text>
+                    <Text style={{
+                      color: !responseText.trim() || sendingResponse ? theme.colors.onSurfaceDisabled : '#FFD700',
+                      fontSize: 16,
+                      marginTop: 1,
+                      marginLeft: 0
+                    }}>★</Text>
+                  </View>
+                </Button>
+              </View>
+            </Surface>
+          </KeyboardAvoidingView>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  replyInputWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 999,
+  },
+  replyInputContent: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    width: '100%',
+    elevation: 5,
+  },
   container: {
     flex: 1,
   },
