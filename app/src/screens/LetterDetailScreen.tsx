@@ -61,6 +61,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const scrollViewRef = useRef<ScrollView>(null);
   const [isDiscarding, setIsDiscarding] = useState(false);
   const [moreOptionsVisible, setMoreOptionsVisible] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   
   // Refs for bottom sheets
   const blockReportBottomSheetRef = useRef<BlockReportBottomSheetRef>(null);
@@ -70,6 +71,27 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const translateYAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(1)).current;
+  
+  // Listen for keyboard events
+  useEffect(() => {
+    const keyboardWillShowListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setKeyboardVisible(true);
+      }
+    );
+    const keyboardWillHideListener = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        setKeyboardVisible(false);
+      }
+    );
+
+    return () => {
+      keyboardWillShowListener.remove();
+      keyboardWillHideListener.remove();
+    };
+  }, []);
 
   const fetchLetter = async () => {
     try {
@@ -734,7 +756,11 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
         <ScrollView
           ref={scrollViewRef}
-          style={[styles.scrollView, responseModalVisible && styles.scrollViewReduced]}
+          style={[
+            styles.scrollView,
+            responseModalVisible && !keyboardVisible && styles.scrollViewPartiallyReduced,
+            responseModalVisible && keyboardVisible && styles.scrollViewReduced
+          ]}
           contentContainerStyle={styles.scrollViewContent}
           refreshControl={
             <RefreshControl
@@ -798,7 +824,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </ScrollView>
 
-        {!hideBottomNav && (
+        {!hideBottomNav && !responseModalVisible && (
           <View style={[styles.actionButtonsContainer, { backgroundColor: theme.colors.background }]}>
             <View style={styles.actionButtons}>
               <Button
@@ -863,12 +889,12 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
         {renderBlockReportBottomSheet()}
       </Animated.View>
       {responseModalVisible && (
-        <View style={styles.replyInputWrapper}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
-            style={{width: '100%'}}
-          >
-            <Surface style={[styles.replyInputContent, { backgroundColor: theme.colors.surface }]}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.replyInputWrapper}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 30 : 0}
+        >
+          <Surface style={[styles.replyInputContent, { backgroundColor: theme.colors.surface }]}>
               <View style={styles.modalHeader}>
                 <IconButton
                   icon="close"
@@ -935,7 +961,6 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
             </Surface>
           </KeyboardAvoidingView>
-        </View>
       )}
     </SafeAreaView>
   );
@@ -943,8 +968,12 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   scrollViewReduced: {
-    // Adjust height to account for reply input
-    maxHeight: '55%', // This allows the scroll view to avoid being covered by the reply input
+    // Adjust height to account for reply input with keyboard showing
+    maxHeight: '25%', // This allows the scroll view to avoid being covered by the reply input and keyboard
+  },
+  scrollViewPartiallyReduced: {
+    // Adjust height to account for reply input without keyboard
+    maxHeight: '60%', // More space for reading the letter when keyboard is not showing
   },
   replyInputWrapper: {
     position: 'absolute',
