@@ -63,7 +63,7 @@ const WriteLetterContentScreen = () => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={120}
+        keyboardVerticalOffset={100}
       >
         <View style={styles.contentContainer}>
           <LabeledTextInput
@@ -109,7 +109,7 @@ What are you currently looking for?`}
                 backgroundColor: 'transparent', 
                 color: theme.colors.onSurface,
                 textAlignVertical: 'top',
-                flex: 1 // Use flex instead of percentage height
+                height: '100%',
               }]}
               maxLength={5000}
               theme={{ colors: { text: theme.colors.onSurface, primary: 'white' } }}
@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   },
   buttonContainer: {
     padding: 16,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 32,
     borderTopWidth: 1,
     borderTopColor: '#333',
   },
