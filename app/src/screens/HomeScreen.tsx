@@ -220,6 +220,52 @@ const HomeScreen = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Request App Tracking Transparency permission
+  useEffect(() => {
+    // Function to check if we've already requested ATT permission
+    const handleTrackingAuthorization = async () => {
+      try {
+        // Check if we've already asked for tracking permission
+        const hasRequestedTracking = await AsyncStorage.getItem('@heard_app/tracking_requested');
+        
+        if (hasRequestedTracking !== 'true') {
+          // Only request tracking authorization after a short delay to ensure the app is fully loaded
+          const timer = setTimeout(() => {
+            console.log('Requesting App Tracking Authorization');
+            Adjust.requestAppTrackingAuthorization(function (status) {
+              console.log("[Adjust]: Authorization status update!", status);
+              switch (status) {
+                case 0:
+                  console.log("The user has not responded to the access prompt yet.");
+                  break;
+                case 1:
+                  console.log("Access to app-related data is blocked at the device level.");
+                  break;
+                case 2:
+                  console.log("The user has denied access to app-related data for device measurement.");
+                  break;
+                case 3:
+                  console.log("The user has approved access to app-related data for device measurement.");
+                  break;
+              }
+              
+              // Mark that we've requested tracking permission regardless of result
+              AsyncStorage.setItem('@heard_app/tracking_requested', 'true');
+            });
+          }, 2000); // Wait 2 seconds before showing the prompt
+          
+          return () => clearTimeout(timer);
+        } else {
+          console.log('App tracking permission has already been requested previously');
+        }
+      } catch (error) {
+        console.error('Error handling tracking authorization:', error);
+      }
+    };
+    
+    handleTrackingAuthorization();
+  }, []);
+
   // Determine the current delivery window when the component mounts or user changes
   useEffect(() => {
     const updateWindowAndFetch = async () => {
