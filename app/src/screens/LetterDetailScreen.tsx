@@ -734,7 +734,7 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 
         <ScrollView
           ref={scrollViewRef}
-          style={styles.scrollView}
+          style={[styles.scrollView, responseModalVisible && styles.scrollViewReduced]}
           contentContainerStyle={styles.scrollViewContent}
           refreshControl={
             <RefreshControl
@@ -942,6 +942,10 @@ const LetterDetailScreen: React.FC<Props> = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  scrollViewReduced: {
+    // Adjust height to account for reply input
+    maxHeight: '55%', // This allows the scroll view to avoid being covered by the reply input
+  },
   replyInputWrapper: {
     position: 'absolute',
     left: 0,
