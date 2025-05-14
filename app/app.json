@@ -40,7 +40,8 @@
       "frameworks": [
         "AdSupport.framework",
         "AdServices.framework",
-        "StoreKit.framework"
+        "StoreKit.framework",
+        "AppTrackingTransparency.framework"
       ],
       "buildSettings": {
         "TARGETED_DEVICE_FAMILY": "1",
