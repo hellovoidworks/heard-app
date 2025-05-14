@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     maxWidth: 420,
     maxHeight: 425,
     marginBottom: 15,
-    resizeMode: 'contain',
+    resizeMode: 'cover',
   },
   slideTitle: {
     fontSize: 24,
