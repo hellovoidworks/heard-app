@@ -114,10 +114,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         console.log('AuthContext: Checking for active session');
         const { data, error } = await supabase.auth.getSession();
+        
         if (error) {
-          console.error('AuthContext: Error checking session:', error);
-          setLoading(false); // Ensure loading is set to false even on error
-          throw error;
+          // Check if this is the "Invalid Refresh Token" error which is expected when no user is logged in
+          const isRefreshTokenError = error.message?.includes('Invalid Refresh Token') || 
+                                    error.message?.includes('Refresh Token Not Found');
+          
+          if (isRefreshTokenError) {
+            // This is an expected condition when no user is logged in, not a true error
+            console.log('AuthContext: No active session (refresh token not found)');
+            setLoading(false);
+            return; // Continue with no user
+          } else {
+            // This is an unexpected error, log it as an error
+            console.error('AuthContext: Error checking session:', error);
+            setLoading(false);
+            return; // Don't throw, just return and let the app continue
+          }
         }
         
         if (data?.session?.user) {
@@ -297,8 +310,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log(`AuthContext: AppState changed to ${nextAppState}`);
       
       if (nextAppState === 'active') {
-        console.log('AuthContext: App is active, starting auto refresh');
-        supabase.auth.startAutoRefresh();
+        // Before starting auto-refresh, check if there's actually a user session
+        // This prevents unnecessary refresh token errors when no user is logged in
+        supabase.auth.getSession().then(({ data, error }) => {
+          // Only start auto-refresh if there's a valid session
+          if (data?.session && !error) {
+            console.log('AuthContext: App is active with valid session, starting auto refresh');
+            supabase.auth.startAutoRefresh();
+          } else {
+            // Don't log as error if it's just a missing refresh token
+            const isRefreshTokenError = error?.message?.includes('Invalid Refresh Token') || 
+                                        error?.message?.includes('Refresh Token Not Found');
+            
+            if (error && !isRefreshTokenError) {
+              console.error('AuthContext: Error checking session for auto-refresh:', error);
+            } else {
+              console.log('AuthContext: No valid session for auto-refresh');
+            }
+          }
+        }).catch(error => {
+          console.log('AuthContext: Error during session check for auto-refresh:', error);
+        });
       } else {
         console.log('AuthContext: App is inactive/background, stopping auto refresh');
         supabase.auth.stopAutoRefresh();
