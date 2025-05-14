@@ -226,7 +226,8 @@ const HomeScreen = () => {
     const handleTrackingAuthorization = async () => {
       try {
         // Check if we've already asked for tracking permission
-        const hasRequestedTracking = await AsyncStorage.getItem('@heard_app/tracking_requested');
+        console.log('Checking if we\'ve already asked for tracking permission');
+        const hasRequestedTracking = await AsyncStorage.getItem('@heard_app/already_requested_tracking');
         
         if (hasRequestedTracking !== 'true') {
           // Only request tracking authorization after a short delay to ensure the app is fully loaded
@@ -250,7 +251,7 @@ const HomeScreen = () => {
               }
               
               // Mark that we've requested tracking permission regardless of result
-              AsyncStorage.setItem('@heard_app/tracking_requested', 'true');
+              AsyncStorage.setItem('@heard_app/already_requested_tracking', 'true');
             });
           }, 2000); // Wait 2 seconds before showing the prompt
           
