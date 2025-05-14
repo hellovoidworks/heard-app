@@ -95,17 +95,17 @@ We may terminate or suspend your access to the App immediately, without prior no
 
 ## 12. Governing Law
 
-These Terms shall be governed by and construed in accordance with the laws of [Jurisdiction], without regard to its conflict of law provisions.
+These Terms shall be governed by and construed in accordance with the laws of Singapore, without regard to its conflict of law provisions.
 
 ## 13. Dispute Resolution
 
-Any dispute arising out of or relating to these Terms or the App shall be resolved through binding arbitration in accordance with the rules of [Arbitration Association] and shall be conducted in [Location].
+Any dispute arising out of or relating to these Terms or the App shall be resolved through binding arbitration in accordance with the rules of Singapore International Arbitration Centre (SIAC) and shall be conducted in Singapore.
 
 ## 14. Contact Information
 
 If you have any questions about these Terms, please contact us at:
 
-[Your Contact Information]
+hello@voidworks.co
 
 ## 15. Severability
 
