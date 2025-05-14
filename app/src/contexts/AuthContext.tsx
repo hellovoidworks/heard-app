@@ -5,6 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { AppState, AppStateStatus } from 'react-native';
 import { generateUniqueRandomUsername, isUsernameUnique } from '../utils/usernameGenerator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SecureStore from 'expo-secure-store';
 import { updateAppBadgeCount } from '../services/notifications';
 
 console.log('=== AuthContext module initialized ===');
@@ -470,11 +471,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       console.log('AuthContext: Signing out user');
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('AuthContext: Error signing out:', error);
-        throw error;
-      }
+      
+      // Clear React state first to prevent any UI issues during sign-out
+      setUser(null);
+      setProfile(null);
+      setIsOnboardingComplete(null);
       
       // Clear notification badge
       console.log('AuthContext: Clearing notification badge');
@@ -485,17 +486,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const keysToRemove = [
         '@heard_app/last_star_count',
         '@heard_app/last_star_reward',
-        '@heard_app/pending_star_reward'
+        '@heard_app/pending_star_reward',
+        // Add any other auth-related AsyncStorage keys here
       ];
       
       await Promise.all(keysToRemove.map(key => AsyncStorage.removeItem(key)));
       
+      // Additional cleanup specific to auth state
+      // This helps address persistent session issues after sign-out
+      await SecureStore.deleteItemAsync('supabase-auth-token');
+      
+      // Now sign out from Supabase with session kill option
+      // This ensures the token is invalidated server-side
+      const { error } = await supabase.auth.signOut({
+        scope: 'global' // Sign out from all devices/tabs
+      });
+      
+      if (error) {
+        console.error('AuthContext: Error signing out from Supabase:', error);
+        throw error;
+      }
+      
       console.log('AuthContext: User signed out successfully');
+    } catch (error) {
+      console.error('AuthContext: Error during sign out process:', error);
+      // Even if there's an error, we want to make sure the UI is reset
       setUser(null);
       setProfile(null);
       setIsOnboardingComplete(null);
-    } catch (error) {
-      console.error('AuthContext: Error signing out:', error);
       throw error;
     }
   };
