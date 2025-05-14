@@ -34,7 +34,8 @@
         "LSApplicationQueriesSchemes": ["mailto"],
         "UIBackgroundModes": ["remote-notification"],
         "CFBundleDisplayName": "Heard",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "This will be used to help us improve the app. Your data and identity remains anonymous."
       },
       "useFrameworks": "static",
       "frameworks": [
