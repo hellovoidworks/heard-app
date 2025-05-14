@@ -89,3 +89,14 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details. 
+
+## Night emailBuilding for App Store
+Add the following frameworks to the Link Binary With Libraries section of the Build Phases tab in Xcode:
+        "AdSupport.framework",
+        "AdServices.framework",
+        "StoreKit.framework",
+        "AppTrackingTransparency.framework"
+
+Change Bundle Version in the Info tab
+Change Team in Signing & Capabilities tab
+Change Version and Build in the General tab
