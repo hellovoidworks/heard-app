@@ -147,7 +147,6 @@ export default function App() {
       // Initialize the SDK
       Adjust.initSdk(adjustConfig);
       console.log('Adjust SDK initialized successfully');
-      adjustConfig.setAttConsentWaitingInterval(180);
       // Track session_start event when app is first opened
       const startEvent = new AdjustEvent('xe30he');
       Adjust.trackEvent(startEvent);
