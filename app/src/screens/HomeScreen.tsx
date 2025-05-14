@@ -826,7 +826,7 @@ const HomeScreen = () => {
       
       if (!moreLetters || moreLetters.length === 0) {
         console.log('No more unread letters available');
-        Alert.alert('No Letters Available', 'There are no new letters available at the moment.');
+        Alert.alert('No Mail Available', 'There is no new mail available at the moment.');
         setLoadingMore(false);
         return;
       }
